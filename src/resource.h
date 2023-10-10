@@ -1,17 +1,11 @@
 //{{NO_DEPENDENCIES}}
-// Plik do³¹czany wygenerowany przez œrodowisko Microsoft Visual C++.
-// U¿ywany przez: config.rc
+// Plik doï¿½ï¿½czany wygenerowany przez ï¿½rodowisko Microsoft Visual C++.
+// Uï¿½ywany przez: config.rc
 //
 #define IDD_CONFIGDLG                   101
 #define IDD_MACRODLG                    102
-#define IDD_STATUS                      103
-#define IDD_STATUS_1                    103
-#define IDD_STATUS_123                  104
-#define IDD_STATUS_2                    105
-#define IDD_STATUS_12                   106
-#define IDD_STATUS_13                   107
-#define IDD_STATUS_3                    108
-#define IDD_STATUS_23                   109
+#define IDD_STATUS_COMBOS               104
+#define IDD_STATUS_NORMAL               105
 #define IDC_COMBOCONT                   1000
 #define IDC_BCONFIG                     1001
 #define IDC_CHECKACTIVE                 1002

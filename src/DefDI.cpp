@@ -110,7 +110,7 @@ struct Status
 		radialRecalc = true;
 		statusDlg = NULL;
 		prevHWnd = NULL;
-		Extend = 1|2;
+		Extend = 0;
 		positioned = false;
 		comboTask = C_IDLE;
 		once = true;
@@ -163,10 +163,6 @@ struct Status
 			StartThread(Control);
 		}
 	}
-
-	bool HasPanel(int num) { return 0 != (Extend & (1<<(num-1))); }
-	void AddPanel(int num) { Extend |= (1<<(num-1)); }
-	void RemovePanel(int num) { Extend &= ~(1<<(num-1)); }
 
 	HANDLE statusThread;
 	DWORD dwThreadId, dwThreadParam;
@@ -940,7 +936,7 @@ void Status::SetKeys(BUTTONS ControllerInput)
 	if(statusDlg)
 	{
 		//true if physical controller state is changed (because logical is handled in GetKeys)
-		if (buttonDisplayed.Value != ControllerInput.Value && HasPanel(2))
+		if (buttonDisplayed.Value != ControllerInput.Value)
 		{
 			UpdateVisuals(ControllerInput);
 			buttonDisplayed.Value = ControllerInput.Value;
@@ -1090,8 +1086,7 @@ void Status::SetKeys(BUTTONS ControllerInput)
 		}
 		if(!overrideOn && (LastControllerInput.X_AXIS != ControllerInput.X_AXIS || (AngDisp && LastControllerInput.Y_AXIS != ControllerInput.Y_AXIS)))
 		{
-			if(HasPanel(1))
-			{
+			
 				char str [256], str2 [256];
 				GetDlgItemText(statusDlg, IDC_EDITX, str2, 256);
 				if(!AngDisp)
@@ -1108,13 +1103,12 @@ void Status::SetKeys(BUTTONS ControllerInput)
 					//this and the same one for Y editbox is running at a moderate speed
 					//SetDlgItemText(statusDlg, IDC_EDITX, str);
 					SetXYTextFast(statusDlg, TRUE, str);
-			}
+			
 			changed = true;
 		}
 		if(!overrideOn && (LastControllerInput.Y_AXIS != ControllerInput.Y_AXIS || (AngDisp && LastControllerInput.X_AXIS != ControllerInput.X_AXIS)))
 		{
-			if(HasPanel(1))
-			{
+			
 				char str [256], str2 [256];
 				GetDlgItemText(statusDlg, IDC_EDITY, str2, 256);
 				if(!AngDisp)
@@ -1129,7 +1123,7 @@ void Status::SetKeys(BUTTONS ControllerInput)
 				if(strcmp(str,str2))
 					//SetDlgItemText(statusDlg, IDC_EDITY, str);
 					SetXYTextFast(statusDlg, FALSE, str);
-			}
+			
 			changed = true;
 		}
 	}
@@ -1591,8 +1585,7 @@ void Status::InitialiseCombos(char* path) {
 
 void Status::RefreshAnalogPicture ()
 {
-	if(HasPanel(1))
-	{
+	
 		RECT rect, rect2;
 		GetWindowRect(GetDlgItem(statusDlg,IDC_STICKPIC), &rect);
 		GetWindowRect(statusDlg, &rect2);
@@ -1600,34 +1593,23 @@ void Status::RefreshAnalogPicture ()
 		rect.top  -= rect2.top+3;  rect.bottom -= rect2.top+3;
 		InvalidateRect(statusDlg, &rect, TRUE);
 		UpdateWindow(statusDlg);
-	}
+	
 }
 
 DWORD WINAPI StatusDlgThreadProc (LPVOID lpParameter)
 {
 	int Control = LOBYTE(*(int*)lpParameter);
-	int DialogID;
-	switch(HIBYTE(*(int*)lpParameter)) // Extend
-	{
-		default:
-		case 1:     DialogID = IDD_STATUS_1; break;
-		case 1|2:   DialogID = IDD_STATUS_12; break;
-		case   2:   DialogID = IDD_STATUS_2; break;
-		case 1|2|4: DialogID = IDD_STATUS_123; break;
-		case 1 | 4: DialogID = IDD_STATUS_13; break;
-		case   2|4: DialogID = IDD_STATUS_23; break;
-		case     4: DialogID = IDD_STATUS_3; break;
-	}
+	auto extend = HIBYTE(*(int*)lpParameter);
+	int DialogID = extend ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
+
 	switch(Control)
 	{
 		case 0: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc0); break;
 		case 1: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc1); break;
 		case 2: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc2); break;
 		case 3: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc3); break;
-		default:  DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_STATUS_12), NULL, (DLGPROC)StatusDlgProc0);
+		default:  DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc0);
 	}
-//	DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_STATUS), NULL, (DLGPROC)StatusDlgProc);
-//	statusThread = NULL;
 	return 0;
 }
 
@@ -1821,21 +1803,12 @@ LRESULT Status::StatusDlgMethod (UINT msg, WPARAM wParam, LPARAM lParam)
 
 			// set title
 			char str [256];
-			if(HasPanel(1))
-			{
-				sprintf(str, "Analog Stick - Controller %d", Control+1);
-				SetWindowText(GetDlgItem(statusDlg,IDC_ANALOGSTICKLABEL), str);
-			}
-			else if(HasPanel(2))
-			{
-				sprintf(str, "Buttons - Controller %d", Control+1);
-				SetWindowText(GetDlgItem(statusDlg,IDC_BUTTONSLABEL), str);
-			}
-			else if(HasPanel(3))
-			{
-				sprintf(str, "Combos - Controller %d", Control+1); // XXX
-				SetWindowText(GetDlgItem(statusDlg,IDC_COMBOLABEL), str);
-			}
+			sprintf(str, "Analog Stick - Controller %d", Control+1);
+			SetWindowText(GetDlgItem(statusDlg,IDC_ANALOGSTICKLABEL), str);
+			sprintf(str, "Buttons - Controller %d", Control+1);
+			SetWindowText(GetDlgItem(statusDlg,IDC_BUTTONSLABEL), str);
+			sprintf(str, "Combos - Controller %d", Control+1); // XXX
+			SetWindowText(GetDlgItem(statusDlg,IDC_COMBOLABEL), str);
 			if(AngDisp)
 			{
 				CheckDlgButton(statusDlg, IDC_CHECK_ANGDISP, TRUE);
@@ -1885,33 +1858,28 @@ LRESULT Status::StatusDlgMethod (UINT msg, WPARAM wParam, LPARAM lParam)
 			SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, 1000);
 
 			// set checkbox initial states
-			if(HasPanel(1))
-			{
-				CheckDlgButton(statusDlg, IDC_XABS, relativeXOn==0 ? TRUE : FALSE);
-				CheckDlgButton(statusDlg, IDC_YABS, relativeYOn==0 ? TRUE : FALSE);
-				CheckDlgButton(statusDlg, IDC_XSEM, relativeXOn==1 ? TRUE : FALSE);
-				CheckDlgButton(statusDlg, IDC_YSEM, relativeYOn==1 ? TRUE : FALSE);
-				CheckDlgButton(statusDlg, IDC_XREL, relativeXOn==2 ? TRUE : FALSE);
-				CheckDlgButton(statusDlg, IDC_YREL, relativeYOn==2 ? TRUE : FALSE);
-				CheckDlgButton(statusDlg, IDC_XRAD, relativeXOn==3 ? TRUE : FALSE);
-			}
-			if(HasPanel(2))
-			{
-				CheckDlgButton(statusDlg, IDC_CHECK_A, buttonDisplayed.A_BUTTON);
-				CheckDlgButton(statusDlg, IDC_CHECK_B, buttonDisplayed.B_BUTTON);
-				CheckDlgButton(statusDlg, IDC_CHECK_START, buttonDisplayed.START_BUTTON);
-				CheckDlgButton(statusDlg, IDC_CHECK_L, buttonDisplayed.L_TRIG);
-				CheckDlgButton(statusDlg, IDC_CHECK_R, buttonDisplayed.R_TRIG);
-				CheckDlgButton(statusDlg, IDC_CHECK_Z, buttonDisplayed.Z_TRIG);
-				CheckDlgButton(statusDlg, IDC_CHECK_CUP, buttonDisplayed.U_CBUTTON);
-				CheckDlgButton(statusDlg, IDC_CHECK_CLEFT, buttonDisplayed.L_CBUTTON);
-				CheckDlgButton(statusDlg, IDC_CHECK_CRIGHT, buttonDisplayed.R_CBUTTON);
-				CheckDlgButton(statusDlg, IDC_CHECK_CDOWN, buttonDisplayed.D_CBUTTON);
-				CheckDlgButton(statusDlg, IDC_CHECK_DUP, buttonDisplayed.U_DPAD);
-				CheckDlgButton(statusDlg, IDC_CHECK_DLEFT, buttonDisplayed.L_DPAD);
-				CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, buttonDisplayed.R_DPAD);
-				CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, buttonDisplayed.D_DPAD);
-			}
+			
+			CheckDlgButton(statusDlg, IDC_XABS, relativeXOn==0 ? TRUE : FALSE);
+			CheckDlgButton(statusDlg, IDC_YABS, relativeYOn==0 ? TRUE : FALSE);
+			CheckDlgButton(statusDlg, IDC_XSEM, relativeXOn==1 ? TRUE : FALSE);
+			CheckDlgButton(statusDlg, IDC_YSEM, relativeYOn==1 ? TRUE : FALSE);
+			CheckDlgButton(statusDlg, IDC_XREL, relativeXOn==2 ? TRUE : FALSE);
+			CheckDlgButton(statusDlg, IDC_YREL, relativeYOn==2 ? TRUE : FALSE);
+			CheckDlgButton(statusDlg, IDC_XRAD, relativeXOn==3 ? TRUE : FALSE);
+			CheckDlgButton(statusDlg, IDC_CHECK_A, buttonDisplayed.A_BUTTON);
+			CheckDlgButton(statusDlg, IDC_CHECK_B, buttonDisplayed.B_BUTTON);
+			CheckDlgButton(statusDlg, IDC_CHECK_START, buttonDisplayed.START_BUTTON);
+			CheckDlgButton(statusDlg, IDC_CHECK_L, buttonDisplayed.L_TRIG);
+			CheckDlgButton(statusDlg, IDC_CHECK_R, buttonDisplayed.R_TRIG);
+			CheckDlgButton(statusDlg, IDC_CHECK_Z, buttonDisplayed.Z_TRIG);
+			CheckDlgButton(statusDlg, IDC_CHECK_CUP, buttonDisplayed.U_CBUTTON);
+			CheckDlgButton(statusDlg, IDC_CHECK_CLEFT, buttonDisplayed.L_CBUTTON);
+			CheckDlgButton(statusDlg, IDC_CHECK_CRIGHT, buttonDisplayed.R_CBUTTON);
+			CheckDlgButton(statusDlg, IDC_CHECK_CDOWN, buttonDisplayed.D_CBUTTON);
+			CheckDlgButton(statusDlg, IDC_CHECK_DUP, buttonDisplayed.U_DPAD);
+			CheckDlgButton(statusDlg, IDC_CHECK_DLEFT, buttonDisplayed.L_DPAD);
+			CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, buttonDisplayed.R_DPAD);
+			CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, buttonDisplayed.D_DPAD);
 
 			// begin accepting other messages
 			initialized = true;
@@ -2446,23 +2414,13 @@ LRESULT Status::StatusDlgMethod (UINT msg, WPARAM wParam, LPARAM lParam)
 				case IDC_CHECK_DDOWN:  buttonOverride.D_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0; buttonAutofire.D_DPAD = buttonAutofire2.D_DPAD = 0; ActivateEmulatorWindow(); break;
 				case IDC_CLEARJOY: overrideAllowed = true; overrideOn = true; overrideX = 0; overrideY = 0; SetDlgItemText(statusDlg, IDC_EDITY, "0"); SetDlgItemText(statusDlg, IDC_EDITX, "0"); RefreshAnalogPicture(); ActivateEmulatorWindow(); break;
 				case IDC_CLEARBUTTONS: buttonOverride.Value = buttonAutofire.Value = buttonAutofire2.Value = 0; GetKeys(0); ActivateEmulatorWindow(); break;
-				case IDC_MOREBUTTON0:
-				case IDC_MOREBUTTON1:
-				case IDC_MOREBUTTON2:
-				case IDC_MOREBUTTON3:
 				case IDC_MOREBUTTON4:
 				case IDC_MOREBUTTON5:
-				case IDC_MOREBUTTON6:
 				{
 					switch(LOWORD(wParam)) // Extend
 					{
-			            case IDC_MOREBUTTON0: RemovePanel(1); break;
-			   default: case IDC_MOREBUTTON1: AddPanel(2); break;
-						case IDC_MOREBUTTON2: AddPanel(1); break;
-						case IDC_MOREBUTTON3: RemovePanel(2); break;
-						case IDC_MOREBUTTON4: AddPanel(3); break;
-						case IDC_MOREBUTTON5: RemovePanel(3); break;
-						case IDC_MOREBUTTON6: AddPanel(2); break;
+					case IDC_MOREBUTTON4: Extend = 1; break;
+					case IDC_MOREBUTTON5: Extend = 0; break;
 					}
 
 					comboTask = C_IDLE;
