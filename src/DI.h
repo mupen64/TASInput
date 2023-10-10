@@ -27,21 +27,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern BYTE nCurrentDevices;
 
-extern LPDIRECTINPUT8        g_lpDI;
+extern LPDIRECTINPUT8 g_lpDI;
 
 extern GUID Guids[MAX_DEVICES];
 
-typedef struct {
-	LPDIRECTINPUTDEVICE8 lpDIDevice;
-	DIDEVICEINSTANCE	 DIDevInst;
-} DIINPUTDEVICE;
+using DIINPUTDEVICE = struct
+{
+    LPDIRECTINPUTDEVICE8 lpDIDevice;
+    DIDEVICEINSTANCE DIDevInst;
+};
 
 extern DIINPUTDEVICE DInputDev[MAX_DEVICES];
 
 void WINAPI FreeDirectInput();
 BOOL WINAPI InitDirectInput(HWND hMainWindow);
-BOOL CALLBACK DIEnumDevicesCallback( LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
-BOOL CALLBACK EnumAxesCallback( const DIDEVICEOBJECTINSTANCE* pdidoi, LPVOID pContext );
+BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
+BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi, LPVOID pContext);
 
 
 #endif

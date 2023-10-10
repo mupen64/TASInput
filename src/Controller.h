@@ -35,46 +35,51 @@ extern "C" {
 #define CALL						_cdecl
 
 /***** Structures *****/
-typedef struct {
-	WORD Version;        /* Should be set to 0x0100 */
-	WORD Type;           /* Set to PLUGIN_TYPE_CONTROLLER */
-	char Name[100];      /* Name of the DLL */
-	BOOL Reserved1;
-	BOOL Reserved2;
-} PLUGIN_INFO;
+using PLUGIN_INFO = struct
+{
+    WORD Version; /* Should be set to 0x0100 */
+    WORD Type; /* Set to PLUGIN_TYPE_CONTROLLER */
+    char Name[100]; /* Name of the DLL */
+    BOOL Reserved1;
+    BOOL Reserved2;
+};
 
-typedef struct {
-	BOOL Present;
-	BOOL RawData;
-	int  Plugin;
-} CONTROL;
+using CONTROL = struct
+{
+    BOOL Present;
+    BOOL RawData;
+    int Plugin;
+};
 
-typedef union {
-	DWORD Value;
-	struct {
-		unsigned R_DPAD       : 1;
-		unsigned L_DPAD       : 1;
-		unsigned D_DPAD       : 1;
-		unsigned U_DPAD       : 1;
-		unsigned START_BUTTON : 1;
-		unsigned Z_TRIG       : 1;
-		unsigned B_BUTTON     : 1;
-		unsigned A_BUTTON     : 1;
+using BUTTONS = union
+{
+    DWORD Value;
 
-		unsigned R_CBUTTON    : 1;
-		unsigned L_CBUTTON    : 1;
-		unsigned D_CBUTTON    : 1;
-		unsigned U_CBUTTON    : 1;
-		unsigned R_TRIG       : 1;
-		unsigned L_TRIG       : 1;
-		unsigned Reserved1    : 1;
-		unsigned Reserved2    : 1;
+    struct
+    {
+        unsigned R_DPAD : 1;
+        unsigned L_DPAD : 1;
+        unsigned D_DPAD : 1;
+        unsigned U_DPAD : 1;
+        unsigned START_BUTTON : 1;
+        unsigned Z_TRIG : 1;
+        unsigned B_BUTTON : 1;
+        unsigned A_BUTTON : 1;
 
-		signed   X_AXIS       : 8;
+        unsigned R_CBUTTON : 1;
+        unsigned L_CBUTTON : 1;
+        unsigned D_CBUTTON : 1;
+        unsigned U_CBUTTON : 1;
+        unsigned R_TRIG : 1;
+        unsigned L_TRIG : 1;
+        unsigned Reserved1 : 1;
+        unsigned Reserved2 : 1;
 
-		signed   Y_AXIS       : 8;
-	};
-} BUTTONS;
+        signed X_AXIS : 8;
+
+        signed Y_AXIS : 8;
+    };
+};
 
 /******************************************************************
   Function: CloseDLL
@@ -82,8 +87,8 @@ typedef union {
             down allowing the dll to de-initialise.
   input:    none
   output:   none
-*******************************************************************/ 
-EXPORT void CALL CloseDLL (void);
+*******************************************************************/
+EXPORT void CALL CloseDLL(void);
 
 /******************************************************************
   Function: ControllerCommand
@@ -101,7 +106,7 @@ EXPORT void CALL CloseDLL (void);
             initilize controller: 01 03 00 FF FF FF 
             read controller:      01 04 01 FF FF FF FF
 *******************************************************************/
-EXPORT void CALL ControllerCommand ( int Control, BYTE * Command);
+EXPORT void CALL ControllerCommand(int Control, BYTE* Command);
 
 /******************************************************************
   Function: DllAbout
@@ -109,8 +114,8 @@ EXPORT void CALL ControllerCommand ( int Control, BYTE * Command);
             to give further information about the DLL.
   input:    a handle to the window that calls this function
   output:   none
-*******************************************************************/ 
-EXPORT void CALL DllAbout ( HWND hParent );
+*******************************************************************/
+EXPORT void CALL DllAbout(HWND hParent);
 
 /******************************************************************
   Function: DllConfig
@@ -118,8 +123,8 @@ EXPORT void CALL DllAbout ( HWND hParent );
             to allow the user to configure the dll
   input:    a handle to the window that calls this function
   output:   none
-*******************************************************************/ 
-EXPORT void CALL DllConfig ( HWND hParent );
+*******************************************************************/
+EXPORT void CALL DllConfig(HWND hParent);
 
 /******************************************************************
   Function: DllTest
@@ -127,8 +132,8 @@ EXPORT void CALL DllConfig ( HWND hParent );
             to allow the user to test the dll
   input:    a handle to the window that calls this function
   output:   none
-*******************************************************************/ 
-EXPORT void CALL DllTest ( HWND hParent );
+*******************************************************************/
+EXPORT void CALL DllTest(HWND hParent);
 
 /******************************************************************
   Function: GetDllInfo
@@ -137,8 +142,8 @@ EXPORT void CALL DllTest ( HWND hParent );
   input:    a pointer to a PLUGIN_INFO stucture that needs to be
             filled by the function. (see def above)
   output:   none
-*******************************************************************/ 
-EXPORT void CALL GetDllInfo ( PLUGIN_INFO * PluginInfo );
+*******************************************************************/
+EXPORT void CALL GetDllInfo(PLUGIN_INFO* PluginInfo);
 
 /******************************************************************
   Function: GetKeys
@@ -147,8 +152,8 @@ EXPORT void CALL GetDllInfo ( PLUGIN_INFO * PluginInfo );
             - A pointer to a BUTTONS structure to be filled with 
 			the controller state.
   output:   none
-*******************************************************************/  	
-EXPORT void CALL GetKeys(int Control, BUTTONS * Keys );
+*******************************************************************/
+EXPORT void CALL GetKeys(int Control, BUTTONS* Keys);
 
 /******************************************************************
   Function: InitiateControllers
@@ -158,8 +163,8 @@ EXPORT void CALL GetKeys(int Control, BUTTONS * Keys );
             - A controller structure that needs to be filled for 
 			  the emulator to know how to handle each controller.
   output:   none
-*******************************************************************/  
-EXPORT void CALL InitiateControllers (HWND hMainWindow, CONTROL Controls[4]);
+*******************************************************************/
+EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4]);
 
 /******************************************************************
   Function: ReadController
@@ -172,15 +177,15 @@ EXPORT void CALL InitiateControllers (HWND hMainWindow, CONTROL Controls[4]);
   note:     This function is only needed if the DLL is allowing raw
             data.
 *******************************************************************/
-EXPORT void CALL ReadController ( int Control, BYTE * Command );
+EXPORT void CALL ReadController(int Control, BYTE* Command);
 
 /******************************************************************
   Function: RomClosed
   Purpose:  This function is called when a rom is closed.
   input:    none
   output:   none
-*******************************************************************/ 
-EXPORT void CALL RomClosed (void);
+*******************************************************************/
+EXPORT void CALL RomClosed(void);
 
 /******************************************************************
   Function: RomOpen
@@ -188,8 +193,8 @@ EXPORT void CALL RomClosed (void);
             emulation thread)
   input:    none
   output:   none
-*******************************************************************/ 
-EXPORT void CALL RomOpen (void);
+*******************************************************************/
+EXPORT void CALL RomOpen(void);
 
 /******************************************************************
   Function: WM_KeyDown
@@ -197,8 +202,8 @@ EXPORT void CALL RomOpen (void);
             plugin.
   input:    wParam and lParam of the WM_KEYDOWN message.
   output:   none
-*******************************************************************/ 
-EXPORT void CALL WM_KeyDown( WPARAM wParam, LPARAM lParam );
+*******************************************************************/
+EXPORT void CALL WM_KeyDown(WPARAM wParam, LPARAM lParam);
 
 /******************************************************************
   Function: WM_KeyUp
@@ -206,8 +211,8 @@ EXPORT void CALL WM_KeyDown( WPARAM wParam, LPARAM lParam );
             plugin.
   input:    wParam and lParam of the WM_KEYDOWN message.
   output:   none
-*******************************************************************/ 
-EXPORT void CALL WM_KeyUp( WPARAM wParam, LPARAM lParam );
+*******************************************************************/
+EXPORT void CALL WM_KeyUp(WPARAM wParam, LPARAM lParam);
 
 /******************************************************************
   Function: SetKeys
@@ -217,11 +222,10 @@ EXPORT void CALL WM_KeyUp( WPARAM wParam, LPARAM lParam );
   input:    - Controller Number (0 to 3)
             - A BUTTONS structure with the controller state.
   output:   none
-*******************************************************************/  	
+*******************************************************************/
 EXPORT void CALL SetKeys(int Control, BUTTONS ControllerInput);
 
 #if defined(__cplusplus)
 }
 #endif
 #endif
-

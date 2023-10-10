@@ -68,7 +68,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define DIJOFS_POV3S	30
 #define DIJOFS_POV3W	31
 
-#define BUTTONDOWN(name, key) (name[key] & 0x80) 
+#define BUTTONDOWN(name, key) (name[key] & 0x80)
 
 #define IDT_TIMER3 3
 
@@ -82,56 +82,62 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //custom messages
 #define EDIT_END 10001
 
-typedef struct COMBO
+using COMBO = struct COMBO
 {
-	int length = 0;
-	bool joystickUsed; //true if theres at least one frame where joystick is not 0 (THIS ISN'T SAVED TO FILE)
-	BUTTONS* data = 0; //pointer to combo key data somewhere in memory (because it's dynamic)
-} COMBO;
+    int length = 0;
+    bool joystickUsed; //true if theres at least one frame where joystick is not 0 (THIS ISN'T SAVED TO FILE)
+    BUTTONS* data = 0; //pointer to combo key data somewhere in memory (because it's dynamic)
+};
 
-typedef struct {
-	BYTE Device;
-	BYTE type;
-	BYTE vkey;
-	DWORD button;
-} INPUT_CTRL;
+using INPUT_CTRL = struct
+{
+    BYTE Device;
+    BYTE type;
+    BYTE vkey;
+    DWORD button;
+};
 
-typedef struct {
-	TCHAR szName[16];
-	BYTE NDevices;
-	DWORD Devices[MAX_DEVICES];
-	BOOL bActive;
-	BOOL bMemPak;
-	BYTE SensMax;
-	BYTE SensMin;
-	INPUT_CTRL Input[NUMBER_OF_BUTTONS];
-} DEFCONTROLLER;
+using DEFCONTROLLER = struct
+{
+    TCHAR szName[16];
+    BYTE NDevices;
+    DWORD Devices[MAX_DEVICES];
+    BOOL bActive;
+    BOOL bMemPak;
+    BYTE SensMax;
+    BYTE SensMin;
+    INPUT_CTRL Input[NUMBER_OF_BUTTONS];
+};
 
 extern DEFCONTROLLER Controller[NUMBER_OF_CONTROLS];
 
 extern HINSTANCE g_hInstance;
 
 //---- Popup menu
-enum PopupOptions {
-	None,
-	OnTop,
-	Float,
-	Movable
+enum PopupOptions
+{
+    None,
+    OnTop,
+    Float,
+    Movable
 };
 
-typedef struct {
-	bool onTop = false;
-	bool floatFromParent = true;
-	bool movable = true;
-} MENUCONFIG;
+using MENUCONFIG = struct
+{
+    bool onTop = false;
+    bool floatFromParent = true;
+    bool movable = true;
+};
 //----
 
-void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS *ControllerInput, int &M1Speed, int &M2Speed);
-void WINAPI GetPosAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS *ControllerInput, int &M1Speed, int &M2Speed);
+void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* ControllerInput, int& M1Speed,
+                          int& M2Speed);
+void WINAPI GetPosAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* ControllerInput, int& M1Speed,
+                          int& M2Speed);
 void WINAPI InitializeAndCheckDevices(HWND hMainWindow);
 BOOL WINAPI CheckForDeviceChange(HKEY hKey);
-LRESULT CALLBACK StatusDlgProc (HWND hDlg, UINT Message, WPARAM wParam, LPARAM lParam);
-VOID CALLBACK StatusDlgProcTimer( UINT idEvent, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
+LRESULT CALLBACK StatusDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lParam);
+VOID CALLBACK StatusDlgProcTimer(UINT idEvent, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
 
 #define UPDATEAUTO(idc,field) \
 { \
