@@ -224,11 +224,6 @@ int Status::frameCounter = 0;
 
 Status status [NUMBER_OF_CONTROLS];
 
-//#define STICKPIC_SIZE (131) 
-
-// todo split into x y
-UINT STICKPIC_SIZE = 131;
-
 int WINAPI DllMain ( HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
 {
 
@@ -865,42 +860,6 @@ VOID SetXYTextFast(HWND parent, BOOL x, char* str) {
 
 	if (x) SetWindowText(textXHWND, str); 
 	else   SetWindowText(textYHWND, str);
-}
-
-BOOL AdjustForDPI(HWND parent, UINT dpi) {
-
-	// Adjust for system scaling
-	// todo: more scaling checks
-	// 96 - 100%
-	// 120 - 125%
-
-	RECT ctl_pos, ctl_gp_pos;
-	GetWindowRect(GetDlgItem(parent, IDC_STICKPIC), &ctl_pos);
-	GetWindowRect(GetDlgItem(parent, IDC_STATICX), &ctl_gp_pos);
-
-	ctl_gp_pos.left -= 3; // adjust for border
-	
-	if (STICKPIC_SIZE == 131) {
-		// prevent infinitely increasing size
-
-		if (dpi == 120) { 
-			STICKPIC_SIZE = STICKPIC_SIZE * 125 / 100;
-		}
-
-
-		// check for overlap with gpbox and try to fix it
-		if (ctl_pos.right+1 > ctl_gp_pos.left) {
-			printf("overlap with groupbox (%d/%d)", ctl_pos.right, ctl_gp_pos.left);
-			STICKPIC_SIZE = ctl_gp_pos.left - 2;
-		}
-	}
-
-	STICKPIC_SIZE -= 1;
-
-	//STICKPIC_SIZE = (UINT)STICKPIC_SIZE; // ensure no double
-	printf("stickpic size: %d\ndpi: %d", STICKPIC_SIZE, dpi);
-	return dpi != 96;
-
 }
 
 //updates buttons
@@ -1779,13 +1738,6 @@ LRESULT Status::StatusDlgMethod (UINT msg, WPARAM wParam, LPARAM lParam)
 			return TRUE; 
         case WM_INITDIALOG:
 		{
-			//SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-			// sure... did i think it is that easy
-
-			systemDPI = GetDpiForSystem();
-
-			AdjustForDPI(statusDlg, systemDPI);
-
 			// reset some dialog state
 			lastXDrag = 0;
 			lastYDrag = 0;
@@ -1837,9 +1789,6 @@ LRESULT Status::StatusDlgMethod (UINT msg, WPARAM wParam, LPARAM lParam)
 				positioned = true;
 			}
 			SetWindowPos(statusDlg,0, xPosition, yPosition, 0,0, SWP_NOZORDER|SWP_NOSIZE|SWP_SHOWWINDOW);
-
-			// reposition stick picture
-			MoveWindow(GetDlgItem(statusDlg,IDC_STICKPIC), picRect.left, picRect.top, STICKPIC_SIZE, STICKPIC_SIZE, FALSE);
 
 			// set ranges
 			if(!AngDisp)
@@ -1993,8 +1942,12 @@ LRESULT Status::StatusDlgMethod (UINT msg, WPARAM wParam, LPARAM lParam)
 				POINT pt;
 				GetCursorPos(&pt);
 				ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
-				overrideX =  (pt.x*256/(signed)STICKPIC_SIZE - 128 + 1);
-				overrideY = -(pt.y*256/(signed)STICKPIC_SIZE - 128 + 1);
+				
+				RECT picRect;
+				GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &picRect);
+
+				overrideX =  (pt.x*256/(signed)(picRect.right - picRect.left) - 128 + 1);
+				overrideY = -(pt.y*256/(signed)(picRect.bottom - picRect.top) - 128 + 1);
 				
 				// normalize out-of-bounds clicks
 				if(overrideX > 127 || overrideY > 127 || overrideX < -128 || overrideY < -129)
