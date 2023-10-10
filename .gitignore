@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+/bin
+/src/.idea/.idea.DefDI/.idea
+/src/.vs/DefDI
+/src/config.aps
+/src/Debug
