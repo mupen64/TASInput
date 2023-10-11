@@ -319,14 +319,6 @@ bool ParseCombo(BUTTONS* data, int len)
 
 LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR sId, DWORD_PTR dwRefData)
 {
-    //debug messages
-    //if (msg == ...)
-    //{
-    //char txt[100];
-    //sprintf(txt, "msg: %d", msg);
-    //ListBox_InsertString(GetParent(hwnd), -1, txt);
-    //}
-
     switch (msg)
     {
     case WM_GETDLGCODE:
@@ -344,10 +336,14 @@ LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
             }
             break;
         }
-    case WM_KILLFOCUS:
+    case WM_KILLFOCUS: {
+        char txt[MAX_PATH] = { 0 };
+        SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
+        SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
         DestroyWindow(hwnd);
         lock = false;
         break;
+    }
     case WM_NCDESTROY:
         RemoveWindowSubclass(hwnd, EditBoxProc, sId);
     }
@@ -2538,18 +2534,23 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 buttonAutofire.D_DPAD = buttonAutofire2.D_DPAD = 0;
                 ActivateEmulatorWindow();
                 break;
-            case IDC_CLEARJOY: overrideAllowed = true;
-                overrideOn = true;
-                overrideX = 0;
-                overrideY = 0;
-                SetDlgItemText(statusDlg, IDC_EDITY, "0");
-                SetDlgItemText(statusDlg, IDC_EDITX, "0");
-                RefreshAnalogPicture();
-                ActivateEmulatorWindow();
-                break;
-            case IDC_CLEARBUTTONS: buttonOverride.Value = buttonAutofire.Value = buttonAutofire2.Value = 0;
-                GetKeys(0);
-                ActivateEmulatorWindow();
+            case IDC_CLEARINPUT:
+                if (GetKeyState(VK_MENU) & 0x8000)
+                {
+                    overrideAllowed = true;
+                    overrideOn = true;
+                    overrideX = 0;
+                    overrideY = 0;
+                    SetDlgItemText(statusDlg, IDC_EDITY, "0");
+                    SetDlgItemText(statusDlg, IDC_EDITX, "0");
+                    RefreshAnalogPicture();
+                    ActivateEmulatorWindow();
+                }
+                else {
+                    buttonOverride.Value = buttonAutofire.Value = buttonAutofire2.Value = 0;
+                    GetKeys(0);
+                    ActivateEmulatorWindow();
+                }
                 break;
             case IDC_MOREBUTTON4:
             case IDC_MOREBUTTON5:

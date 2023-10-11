@@ -145,7 +145,7 @@
 #define IDC_RADIO1                      1118
 #define IDC_RADIO2                      1119
 #define IDC_RADIO4                      1120
-#define IDC_CLEARBUTTONS                1122
+#define IDC_CLEARINPUT                1122
 #define IDC_MOREBUTTON6                 1124
 #define IDC_CHECK1                      1125
 #define IDC_CHECK_ANGDISP               1125
@@ -161,7 +161,6 @@
 #define IDC_SAVE                        1136
 #define IDC_CLEAR3                      1136
 #define IDC_STATUS                      1137
-#define IDC_CLEARJOY                    1138
 #define IDC_STATIC                      0
 
 // Next default values for new objects
