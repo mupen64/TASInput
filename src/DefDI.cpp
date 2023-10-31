@@ -194,9 +194,9 @@ struct Status
 
     void FreeCombos();
 
-    void SetStatus(char*); //updates text over combo list
+    void set_status(std::string str);
     void SaveCombos();
-    void InitialiseCombos(char*); //path to file
+    void load_combos(const char*);
     int CreateNewCombo(int);
     void StartEdit(int);
     void EndEdit(int, char*);
@@ -794,14 +794,14 @@ void Status::GetKeys(BUTTONS* Keys)
                         buttonOverride.Value = 0;
                         oldOverride = 0;
                     }
-                    SetStatus("Idle");
+                    set_status("Idle");
                     comboTask = C_IDLE;
                     goto continue_controller;
                 }
             }
             char buf[64];
             sprintf(buf, "Playing combo (%d/%d)", frame + 1, ACTIVE_COMBO->samples.size());
-            SetStatus(buf);
+            set_status(buf);
             //allows to use joystick with combos
             buttonOverride.Value |= ACTIVE_COMBO->samples[frame].Value;
             // if joystick used, copy the values too (because simply ORing is not enough)
@@ -848,9 +848,8 @@ continue_controller:
         //extend if full and frame is not 0
         char buf[64];
         sprintf(buf, "Recording combo (%d)", frameCounter - comboStart + 1);
-        SetStatus(buf);
+        set_status(buf);
 
-        // TODO: is this really needed?
         ACTIVE_COMBO->samples.push_back(*Keys);
     }
 
@@ -1497,12 +1496,10 @@ void Status::FreeCombos()
 }
 
 //sets information about current task
-void Status::SetStatus(char* str)
+void Status::set_status(std::string str)
 {
     HWND hTask = GetDlgItem(statusDlg, IDC_STATUS);
-    char buf[100] = "Status: ";
-    strcat(buf, str);
-    SendMessage(hTask, WM_SETTEXT, 0, (LPARAM)buf);
+    SendMessage(hTask, WM_SETTEXT, 0, (LPARAM)str.c_str());
 }
 
 //Creates new combo, if id!=1 duplicates existing (todo)
@@ -1556,7 +1553,7 @@ void Status::EndEdit(int id, char* name)
             ListBox_InsertString(lBox, id, name);
         }
     }
-    SetStatus("Idle");
+    set_status("Idle");
 }
 
 //saves combos to combos.cmb
@@ -1566,7 +1563,7 @@ void Status::SaveCombos()
 }
 
 //load combos to listBox
-void Status::InitialiseCombos(char* path)
+void Status::load_combos(const char* path)
 {
     combos = find_combos("combos.cmb");
 
@@ -1893,7 +1890,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 if (lBox)
                 {
                     FreeCombos();
-                    InitialiseCombos("combos.cmb");
+                    load_combos("combos.cmb");
                 }
                 // switch to emulator
                 if (IsWindowFromEmulatorProcessActive())
@@ -2394,7 +2391,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     ActivateEmulatorWindow();
                 }
                 break;
-
             //on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
             case IDC_CHECK_A: buttonOverride.A_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.A_BUTTON = buttonAutofire2.A_BUTTON = 0;
@@ -2512,16 +2508,16 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 activeCombo = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
                 if (activeCombo == -1)
                 {
-                    SetStatus("Select a combo first");
+                    set_status("Select a combo first");
                     break;
                 }
-                SetStatus("Playing combo");
+                set_status("Playing combo");
                 CheckDlgButton(statusDlg, IDC_LOOP, 0);
                 if (comboTask != C_PAUSE) comboStart = frameCounter;
                 comboTask = C_RUNNING;
                 break;
             case IDC_STOP:
-                SetStatus("Idle");
+                set_status("Idle");
                 CheckDlgButton(statusDlg, IDC_LOOP, 0);
                 comboTask = C_IDLE;
                 comboStart = 0; //should avoid unnecessary bugs
@@ -2529,7 +2525,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             case IDC_PAUSE:
                 if (comboTask == C_RUNNING || comboTask == C_LOOP)
                 {
-                    SetStatus("Paused");
+                    set_status("Paused");
                     CheckDlgButton(statusDlg, IDC_LOOP, 0);
                     comboTask = C_PAUSE;
                 }
@@ -2537,24 +2533,24 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             case IDC_LOOP:
                 if (comboTask == C_LOOP)
                 {
-                    SetStatus("Stopped looping");
+                    set_status("Stopped looping");
                     comboTask = C_RUNNING;
                     break;
                 }
                 activeCombo = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
                 if (activeCombo == -1)
                 {
-                    SetStatus("Select a combo first");
+                    set_status("Select a combo first");
                     break;
                 }
                 if (comboTask != C_PAUSE) comboStart = frameCounter;
                 comboTask = C_LOOP;
-                SetStatus("Looping combo");
+                set_status("Looping combo");
                 break;
             case IDC_RECORD:
                 if (comboTask == C_RECORD)
                 {
-                    SetStatus("Recording stopped");
+                    set_status("Recording stopped");
                     comboTask = C_IDLE;
                     //free(aCombo.data); //is it better to copy to new, aligned buffer or leave it?
                 }
@@ -2562,14 +2558,14 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     if (comboTask == C_IDLE || activeCombo == -1)
                     {
-                        SetStatus("Recording new combo");
+                        set_status("Recording new combo");
                         activeCombo = CreateNewCombo(-1);
                         ListBox_SetCurSel(lBox, activeCombo);
                         comboStart = frameCounter;
                     }
                     else
                     {
-                        SetStatus("Overwriting combo");
+                        set_status("Overwriting combo");
                         // FIXME: is this right?
                         ACTIVE_COMBO->samples = {};
                     }
@@ -2580,10 +2576,10 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 activeCombo = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
                 if (activeCombo == -1)
                 {
-                    SetStatus("Select a combo first");
+                    set_status("Select a combo first");
                     break;
                 }
-                SetStatus("Editing...");
+                set_status("Editing...");
                 StartEdit(activeCombo);
                 break;
             case IDC_CLEAR:
@@ -2592,16 +2588,16 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             //good joke, imagine msgbox working
             //if (MessageBox(0, "Do you want to remove everything?", "Warning", MB_YESNO| MB_ICONQUESTION) == 6)
             //{
-                SetStatus("Clearing...");
+                set_status("Clearing...");
                 CheckDlgButton(statusDlg, IDC_LOOP, 0);
                 FreeCombos();
                 ListBox_ResetContent(lBox);
-                SetStatus("Cleared all combos");
+                set_status("Cleared all combos");
             //}
                 break;
             case IDC_IMPORT:
                 {
-                    SetStatus("Importing...");
+                    set_status("Importing...");
                     OPENFILENAME data = {0};
                     char file[MAX_PATH] = "\0";
                     data.lStructSize = sizeof(data);
@@ -2613,16 +2609,16 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     lock = true;
                     if (GetOpenFileName(&data))
                     {
-                        InitialiseCombos(file);
+                        load_combos(file);
                     }
                     lock = false;
-                    SetStatus("Imported combo data");
+                    set_status("Imported combo data");
                     break;
                 }
             case IDC_SAVE:
-                SetStatus("Saving...");
+                set_status("Saving...");
                 SaveCombos();
-                SetStatus("Saved to combos.cmb");
+                set_status("Saved to combos.cmb");
                 break;
             default:
                 //					SetFocus(statusDlg);

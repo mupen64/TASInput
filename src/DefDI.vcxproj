@@ -71,6 +71,7 @@
             <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
             <AdditionalOptions>-D DEBUG %(AdditionalOptions)</AdditionalOptions>
             <SmallerTypeCheck>false</SmallerTypeCheck>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -111,6 +112,7 @@
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <DebugInformationFormat>None</DebugInformationFormat>
             <DiagnosticsFormat>Caret</DiagnosticsFormat>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>

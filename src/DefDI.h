@@ -82,22 +82,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //custom messages
 #define EDIT_END 10001
 
-using COMBO = struct COMBO
-{
-    int length = 0;
-    bool joystickUsed; //true if theres at least one frame where joystick is not 0 (THIS ISN'T SAVED TO FILE)
-    BUTTONS* data = 0; //pointer to combo key data somewhere in memory (because it's dynamic)
-};
-
-using INPUT_CTRL = struct
+typedef struct
 {
     BYTE Device;
     BYTE type;
     BYTE vkey;
     DWORD button;
-};
+} INPUT_CTRL;
 
-using DEFCONTROLLER = struct
+typedef struct
 {
     TCHAR szName[16];
     BYTE NDevices;
@@ -107,7 +100,7 @@ using DEFCONTROLLER = struct
     BYTE SensMax;
     BYTE SensMin;
     INPUT_CTRL Input[NUMBER_OF_BUTTONS];
-};
+} DEFCONTROLLER;
 
 extern DEFCONTROLLER Controller[NUMBER_OF_CONTROLS];
 
@@ -122,12 +115,12 @@ enum PopupOptions
     Movable
 };
 
-using MENUCONFIG = struct
+typedef struct MENUCONFIG
 {
     bool onTop = false;
     bool floatFromParent = true;
     bool movable = true;
-};
+} MENUCONFIG;
 //----
 
 void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* ControllerInput, int& M1Speed,
