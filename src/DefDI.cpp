@@ -91,10 +91,7 @@ struct Status
         overrideOn = false;
         overrideAllowed = false;
         relativeControlNow = false;
-        //		incrementingFrameNow = true;
         gettingKeys = false;
-        resetXScale = false;
-        resetYScale = false;
         relativeXOn = 0;
         relativeYOn = 0;
         radialAngle = -PI / 2;
@@ -177,12 +174,10 @@ struct Status
     bool AngDisp;
     int dragXStart, dragYStart;
     int lastXDrag, lastYDrag;
-    bool lastClick, nextClick, lastWasRight;
     bool deactivateAfterClick, skipEditX, skipEditY;
     bool positioned, initialized;
     int xPosition, yPosition;
     float xScale, yScale;
-    bool resetXScale, resetYScale;
     //	int frameCounter;
     static int frameCounter;
     int comboStart;
@@ -1825,6 +1820,10 @@ MAKE_DLG_PROC(3)
 
 LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    static bool last_rmb_down = false;
+    bool rmb_just_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000 && !last_rmb_down;
+
+    
     if (initialized || msg == WM_INITDIALOG /*|| msg == WM_DESTROY || msg == WM_NCDESTROY*/)
         switch (msg)
         {
@@ -1850,11 +1849,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 lastXDrag = 0, lastYDrag = 0;
                 xScale = 1.0f;
                 yScale = 1.0f;
-                nextClick = false;
                 deactivateAfterClick = false;
-                lastClick = ((GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000) || (GetAsyncKeyState(
-                    MOUSE_RBUTTONREDEFINITION) & 0x8000));
-                lastWasRight = 0 != (GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000);
                 int initialStickX = overrideX;
                 int initialStickY = overrideY;
 
@@ -1986,21 +1981,21 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         // too bad we don't get useful events like WM_MOUSEMOVE or WM_LBUTTONDOWN...
         case WM_SETCURSOR:
             {
-                static bool last_rmb_down = false;
-                bool rmb_just_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000 && !last_rmb_down;
-                //is any mouse button pressed?
-                nextClick = ((GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000) || (GetAsyncKeyState(
-                    MOUSE_RBUTTONREDEFINITION) & 0x8000));
+                if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERX))
+                {
+                    SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
+                    deactivateAfterClick = true;
+                }
 
-                //used for sliders (rightclick reset), remembers if rightclick was pressed
-                //!! turns it into bool
-                lastWasRight = !!(GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000);
-                // logical compromise for l handed mode
-                //if we are over buttons area and right is clicked, look for autofire candidates
-                //sadly wm_rbuttondown doesnt work here
+                if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERY))
+                {
+                    SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
+                    deactivateAfterClick = true;
+                }
+
+                // update autofire state
                 if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_BUTTONSLABEL))
                 {
-                    //clicking on buttons counts as override
                     overrideOn = true; 
 
                     UPDATEAUTO(IDC_CHECK_A, A_BUTTON);
@@ -2021,18 +2016,13 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     ActivateEmulatorWindow();
                 }
                 last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
-                lastClick = nextClick;
             }
-        /* fall through */
+        break;
         case WM_MOUSEMOVE:
         case WM_NCHITTEST:
         case WM_TIMER:
             skipEditX = false;
             skipEditY = false;
-            if (resetXScale)
-                resetXScale = false, SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
-            if (resetYScale)
-                resetYScale = false, SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
             if (dragging)
             {
                 POINT pt;
@@ -2184,9 +2174,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             }
 
             break;
-
-        //		case UDN_DELTAPOS:
-        //			break;
         case WM_NOTIFY:
             {
                 switch (LOWORD(wParam))
@@ -2202,30 +2189,15 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
                 case IDC_SLIDERX:
                     {
-                        if (lastWasRight || GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000)
-                        {
-                            resetXScale = true;
-                            // right-click resets to 100% scale (defer setpos until later because it would ruin the the control to do it during a WM_NOTIFY)
-                            deactivateAfterClick = true;
-                        }
                         int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_GETPOS, 0, 0);
                         xScale = pos / 1000.0f;
-                        if (GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000)
-                            deactivateAfterClick = true;
                     }
                     break;
 
                 case IDC_SLIDERY:
                     {
-                        if (lastWasRight || GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000)
-                        {
-                            resetYScale = true;
-                            deactivateAfterClick = true;
-                        }
                         int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETPOS, 0, 0);
                         yScale = pos / 1000.0f;
-                        if (GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000)
-                            deactivateAfterClick = true;
                     }
                     break;
                 }
