@@ -8,6 +8,8 @@ http://www.egroups.com/group/Plugin64-Dev
 #ifndef _CONTR_H_INCLUDED__
 #define _CONTR_H_INCLUDED__
 
+#include <Windows.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
