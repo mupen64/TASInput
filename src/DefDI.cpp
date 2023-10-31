@@ -1463,8 +1463,6 @@ EXPORT void CALL RomOpen(void)
             RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].relativeXOn, &dwDWSize);
             sprintf(str, "Controller%dRelativeY", Control);
             RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].relativeYOn, &dwDWSize);
-            sprintf(str, "Controller%dDlgExtend", Control);
-            RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].Extend, &dwDWSize);
             sprintf(str, "Controller%dAngDisp", Control);
             RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].AngDisp, &dwDWSize);
         }
@@ -2483,17 +2481,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     xPosition = rect.left;
                     yPosition = rect.top;
                     positioned = true;
-
-                    HKEY hKey;
-                    DWORD dwDWType = REG_DWORD;
-                    DWORD dwDWSize = sizeof(DWORD);
-                    if (RegOpenKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
-                    {
-                        char str[256];
-                        sprintf(str, "Controller%dDlgExtend", Extend);
-                        RegSetValueEx(hKey, str, 0, dwDWType, (LPBYTE)&relativeXOn, dwDWSize);
-                    }
-                    RegCloseKey(hKey);
 
                     // Extend the dialog by replacing it with a new one created from a different resource.
                     // Resizing wouldn't work, because any resizing causes visible damage to the dialog's background
