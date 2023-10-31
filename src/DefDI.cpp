@@ -46,7 +46,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
 int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
-BOOL lHandedMode = FALSE;
 
 #undef List // look at line 32 for cause
 #define aCombo ComboList.at(activeCombo) //so it's a bit cleaner
@@ -240,7 +239,6 @@ int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
     {
         MOUSE_LBUTTONREDEFINITION = VK_RBUTTON;
         MOUSE_RBUTTONREDEFINITION = VK_LBUTTON;
-        lHandedMode = TRUE;
     }
 
     return TRUE;
