@@ -1,12 +1,12 @@
 ﻿#include "Combo.h"
 
+
 std::vector<Combo*> find_combos(const char* path)
 {
     FILE* f = fopen(path, "rb");
 
     if (!f)
     {
-        printf("Can't find combos.cmb\n");
         return {};
     }
 
@@ -43,4 +43,28 @@ std::vector<Combo*> find_combos(const char* path)
     }
 
     return combos;
+}
+
+bool save_combos(const char* path, std::vector<Combo*> combos)
+{
+    FILE* f = fopen(path, "wb");
+
+    if (!f)
+    {
+        return false;
+    }
+    
+    for (auto& combo : combos)
+    {
+        fputs(combo->name.c_str(), f);
+        // null-terminate the string
+        fputc(0, f);
+
+        uint32_t size = combo->samples.size();
+        fwrite(&size, 4, 1, f);
+        fwrite(combo->samples.data(), sizeof(BUTTONS), combo->samples.size(), f);
+    }
+    
+    fclose(f);
+    return true;
 }

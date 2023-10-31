@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "DefDI.h"
 #include "Config.h"
 #include "resource.h"
+#include "Combo.h"
 
 #ifdef DEBUG
 #define PLUGIN_NAME "TAS Input debug"
@@ -48,7 +49,6 @@ int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
 int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
 
 #undef List // look at line 32 for cause
-#define aCombo ComboList.at(activeCombo) //so it's a bit cleaner
 
 HINSTANCE g_hInstance;
 
@@ -69,12 +69,9 @@ bool validatedhTxtbox = FALSE;
 UINT systemDPI;
 
 bool lock; //don't focus mupen
-FILE* cFile; /*combo file conains list of combos in format:
-				n bytes - null terminated name string,
-				4 bytes - combo length (little endian),
-				length*4 bytes - combo data.*/
 
-std::vector<COMBO> ComboList;
+std::vector<Combo*> combos;
+#define ACTIVE_COMBO combos[activeCombo]
 
 MENUCONFIG menuConfig;
 HWND textXHWND = NULL, textYHWND = textXHWND;
@@ -781,10 +778,8 @@ void Status::GetKeys(BUTTONS* Keys)
     DWORD oldOverride = buttonOverride.Value; //so the keys don't stick...
     if (!fakeInput && activeCombo != -1 && (comboTask == C_RUNNING || comboTask == C_LOOP))
     {
-        if (aCombo.length) //this has to be separate because activeCombo might be -1
-        {
             int frame = frameCounter - comboStart;
-            if (frame > aCombo.length - 1)
+            if (frame > ACTIVE_COMBO->samples.size() - 1)
             {
                 //if frame is out of range
                 if (comboTask == C_LOOP)
@@ -805,16 +800,16 @@ void Status::GetKeys(BUTTONS* Keys)
                 }
             }
             char buf[64];
-            sprintf(buf, "Playing combo (%d/%d)", frame + 1, aCombo.length);
+            sprintf(buf, "Playing combo (%d/%d)", frame + 1, ACTIVE_COMBO->samples.size());
             SetStatus(buf);
             //allows to use joystick with combos
-            buttonOverride.Value |= aCombo.data[frame].Value;
-            if (aCombo.joystickUsed) //if joystick used, paste the values too (because simply ORing is not enough)
+            buttonOverride.Value |= ACTIVE_COMBO->samples[frame].Value;
+            // if joystick used, copy the values too (because simply ORing is not enough)
+            if (ACTIVE_COMBO->uses_joystick()) 
             {
-                overrideX = ControllerInput.X_AXIS = aCombo.data[frame].X_AXIS;
-                overrideY = ControllerInput.Y_AXIS = aCombo.data[frame].Y_AXIS;
+                overrideX = ControllerInput.X_AXIS = ACTIVE_COMBO->samples[frame].X_AXIS;
+                overrideY = ControllerInput.Y_AXIS = ACTIVE_COMBO->samples[frame].Y_AXIS;
             }
-        };
     }
     else if (comboTask == C_PAUSE) comboStart++;
 
@@ -854,10 +849,9 @@ continue_controller:
         char buf[64];
         sprintf(buf, "Recording combo (%d)", frameCounter - comboStart + 1);
         SetStatus(buf);
-        if (frameCounter - comboStart && aCombo.length % BUFFER_CHUNK == 0)
-            aCombo.data = ExtendBuffer(aCombo.data, aCombo.length * 4);
-        aCombo.data[frameCounter - comboStart].Value = Keys->Value;
-        aCombo.length++;
+
+        // TODO: is this really needed?
+        ACTIVE_COMBO->samples.push_back(*Keys);
     }
 
     gettingKeys = false;
@@ -1495,16 +1489,11 @@ EXPORT void CALL WM_KeyUp(WPARAM wParam, LPARAM lParam)
 
 void Status::FreeCombos()
 {
-    if (ComboList.size()) //reset
+    for (auto combo : combos)
     {
-        for (COMBO c : ComboList)
-        {
-            free(c.data);
-            //because default destructor gets called when building vector and input data shouldn't get freed yet.
-            //delete c; //no you can't
-        }
-        ComboList.clear();
+        delete combo;
     }
+    combos.clear();
 }
 
 //sets information about current task
@@ -1519,12 +1508,9 @@ void Status::SetStatus(char* str)
 //Creates new combo, if id!=1 duplicates existing (todo)
 int Status::CreateNewCombo(int id)
 {
-    COMBO Combo;
-    Combo.length = 0;
-    Combo.data = (BUTTONS*)malloc(BUFFER_CHUNK * 4); //must be aligned
-    char name[] = "New Combo"; //must be later renamed lol
-    ComboList.push_back(Combo);
-    return ListBox_InsertString(lBox, -1, name);
+    auto combo = new Combo();
+    combos.push_back(combo);
+    return ListBox_InsertString(lBox, -1, combo->name.c_str());
 }
 
 //shows edit box
@@ -1560,9 +1546,10 @@ void Status::EndEdit(int id, char* name)
     if (name != NULL)
     {
         ListBox_DeleteString(lBox, id);
+        
         if (name[0] == NULL)
         {
-            ComboList.erase(ComboList.begin() + id);
+            combos.erase(combos.begin() + id);
         }
         else
         {
@@ -1575,57 +1562,18 @@ void Status::EndEdit(int id, char* name)
 //saves combos to combos.cmb
 void Status::SaveCombos()
 {
-    cFile = fopen("combos.cmb", "w");
-    for (int i = 0; i < ComboList.size(); i++)
-    {
-        char name[MAX_PATH];
-        ListBox_GetText(lBox, i, name);
-        fputs(name, cFile); //write name
-        fputc(0, cFile); //write null terminator because fputs doesn't
-        fwrite(&ComboList.at(i).length, 4, 1, cFile); //write length
-        fwrite(ComboList.at(i).data, 4, ComboList.at(i).length, cFile); //write data
-    }
-    fclose(cFile);
+    save_combos("combos.cmb", combos);
 }
 
 //load combos to listBox
 void Status::InitialiseCombos(char* path)
 {
-    char c; //used to read name of combo
-    char name[MAX_PATH] = "Empty"; //cap of 260 characters!
-    cFile = fopen(path, "a+"); //file used to store combos is in .exe location
-    c = fgetc(cFile);
-    if (c == -1)
+    combos = find_combos("combos.cmb");
+
+    for (auto combo : combos)
     {
-        //file empty
-        //ListBox_AddString(lBox, name); //maybe let's not create a ghost combo that crashes everything 
+        ListBox_InsertString(lBox, -1, combo->name.c_str());
     }
-    else
-    {
-        while (c != -1)
-        {
-            //for each combo
-            COMBO combo;
-            int i = 0;
-            while (c > 0)
-            {
-                //read name until \0
-                name[i] = c;
-                c = fgetc(cFile);
-                i++;
-            }
-            name[i++] = '\0';
-            //todo: use CreateNewCombo() here?
-            ListBox_InsertString(lBox, -1, name);
-            fread(&combo.length, 4, 1, cFile); //reads 4 bytes - length
-            combo.data = (BUTTONS*)malloc(combo.length * 4);
-            fread(combo.data, 4, combo.length, cFile);
-            ComboList.push_back(combo); //this calls destructor
-            combo.joystickUsed = ParseCombo(combo.data, combo.length);
-            c = fgetc(cFile);
-        }
-    }
-    fclose(cFile);
 }
 
 void Status::RefreshAnalogPicture()
@@ -2575,10 +2523,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             case IDC_STOP:
                 SetStatus("Idle");
                 CheckDlgButton(statusDlg, IDC_LOOP, 0);
-                if (comboTask = C_RECORD)
-                {
-                    aCombo.joystickUsed = ParseCombo(aCombo.data, aCombo.length);
-                }
                 comboTask = C_IDLE;
                 comboStart = 0; //should avoid unnecessary bugs
                 break;
@@ -2626,8 +2570,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     else
                     {
                         SetStatus("Overwriting combo");
-                        aCombo.length = frameCounter - comboStart;
-                        aCombo.data = ExtendBuffer(aCombo.data, aCombo.length * 4);
+                        // FIXME: is this right?
+                        ACTIVE_COMBO->samples = {};
                     }
                     comboTask = C_RECORD;
                 }

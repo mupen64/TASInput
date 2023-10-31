@@ -15,7 +15,7 @@ public:
     /**
      * \brief The combo's name
      */
-    std::string name;
+    std::string name = "Unnamed Combo";
     
     /**
      * \brief The combo's samples
@@ -40,3 +40,10 @@ public:
  */
 std::vector<Combo*> find_combos(const char* path);
 
+/**
+ * \brief Writes combos to a file
+ * \param path The path to the combo file
+ * \param combos A list of combos
+ * \return Whether the operation succeeded
+ */
+bool save_combos(const char* path, std::vector<Combo*> combos);
