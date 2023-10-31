@@ -80,6 +80,7 @@ std::vector<COMBO> ComboList;
 MENUCONFIG menuConfig;
 HWND textXHWND = NULL, textYHWND = textXHWND;
 
+
 struct Status
 {
     Status()
@@ -1984,26 +1985,24 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
         // too bad we don't get useful events like WM_MOUSEMOVE or WM_LBUTTONDOWN...
         case WM_SETCURSOR:
-#ifdef _DEBUG
-            //printf("tasinput setcursor message!\n");
-#endif
-
-            //is any mouse button pressed?
-            nextClick = ((GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000) || (GetAsyncKeyState(
-                MOUSE_RBUTTONREDEFINITION) & 0x8000));
-
-        //used for sliders (rightclick reset), remembers if rightclick was pressed
-        //!! turns it into bool
-            lastWasRight = !!(GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000);
-        // logical compromise for l handed mode
-        //if we are over buttons area and right is clicked, look for autofire candidates
-        //sadly wm_rbuttondown doesnt work here
-            if (IsMouseOverControl(statusDlg, IDC_BUTTONSLABEL) && lastWasRight)
             {
-                overrideOn = true; //clicking on buttons counts as override
+                static bool last_rmb_down = false;
+                bool rmb_just_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000 && !last_rmb_down;
+                //is any mouse button pressed?
+                nextClick = ((GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000) || (GetAsyncKeyState(
+                    MOUSE_RBUTTONREDEFINITION) & 0x8000));
 
-                if (GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000) // right click on a button to autofire it
+                //used for sliders (rightclick reset), remembers if rightclick was pressed
+                //!! turns it into bool
+                lastWasRight = !!(GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000);
+                // logical compromise for l handed mode
+                //if we are over buttons area and right is clicked, look for autofire candidates
+                //sadly wm_rbuttondown doesnt work here
+                if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_BUTTONSLABEL))
                 {
+                    //clicking on buttons counts as override
+                    overrideOn = true; 
+
                     UPDATEAUTO(IDC_CHECK_A, A_BUTTON);
                     UPDATEAUTO(IDC_CHECK_B, B_BUTTON);
                     UPDATEAUTO(IDC_CHECK_START, START_BUTTON);
@@ -2021,8 +2020,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
                     ActivateEmulatorWindow();
                 }
+                last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
+                lastClick = nextClick;
             }
-            lastClick = nextClick;
         /* fall through */
         case WM_MOUSEMOVE:
         case WM_NCHITTEST:
