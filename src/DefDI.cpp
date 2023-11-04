@@ -122,15 +122,12 @@ struct Status
         Extend = 0;
         positioned = false;
         comboTask = C_IDLE;
-        once = true;
     }
 
     void StartThread(int ControllerNumber)
     {
         HANDLE prevStatusThread = statusThread;
         HWND prevStatusDlg = statusDlg;
-
-        once = true; //redraw once
 
         Control = ControllerNumber;
         dwThreadId = Control;
@@ -208,7 +205,6 @@ struct Status
     DWORD relativeXOn, relativeYOn;
     float radialAngle, radialDistance, radialRecalc;
     bool is_dragging_stick;
-    bool AngDisp;
     bool deactivateAfterClick, skipEditX, skipEditY;
     bool positioned, initialized;
     int xPosition, yPosition;
@@ -228,8 +224,6 @@ struct Status
     int comboTask;
     int activeCombo;
     bool fakeInput;
-
-    bool once;
 
     void FreeCombos();
 
@@ -391,13 +385,7 @@ void Status::GetKeys(BUTTONS* Keys)
 {
     gettingKeys = true;
 
-    //	if(incrementingFrameNow)
-    //		frameCounter++;
-
-    BUTTONS ControllerInput;
-
-    //Empty Keyboard Button Info 
-    ControllerInput.Value = 0;
+    BUTTONS controller_input = { 0 };
 
     if (Controller[Control].bActive == TRUE)
     {
@@ -410,7 +398,7 @@ void Status::GetKeys(BUTTONS* Keys)
         if (Keys == NULL)
         {
             gettingKeys = false;
-            SetKeys(ControllerInput);
+            SetKeys(controller_input);
             return;
         }
 
@@ -460,7 +448,7 @@ void Status::GetKeys(BUTTONS* Keys)
                                         analogKey = true;
                                     /* fall through */
                                     default:
-                                        ControllerInput.Value |= Controller[Control].Input[count].button;
+                                        controller_input.Value |= Controller[Control].Input[count].button;
                                         break;
                                     }
                                 }
@@ -517,7 +505,7 @@ void Status::GetKeys(BUTTONS* Keys)
                                         analogKey = true;
                                     /* fall through */
                                     default:
-                                        ControllerInput.Value |= Controller[Control].Input[count].button;
+                                        controller_input.Value |= Controller[Control].Input[count].button;
                                         break;
                                     }
                                 }
@@ -528,70 +516,70 @@ void Status::GetKeys(BUTTONS* Keys)
                                 {
                                 case DIJOFS_YN:
                                     if (js.lY < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lY, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetNegAxisVal(js.lY, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_YP:
                                     if (js.lY > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lY, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetPosAxisVal(js.lY, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_XN:
                                     if (js.lX < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lX, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetNegAxisVal(js.lX, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_XP:
                                     if (js.lX > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lX, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetPosAxisVal(js.lX, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_ZN:
                                     if (js.lZ < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lZ, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetNegAxisVal(js.lZ, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_ZP:
                                     if (js.lZ > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lZ, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetPosAxisVal(js.lZ, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_RYN:
                                     if (js.lRy < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lRy, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetNegAxisVal(js.lRy, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_RYP:
                                     if (js.lRy > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lRy, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetPosAxisVal(js.lRy, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_RXN:
                                     if (js.lRx < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lRx, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetNegAxisVal(js.lRx, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_RXP:
                                     if (js.lRx > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lRx, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetPosAxisVal(js.lRx, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_RZN:
                                     if (js.lRz < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lRz, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetNegAxisVal(js.lRz, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_RZP:
                                     if (js.lRz > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lRz, Control, count, &ControllerInput, M1Speed, M2Speed);
+                                        GetPosAxisVal(js.lRz, Control, count, &controller_input, M1Speed, M2Speed);
                                     break;
                                 case DIJOFS_SLIDER0N:
                                     if (js.rglSlider[0] < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.rglSlider[0], Control, count, &ControllerInput, M1Speed,
+                                        GetNegAxisVal(js.rglSlider[0], Control, count, &controller_input, M1Speed,
                                                       M2Speed);
                                     break;
                                 case DIJOFS_SLIDER0P:
                                     if (js.rglSlider[0] > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.rglSlider[0], Control, count, &ControllerInput, M1Speed,
+                                        GetPosAxisVal(js.rglSlider[0], Control, count, &controller_input, M1Speed,
                                                       M2Speed);
                                     break;
                                 case DIJOFS_SLIDER1N:
                                     if (js.rglSlider[1] < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.rglSlider[1], Control, count, &ControllerInput, M1Speed,
+                                        GetNegAxisVal(js.rglSlider[1], Control, count, &controller_input, M1Speed,
                                                       M2Speed);
                                     break;
                                 case DIJOFS_SLIDER1P:
                                     if (js.rglSlider[1] > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.rglSlider[1], Control, count, &ControllerInput, M1Speed,
+                                        GetPosAxisVal(js.rglSlider[1], Control, count, &controller_input, M1Speed,
                                                       M2Speed);
                                     break;
                                 }
@@ -627,7 +615,7 @@ void Status::GetKeys(BUTTONS* Keys)
                                                     analogKey = true;
                                                 /* fall through */
                                                 default:
-                                                    ControllerInput.Value |= Controller[Control].Input[count].button;
+                                                    controller_input.Value |= Controller[Control].Input[count].button;
                                                     break;
                                                 }
                                             }
@@ -655,7 +643,7 @@ void Status::GetKeys(BUTTONS* Keys)
                                                     analogKey = true;
                                                 /* fall through */
                                                 default:
-                                                    ControllerInput.Value |= Controller[Control].Input[count].button;
+                                                    controller_input.Value |= Controller[Control].Input[count].button;
                                                     break;
                                                 }
                                             }
@@ -683,7 +671,7 @@ void Status::GetKeys(BUTTONS* Keys)
                                                     analogKey = true;
                                                 /* fall through */
                                                 default:
-                                                    ControllerInput.Value |= Controller[Control].Input[count].button;
+                                                    controller_input.Value |= Controller[Control].Input[count].button;
                                                     break;
                                                 }
                                             }
@@ -711,7 +699,7 @@ void Status::GetKeys(BUTTONS* Keys)
                                                     analogKey = true;
                                                 /* fall through */
                                                 default:
-                                                    ControllerInput.Value |= Controller[Control].Input[count].button;
+                                                    controller_input.Value |= Controller[Control].Input[count].button;
                                                     break;
                                                 }
                                             }
@@ -731,31 +719,31 @@ void Status::GetKeys(BUTTONS* Keys)
 
         if (M2Speed)
         {
-            if (ControllerInput.Y_AXIS < 0)
-                ControllerInput.Y_AXIS = (char)-M2Speed;
-            else if (ControllerInput.Y_AXIS > 0)
-                ControllerInput.Y_AXIS = (char)M2Speed;
+            if (controller_input.Y_AXIS < 0)
+                controller_input.Y_AXIS = (char)-M2Speed;
+            else if (controller_input.Y_AXIS > 0)
+                controller_input.Y_AXIS = (char)M2Speed;
 
-            if (ControllerInput.X_AXIS < 0)
-                ControllerInput.X_AXIS = (char)-M2Speed;
-            else if (ControllerInput.X_AXIS > 0)
-                ControllerInput.X_AXIS = (char)M2Speed;
+            if (controller_input.X_AXIS < 0)
+                controller_input.X_AXIS = (char)-M2Speed;
+            else if (controller_input.X_AXIS > 0)
+                controller_input.X_AXIS = (char)M2Speed;
         }
         if (M1Speed)
         {
-            if (ControllerInput.Y_AXIS < 0)
-                ControllerInput.Y_AXIS = (char)-M1Speed;
-            else if (ControllerInput.Y_AXIS > 0)
-                ControllerInput.Y_AXIS = (char)M1Speed;
+            if (controller_input.Y_AXIS < 0)
+                controller_input.Y_AXIS = (char)-M1Speed;
+            else if (controller_input.Y_AXIS > 0)
+                controller_input.Y_AXIS = (char)M1Speed;
 
-            if (ControllerInput.X_AXIS < 0)
-                ControllerInput.X_AXIS = (char)-M1Speed;
-            else if (ControllerInput.X_AXIS > 0)
-                ControllerInput.X_AXIS = (char)M1Speed;
+            if (controller_input.X_AXIS < 0)
+                controller_input.X_AXIS = (char)-M1Speed;
+            else if (controller_input.X_AXIS > 0)
+                controller_input.X_AXIS = (char)M1Speed;
         }
         if (analogKey)
         {
-            if (ControllerInput.X_AXIS && ControllerInput.Y_AXIS)
+            if (controller_input.X_AXIS && controller_input.Y_AXIS)
             {
                 const static float mult = 1.0f / sqrtf(2.0f);
                 float mult2;
@@ -764,16 +752,16 @@ void Status::GetKeys(BUTTONS* Keys)
                 else
                     mult2 = 1.0f;
                 if (!relativeXOn)
-                    ControllerInput.X_AXIS = (int)(ControllerInput.X_AXIS * mult * mult2 + (ControllerInput.X_AXIS > 0
+                    controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS > 0
                         ? 0.5f
                         : -0.5f));
                 if (!relativeYOn && relativeXOn != 3)
-                    ControllerInput.Y_AXIS = (int)(ControllerInput.Y_AXIS * mult * mult2 + (ControllerInput.Y_AXIS > 0
+                    controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS > 0
                         ? 0.5f
                         : -0.5f));
 
-                int newX = (int)((float)ControllerInput.X_AXIS * xScale + (ControllerInput.X_AXIS > 0 ? 0.5f : -0.5f));
-                int newY = (int)((float)ControllerInput.Y_AXIS * yScale + (ControllerInput.Y_AXIS > 0 ? 0.5f : -0.5f));
+                int newX = (int)((float)controller_input.X_AXIS * xScale + (controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
+                int newY = (int)((float)controller_input.Y_AXIS * yScale + (controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
                 if (abs(newX) >= abs(newY) && (newX > 127 || newX < -128))
                 {
                     newY = newY * (newY > 0 ? 127 : 128) / abs(newX);
@@ -784,28 +772,28 @@ void Status::GetKeys(BUTTONS* Keys)
                     newX = newX * (newX > 0 ? 127 : 128) / abs(newY);
                     newY = (newY > 0) ? 127 : -128;
                 }
-                if (!newX && ControllerInput.X_AXIS) newX = (ControllerInput.X_AXIS > 0) ? 1 : -1;
-                if (!newY && ControllerInput.Y_AXIS) newY = (ControllerInput.Y_AXIS > 0) ? 1 : -1;
+                if (!newX && controller_input.X_AXIS) newX = (controller_input.X_AXIS > 0) ? 1 : -1;
+                if (!newY && controller_input.Y_AXIS) newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
                 if (!relativeXOn)
-                    ControllerInput.X_AXIS = newX;
+                    controller_input.X_AXIS = newX;
                 if (!relativeYOn && relativeXOn != 3)
-                    ControllerInput.Y_AXIS = newY;
+                    controller_input.Y_AXIS = newY;
             }
             else
             {
-                if (ControllerInput.X_AXIS && !relativeXOn)
+                if (controller_input.X_AXIS && !relativeXOn)
                 {
-                    int newX = (int)((float)ControllerInput.X_AXIS * xScale + (
-                        ControllerInput.X_AXIS > 0 ? 0.5f : -0.5f));
-                    if (!newX && ControllerInput.X_AXIS) newX = (ControllerInput.X_AXIS > 0) ? 1 : -1;
-                    ControllerInput.X_AXIS = min(127, max(-128,newX));
+                    int newX = (int)((float)controller_input.X_AXIS * xScale + (
+                        controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
+                    if (!newX && controller_input.X_AXIS) newX = (controller_input.X_AXIS > 0) ? 1 : -1;
+                    controller_input.X_AXIS = min(127, max(-128,newX));
                 }
-                if (ControllerInput.Y_AXIS && !relativeYOn && relativeXOn != 3)
+                if (controller_input.Y_AXIS && !relativeYOn && relativeXOn != 3)
                 {
-                    int newY = (int)((float)ControllerInput.Y_AXIS * yScale + (
-                        ControllerInput.Y_AXIS > 0 ? 0.5f : -0.5f));
-                    if (!newY && ControllerInput.Y_AXIS) newY = (ControllerInput.Y_AXIS > 0) ? 1 : -1;
-                    ControllerInput.Y_AXIS = min(127, max(-128,newY));
+                    int newY = (int)((float)controller_input.Y_AXIS * yScale + (
+                        controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
+                    if (!newY && controller_input.Y_AXIS) newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
+                    controller_input.Y_AXIS = min(127, max(-128,newY));
                 }
             }
         }
@@ -844,8 +832,8 @@ void Status::GetKeys(BUTTONS* Keys)
             // if joystick used, copy the values too (because simply ORing is not enough)
             if (ACTIVE_COMBO->uses_joystick()) 
             {
-                overrideX = ControllerInput.X_AXIS = ACTIVE_COMBO->samples[frame].X_AXIS;
-                overrideY = ControllerInput.Y_AXIS = ACTIVE_COMBO->samples[frame].Y_AXIS;
+                overrideX = controller_input.X_AXIS = ACTIVE_COMBO->samples[frame].X_AXIS;
+                overrideY = controller_input.Y_AXIS = ACTIVE_COMBO->samples[frame].Y_AXIS;
             }
     }
     else if (comboTask == C_PAUSE) comboStart++;
@@ -855,29 +843,29 @@ continue_controller:
     //1. realChanged has 1 where something changed
     //2. mask out presses, leave releases
     //3. remove the releases from override
-    DWORD realChanged = ControllerInput.Value ^ LastPureControllerInput.Value;
+    DWORD realChanged = controller_input.Value ^ LastPureControllerInput.Value;
     buttonOverride.Value &= ~(realChanged & LastPureControllerInput.Value);
 
-    LastPureControllerInput.Value = ControllerInput.Value;
-    ControllerInput.Value |= buttonOverride.Value;
+    LastPureControllerInput.Value = controller_input.Value;
+    controller_input.Value |= buttonOverride.Value;
     //if((frameCounter/2)%2 == 0)
     if (frameCounter % 2 == 0) //autofire stuff
-        ControllerInput.Value ^= buttonAutofire.Value;
+        controller_input.Value ^= buttonAutofire.Value;
     else
-        ControllerInput.Value ^= buttonAutofire2.Value;
+        controller_input.Value ^= buttonAutofire2.Value;
 
     bool prevOverrideAllowed = overrideAllowed;
     overrideAllowed = true;
     if (comboTask != C_PAUSE)
     {
-        if (!copyButtons && !fakeInput) SetKeys(ControllerInput); //don't overwrite after switching to read write
-        else LastControllerInput = ControllerInput;
+        if (!copyButtons && !fakeInput) SetKeys(controller_input); //don't overwrite after switching to read write
+        else LastControllerInput = controller_input;
         copyButtons = false;
     }
-    ControllerInput.X_AXIS = overrideX;
-    ControllerInput.Y_AXIS = overrideY;
+    controller_input.X_AXIS = overrideX;
+    controller_input.Y_AXIS = overrideY;
     //Pass Button Info to Emulator
-    Keys->Value = ControllerInput.Value;
+    Keys->Value = controller_input.Value;
     //buttonOverride.Value = oldOverride;
     //copy fetched data to combo too
     if (comboTask == C_RECORD && !fakeInput)
@@ -1130,15 +1118,12 @@ void Status::SetKeys(BUTTONS ControllerInput)
             else
                 ControllerInput.Y_AXIS = overrideY;
         }
-        if (!overrideOn && (LastControllerInput.X_AXIS != ControllerInput.X_AXIS || (AngDisp && LastControllerInput.
-            Y_AXIS != ControllerInput.Y_AXIS)))
+        if (!overrideOn && LastControllerInput.X_AXIS != ControllerInput.X_AXIS)
         {
-            // we dont care about ang disp. for now
             update_joystick_spinner(ControllerInput.X_AXIS, ControllerInput.Y_AXIS);
             changed = true;
         }
-        if (!overrideOn && (LastControllerInput.Y_AXIS != ControllerInput.Y_AXIS || (AngDisp && LastControllerInput.
-            X_AXIS != ControllerInput.X_AXIS)))
+        if (!overrideOn && LastControllerInput.Y_AXIS != ControllerInput.Y_AXIS)
         {
             update_joystick_spinner(ControllerInput.X_AXIS, -ControllerInput.Y_AXIS);
             changed = true;
@@ -1493,8 +1478,6 @@ EXPORT void CALL RomOpen(void)
             RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].relativeXOn, &dwDWSize);
             sprintf(str, "Controller%dRelativeY", Control);
             RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].relativeYOn, &dwDWSize);
-            sprintf(str, "Controller%dAngDisp", Control);
-            RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].AngDisp, &dwDWSize);
         }
     }
     RegCloseKey(hKey);
@@ -1698,87 +1681,25 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_CONTEXTMENU:
             ShowContextMenu(statusDlg, (HWND)wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             break;
-        case WM_ERASEBKGND:
-            if (once)
-            {
-                once = false;
-                break;
-            }
-            return TRUE;
         case WM_INITDIALOG:
             {
-                // reset some dialog state
-                is_dragging_stick = false;
                 xScale = 1.0f;
                 yScale = 1.0f;
+                is_dragging_stick = false;
                 deactivateAfterClick = false;
-                int initialStickX = overrideX;
-                int initialStickY = overrideY;
-
-                if (AngDisp)
-                {
-                    CheckDlgButton(statusDlg, IDC_CHECK_ANGDISP, TRUE);
-                    SetDlgItemText(statusDlg, IDC_STATICX, "a");
-                    SetDlgItemText(statusDlg, IDC_STATICY, "D");
-                }
-                else
-                {
-                    CheckDlgButton(statusDlg, IDC_CHECK_ANGDISP, FALSE);
-                    SetDlgItemText(statusDlg, IDC_STATICX, "X");
-                    SetDlgItemText(statusDlg, IDC_STATICY, "Y");
-                }
-
+                
                 SetWindowText(statusDlg, std::format("TASInput - Controller {}", Control + 1).c_str());
 
                 // set ranges
-                if (!AngDisp)
-                {
-                    SendDlgItemMessage(statusDlg, IDC_SPINX, UDM_SETRANGE, 0, (LPARAM)MAKELONG(127, -128));
-                    SendDlgItemMessage(statusDlg, IDC_SPINY, UDM_SETRANGE, 0, (LPARAM)MAKELONG(-128, 127));
-                }
-                else
-                {
-                    SendDlgItemMessage(statusDlg, IDC_SPINX, UDM_SETRANGE, 0, (LPARAM)MAKELONG(720, -720));
-                    SendDlgItemMessage(statusDlg, IDC_SPINY, UDM_SETRANGE, 0, (LPARAM)MAKELONG(180, -180));
-                }
+                SendDlgItemMessage(statusDlg, IDC_SPINX, UDM_SETRANGE, 0, MAKELONG(127, -128));
+                SendDlgItemMessage(statusDlg, IDC_SPINY, UDM_SETRANGE, 0, MAKELONG(-128, 127));
                 SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
                 SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, 1000);
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, 1000);
 
-                // set checkbox initial states
-
-                CheckDlgButton(statusDlg, IDC_XABS, relativeXOn == 0 ? TRUE : FALSE);
-                CheckDlgButton(statusDlg, IDC_YABS, relativeYOn == 0 ? TRUE : FALSE);
-                CheckDlgButton(statusDlg, IDC_XSEM, relativeXOn == 1 ? TRUE : FALSE);
-                CheckDlgButton(statusDlg, IDC_YSEM, relativeYOn == 1 ? TRUE : FALSE);
-                CheckDlgButton(statusDlg, IDC_XREL, relativeXOn == 2 ? TRUE : FALSE);
-                CheckDlgButton(statusDlg, IDC_YREL, relativeYOn == 2 ? TRUE : FALSE);
-                CheckDlgButton(statusDlg, IDC_XRAD, relativeXOn == 3 ? TRUE : FALSE);
-                CheckDlgButton(statusDlg, IDC_CHECK_A, buttonDisplayed.A_BUTTON);
-                CheckDlgButton(statusDlg, IDC_CHECK_B, buttonDisplayed.B_BUTTON);
-                CheckDlgButton(statusDlg, IDC_CHECK_START, buttonDisplayed.START_BUTTON);
-                CheckDlgButton(statusDlg, IDC_CHECK_L, buttonDisplayed.L_TRIG);
-                CheckDlgButton(statusDlg, IDC_CHECK_R, buttonDisplayed.R_TRIG);
-                CheckDlgButton(statusDlg, IDC_CHECK_Z, buttonDisplayed.Z_TRIG);
-                CheckDlgButton(statusDlg, IDC_CHECK_CUP, buttonDisplayed.U_CBUTTON);
-                CheckDlgButton(statusDlg, IDC_CHECK_CLEFT, buttonDisplayed.L_CBUTTON);
-                CheckDlgButton(statusDlg, IDC_CHECK_CRIGHT, buttonDisplayed.R_CBUTTON);
-                CheckDlgButton(statusDlg, IDC_CHECK_CDOWN, buttonDisplayed.D_CBUTTON);
-                CheckDlgButton(statusDlg, IDC_CHECK_DUP, buttonDisplayed.U_DPAD);
-                CheckDlgButton(statusDlg, IDC_CHECK_DLEFT, buttonDisplayed.L_DPAD);
-                CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, buttonDisplayed.R_DPAD);
-                CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, buttonDisplayed.D_DPAD);
-
                 // begin accepting other messages
                 initialized = true;
-
-                // initial x/y text field values
-                // TODO: unify slow and fast xy text update
-                //sprintf(str, "%d", initialStickX);
-                //SetDlgItemText(statusDlg, IDC_EDITX, str); // no need for "fast" version here this only happens one time
-                //sprintf(str, "%d", -initialStickY);
-                //SetDlgItemText(statusDlg, IDC_EDITY, str);
 
                 //Load combos
                 //I realised there's HasPanel() too, but doesn't make much difference
@@ -1977,16 +1898,13 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     char str[256];
                     int newOverrideX = overrideX;
                     GetDlgItemText(statusDlg, IDC_EDITX, str, 256);
-                    if (!AngDisp)
+                    sscanf(str, "%d", &newOverrideX);
+                    if (newOverrideX > 127 || newOverrideX < -128)
                     {
-                        sscanf(str, "%d", &newOverrideX);
-                        if (newOverrideX > 127 || newOverrideX < -128)
-                        {
-                            if (newOverrideX > 127) newOverrideX = 127;
-                            if (newOverrideX < -128) newOverrideX = -128;
-                            // FIXME: why are we mutating textbox contents inside the edit message
-                            update_joystick_spinner(newOverrideX, -overrideY);
-                        }
+                        if (newOverrideX > 127) newOverrideX = 127;
+                        if (newOverrideX < -128) newOverrideX = -128;
+                        // FIXME: why are we mutating textbox contents inside the edit message
+                        update_joystick_spinner(newOverrideX, -overrideY);
                     }
                     
                     if (overrideX != newOverrideX)
@@ -2009,17 +1927,14 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     char str[256];
                     int newOverrideY = overrideY;
                     GetDlgItemText(statusDlg, IDC_EDITY, str, 256);
-                    if (!AngDisp)
+                    sscanf(str, "%d", &newOverrideY);
+                    newOverrideY = -newOverrideY;
+                    if (newOverrideY > 127 || newOverrideY < -128)
                     {
-                        sscanf(str, "%d", &newOverrideY);
-                        newOverrideY = -newOverrideY;
-                        if (newOverrideY > 127 || newOverrideY < -128)
-                        {
-                            if (newOverrideY > 127) newOverrideY = 127;
-                            if (newOverrideY < -128) newOverrideY = -128;
-                            // FIXME: why are we mutating textbox contents inside the edit message
-                            update_joystick_spinner(overrideX, newOverrideY);
-                        }
+                        if (newOverrideY > 127) newOverrideY = 127;
+                        if (newOverrideY < -128) newOverrideY = -128;
+                        // FIXME: why are we mutating textbox contents inside the edit message
+                        update_joystick_spinner(overrideX, newOverrideY);
                     }
                     
                     if (overrideY != newOverrideY)
@@ -2053,11 +1968,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     {
                         relativeXOn = 3;
                     }
-                    // Workaround for wine: this will start or stop the application-breaking timer depending on radial mode enabled or not...
-                    // no one uses radial anyway so we're good
 
                     radialRecalc = true;
-
                     HKEY hKey;
                     DWORD dwDWType = REG_DWORD;
                     DWORD dwDWSize = sizeof(DWORD);
@@ -2068,38 +1980,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         RegSetValueEx(hKey, str, 0, dwDWType, (LPBYTE)&relativeXOn, dwDWSize);
                         sprintf(str, "Controller%dRelativeY", Control);
                         RegSetValueEx(hKey, str, 0, dwDWType, (LPBYTE)&relativeYOn, dwDWSize);
-                    }
-                    RegCloseKey(hKey);
-                }
-                break;
-
-            case IDC_CHECK_ANGDISP:
-                {
-                    if (IsDlgButtonChecked(statusDlg, IDC_CHECK_ANGDISP))
-                    {
-                        AngDisp = true;
-                        SetDlgItemText(statusDlg, IDC_STATICX, "a");
-                        SetDlgItemText(statusDlg, IDC_STATICY, "D");
-                        SendDlgItemMessage(statusDlg, IDC_SPINX, UDM_SETRANGE, 0, (LPARAM)MAKELONG(720, -720));
-                        SendDlgItemMessage(statusDlg, IDC_SPINY, UDM_SETRANGE, 0, (LPARAM)MAKELONG(180, -180));
-                    }
-                    else
-                    {
-                        AngDisp = false;
-                        SetDlgItemText(statusDlg, IDC_STATICX, "X");
-                        SetDlgItemText(statusDlg, IDC_STATICY, "Y");
-                        SendDlgItemMessage(statusDlg, IDC_SPINX, UDM_SETRANGE, 0, (LPARAM)MAKELONG(128, -127));
-                        SendDlgItemMessage(statusDlg, IDC_SPINY, UDM_SETRANGE, 0, (LPARAM)MAKELONG(-127, 128));
-                    }
-
-                    HKEY hKey;
-                    DWORD dwDWType = REG_DWORD;
-                    DWORD dwDWSize = sizeof(DWORD);
-                    if (RegOpenKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
-                    {
-                        char str[256];
-                        sprintf(str, "Controller%dAngDisp", Control);
-                        RegSetValueEx(hKey, str, 0, dwDWType, (LPBYTE)&AngDisp, dwDWSize);
                     }
                     RegCloseKey(hKey);
                 }

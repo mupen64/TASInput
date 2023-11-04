@@ -1515,7 +1515,6 @@
 #define IDC_MOREBUTTON6                 1124
 #define lst5                            0x0464
 #define IDC_CHECK1                      1125
-#define IDC_CHECK_ANGDISP               1125
 #define lst6                            0x0465
 #define IDC_SLIDERX                     1126
 #define lst7                            0x0466
