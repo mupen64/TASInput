@@ -207,7 +207,7 @@ struct Status
     //	bool incrementingFrameNow;
     DWORD relativeXOn, relativeYOn;
     float radialAngle, radialDistance, radialRecalc;
-    bool draggingStick;
+    bool is_dragging_stick;
     bool AngDisp;
     bool deactivateAfterClick, skipEditX, skipEditY;
     bool positioned, initialized;
@@ -241,11 +241,9 @@ struct Status
     void EndEdit(int, char*);
 
     void RefreshAnalogPicture();
-
-    bool IsWindowFromEmulatorProcessActive();
-    static bool IsAnyStatusDialogActive();
     LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
     void update_joystick_spinner(int x, int y);
+    void update_joystick_position();
     void UpdateVisuals(BUTTONS ControllerInput);
     void GetKeys(BUTTONS* Keys);
     void SetKeys(BUTTONS ControllerInput);
@@ -899,6 +897,37 @@ void Status::update_joystick_spinner(int x, int y) {
     SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(y).c_str());
 }
 
+void Status::update_joystick_position()
+{
+    if (!is_dragging_stick)
+    {
+        return;
+    }
+    POINT pt;
+    GetCursorPos(&pt);
+    ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
+    RECT pic_rect;
+    GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
+    overrideX = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
+    overrideY = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
+    // clamp joystick inside of control bounds
+    if (overrideX > 127 || overrideY > 127 || overrideX < -128 || overrideY < -129)
+    {
+        int div = max(abs(overrideX), abs(overrideY));
+        overrideX = overrideX * (overrideX > 0 ? 127 : 128) / div;
+        overrideY = overrideY * (overrideY > 0 ? 127 : 128) / div;
+    }
+    // snap clicks to zero
+    if (overrideX < 7 && overrideX > -7)
+        overrideX = 0;
+    if (overrideY < 7 && overrideY > -7)
+        overrideY = 0;
+    update_joystick_spinner(overrideX, -overrideY);
+    radialRecalc = true;
+    overrideOn = true; //joystick dragged with mouse
+    RefreshAnalogPicture();
+}
+
 //updates buttons
 void Status::UpdateVisuals(BUTTONS ControllerInput)
 {
@@ -1382,9 +1411,6 @@ EXPORT void CALL ReadController(int Control, BYTE* Command)
     //      (The frame counter is used only for autofire and combo progression.)
     if (Control == -1)
         Status::frameCounter++;
-
-    //for (char i = 0; i < 4; i++)
-    //	SendMessage(status[i].statusDlg, WM_SETCURSOR, 0, 0);
 }
 
 EXPORT void CALL RomClosed(void)
@@ -1607,28 +1633,6 @@ static bool IsMouseOverControl(HWND hDlg, int dialogItemID)
     return FALSE;
 }
 
-bool Status::IsWindowFromEmulatorProcessActive()
-{
-    HWND hWnd = GetForegroundWindow();
-    for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
-        if (hWnd == status[i].statusDlg)
-            hWnd = NULL;
-    if (!hWnd) return true;
-    DWORD processID1, processID2;
-    GetWindowThreadProcessId(statusDlg, &processID1);
-    GetWindowThreadProcessId(hWnd, &processID2);
-    return (processID1 == processID2);
-}
-
-bool Status::IsAnyStatusDialogActive()
-{
-    HWND hWnd = GetForegroundWindow();
-    if (!hWnd) return false;
-    for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
-        if (hWnd == status[i].statusDlg)
-            return true;
-    return false;
-}
 
 bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 {
@@ -1697,7 +1701,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_INITDIALOG:
             {
                 // reset some dialog state
-                draggingStick = false;
+                is_dragging_stick = false;
                 xScale = 1.0f;
                 yScale = 1.0f;
                 deactivateAfterClick = false;
@@ -1794,7 +1798,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 statusDlg = NULL;
             }
             break;
-        // too bad we don't get useful events like WM_MOUSEMOVE or WM_LBUTTONDOWN...
         case WM_SETCURSOR:
             {
                 if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERX))
@@ -1832,60 +1835,28 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
             }
         break;
-        case WM_MOUSEMOVE:
-        case WM_NCHITTEST:
         case WM_TIMER:
+            update_joystick_position();
             skipEditX = false;
             skipEditY = false;
-            if (draggingStick)
+
+            // TODO: investigate what all this crap does, probably related to cursed radial mode
+            if (lock)
             {
-                POINT pt;
-                GetCursorPos(&pt);
-                ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
-
-                RECT picRect;
-                GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &picRect);
-
-                overrideX = (pt.x * 256 / (signed)(picRect.right - picRect.left) - 128 + 1);
-                overrideY = -(pt.y * 256 / (signed)(picRect.bottom - picRect.top) - 128 + 1);
-
-                // normalize out-of-bounds clicks
-                if (overrideX > 127 || overrideY > 127 || overrideX < -128 || overrideY < -129)
-                {
-                    int absX = abs(overrideX);
-                    int absY = abs(overrideY);
-                    int div = (absX > absY) ? absX : absY;
-                    overrideX = overrideX * (overrideX > 0 ? 127 : 128) / div;
-                    overrideY = overrideY * (overrideY > 0 ? 127 : 128) / div;
-                }
-                if (overrideX < 7 && overrideX > -7) // snap near-zero clicks to zero
-                    overrideX = 0;
-                if (overrideY < 7 && overrideY > -7)
-                    overrideY = 0;
-
-                update_joystick_spinner(overrideX, -overrideY);
-                radialRecalc = true;
-                overrideOn = true; //joystick dragged with mouse
-                RefreshAnalogPicture();
+                break;
             }
-            else if (IsWindowFromEmulatorProcessActive() && !lock)
-            {
-                if (!IsAnyStatusDialogActive())
-                {
-                    if (gettingKeys)
-                        Sleep(0);
+            
+            if (gettingKeys)
+                Sleep(0);
 
-                    if (!gettingKeys && !(comboTask & (C_RUNNING | C_LOOP)) && !copyButtons)
-                    {
-                        BUTTONS Keys;
-                        relativeControlNow = (msg == WM_TIMER);
-                        fakeInput = true;
-                        GetKeys(&Keys); //used in radial mode I think
-                        fakeInput = false;
-                        relativeControlNow = false;
-                    }
-                }
-                SetWindowPos(statusDlg, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            if (!gettingKeys && !(comboTask & (C_RUNNING | C_LOOP)) && !copyButtons)
+            {
+                BUTTONS keys;
+                relativeControlNow = (msg == WM_TIMER);
+                fakeInput = true;
+                GetKeys(&keys); //used in radial mode I think
+                fakeInput = false;
+                relativeControlNow = false;
             }
             break;
 
@@ -1979,24 +1950,19 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_LBUTTONUP:
-            if (draggingStick)
-            {
-                draggingStick = false;
-                ReleaseCapture();
-            }
+            is_dragging_stick = false;
             break;
-
         case WM_LBUTTONDOWN:
-            //this message is only sent when clicking on non-controls, which is perfect for dragging right
             printf("ld\n");
             if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
             {
-                draggingStick = true;
-                SendMessage(statusDlg, WM_MOUSEMOVE, 0, 0); //updates stick
+                // capturing doesnt work, it stops sending mouse messages to dialog :/
+                is_dragging_stick = true;
             }
-            SetCapture(statusDlg); //let mouse escape window
-
             break;
+        case WM_MOUSEMOVE:
+            update_joystick_position();
+        break;
         case EDIT_END:
             EndEdit(activeCombo, (char*)lParam);
             break;
@@ -2303,15 +2269,11 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             case IDC_CLEAR:
                 comboTask = C_IDLE;
                 activeCombo = -1;
-            //good joke, imagine msgbox working
-            //if (MessageBox(0, "Do you want to remove everything?", "Warning", MB_YESNO| MB_ICONQUESTION) == 6)
-            //{
                 set_status("Clearing...");
                 CheckDlgButton(statusDlg, IDC_LOOP, 0);
                 FreeCombos();
                 ListBox_ResetContent(lBox);
                 set_status("Cleared all combos");
-            //}
                 break;
             case IDC_IMPORT:
                 {
@@ -2339,7 +2301,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 set_status("Saved to combos.cmb");
                 break;
             default:
-                //					SetFocus(statusDlg);
                 break;
             }
             break;
