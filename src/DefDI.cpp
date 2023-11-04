@@ -899,10 +899,17 @@ void Status::update_joystick_spinner(int x, int y) {
 
 void Status::update_joystick_position()
 {
+    // we sometimes dont receive lmb up notification, so its better to just check here
+    if (!(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
+    {
+        is_dragging_stick = false;
+    }
+
     if (!is_dragging_stick)
     {
         return;
     }
+
     POINT pt;
     GetCursorPos(&pt);
     ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
@@ -1945,10 +1952,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     break;
                 }
             }
-            break;
-
-        case WM_LBUTTONUP:
-            is_dragging_stick = false;
             break;
         case WM_LBUTTONDOWN:
             printf("ld\n");
