@@ -66,7 +66,6 @@ bool romIsOpen = false;
 HMENU hMenu;
 
 HANDLE fakeStatusThread = NULL; // fake! used for testing plugin
-bool validatedhTxtbox = FALSE;
 UINT systemDPI;
 
 bool lock; //don't focus mupen
@@ -75,7 +74,6 @@ std::vector<Combo*> combos;
 #define ACTIVE_COMBO combos[activeCombo]
 
 MENUCONFIG menuConfig;
-HWND textXHWND = NULL, textYHWND = textXHWND;
 
 
 struct Status
@@ -207,6 +205,7 @@ struct Status
     bool IsWindowFromEmulatorProcessActive();
     static bool IsAnyStatusDialogActive();
     LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
+    void update_joystick_spinner(int x, int y);
     void UpdateVisuals(BUTTONS ControllerInput);
     void GetKeys(BUTTONS* Keys);
     void SetKeys(BUTTONS ControllerInput);
@@ -855,19 +854,9 @@ continue_controller:
 
     gettingKeys = false;
 }
-
-VOID SetXYTextFast(HWND parent, BOOL x, char* str)
-{
-    // Optimized setdlgitemtext: explanation:
-    // GetDlgItem is very slow because of the many controls and this may limit the speed of emulator in some cases(?)
-    // Instead of using SetDlgItemText every time and (internally) calling GetDlgItem, we precompute the handles to x and y textboxes the first time and re-use them
-    if (!textXHWND || !validatedhTxtbox) textXHWND = GetDlgItem(parent, IDC_EDITX);
-    if (!textYHWND || !validatedhTxtbox) textYHWND = GetDlgItem(parent, IDC_EDITY);
-
-    if (x)
-        SetWindowText(textXHWND, str);
-    else
-        SetWindowText(textYHWND, str);
+void Status::update_joystick_spinner(int x, int y) {
+    SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(x).c_str());
+    SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(y).c_str());
 }
 
 //updates buttons
@@ -1068,46 +1057,14 @@ void Status::SetKeys(BUTTONS ControllerInput)
         if (!overrideOn && (LastControllerInput.X_AXIS != ControllerInput.X_AXIS || (AngDisp && LastControllerInput.
             Y_AXIS != ControllerInput.Y_AXIS)))
         {
-            char str[256], str2[256];
-            GetDlgItemText(statusDlg, IDC_EDITX, str2, 256);
-            if (!AngDisp)
-                sprintf(str, "%d", ControllerInput.X_AXIS);
-            else
-            {
-                float radialAngle = 4 * PI + atan2f(((float)-ControllerInput.Y_AXIS) / yScale,
-                                                    ((float)ControllerInput.X_AXIS) / xScale);
-                float angle2 = fmodf(90.0f + radialAngle * (180.0f / PI), 360.0f);
-                sprintf(str, "%d", (int)(angle2 + (angle2 > 0 ? 0.5f : -0.5f)));
-                skipEditX = true;
-                overrideX = (int)ControllerInput.X_AXIS;
-            }
-            if (strcmp(str, str2))
-                //this and the same one for Y editbox is running at a moderate speed
-                //SetDlgItemText(statusDlg, IDC_EDITX, str);
-                SetXYTextFast(statusDlg, TRUE, str);
-
+            // we dont care about ang disp. for now
+            update_joystick_spinner(ControllerInput.X_AXIS, ControllerInput.Y_AXIS);
             changed = true;
         }
         if (!overrideOn && (LastControllerInput.Y_AXIS != ControllerInput.Y_AXIS || (AngDisp && LastControllerInput.
             X_AXIS != ControllerInput.X_AXIS)))
         {
-            char str[256], str2[256];
-            GetDlgItemText(statusDlg, IDC_EDITY, str2, 256);
-            if (!AngDisp)
-                sprintf(str, "%d", -ControllerInput.Y_AXIS);
-            else
-            {
-                float radialDistance = sqrtf(
-                    ((float)(ControllerInput.X_AXIS * ControllerInput.X_AXIS) / (xScale * xScale) + (float)(
-                        ControllerInput.Y_AXIS * ControllerInput.Y_AXIS) / (yScale * yScale)));
-                sprintf(str, "%d", (int)(0.5f + radialDistance));
-                skipEditY = true;
-                overrideY = (int)ControllerInput.Y_AXIS;
-            }
-            if (strcmp(str, str2))
-                //SetDlgItemText(statusDlg, IDC_EDITY, str);
-                SetXYTextFast(statusDlg, FALSE, str);
-
+            update_joystick_spinner(ControllerInput.X_AXIS, -ControllerInput.Y_AXIS);
             changed = true;
         }
     }
@@ -1932,26 +1889,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 if (overrideY < 7 && overrideY > -7)
                     overrideY = 0;
 
-                char str[256];
-                if (!AngDisp)
-                    sprintf(str, "%d", overrideX);
-                else
-                {
-                    float radialAngle = 4 * PI + atan2f((float)-overrideY, (float)overrideX);
-                    float angle2 = fmodf(90.0f + radialAngle * (180.0f / PI), 360.0f);
-                    sprintf(str, "%d", (int)(angle2 + (angle2 > 0 ? 0.5f : -0.5f)));
-                    skipEditX = true;
-                }
-                SetXYTextFast(statusDlg, true, str);
-                if (!AngDisp)
-                    sprintf(str, "%d", -overrideY);
-                else
-                {
-                    float radialDistance = sqrtf((float)(overrideX * overrideX + overrideY * overrideY));
-                    sprintf(str, "%d", (int)(0.5f + radialDistance));
-                    skipEditY = true;
-                }
-                SetXYTextFast(statusDlg, false, str);
+                update_joystick_spinner(overrideX, -overrideY);
                 radialRecalc = true;
                 overrideOn = true; //joystick dragged with mouse
                 RefreshAnalogPicture();
@@ -2125,34 +2063,11 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         {
                             if (newOverrideX > 127) newOverrideX = 127;
                             if (newOverrideX < -128) newOverrideX = -128;
-                            sprintf(str, "%d", newOverrideX);
-                            SetXYTextFast(statusDlg, true, str);
+                            // FIXME: why are we mutating textbox contents inside the edit message
+                            update_joystick_spinner(newOverrideX, -overrideY);
                         }
                     }
-                    else
-                    {
-                        int newAng;
-                        if (sscanf(str, "%d", &newAng))
-                        {
-                            if (newAng >= 360)
-                            {
-                                sprintf(str, "%d", newAng - 360);
-                                SetXYTextFast(statusDlg, true, str);
-                            }
-                            else if (newAng < 0)
-                            {
-                                sprintf(str, "%d", newAng + 360);
-                                SetXYTextFast(statusDlg, true, str);
-                            }
-                            float newAngF = (newAng - 90) * (PI / 180.0f);
-                            newOverrideX = (int)(xScale * radialDistance * cosf((float)newAngF));
-                            overrideY = -(int)(yScale * radialDistance * sinf((float)newAngF));
-                            if (newOverrideX > 127) newOverrideX = 127;
-                            if (newOverrideX < -128) newOverrideX = -128;
-                            if (overrideY > 127) overrideY = 127;
-                            if (overrideY < -128) overrideY = -128;
-                        }
-                    }
+                    
                     if (overrideX != newOverrideX)
                     {
                         changed = true;
@@ -2181,21 +2096,11 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         {
                             if (newOverrideY > 127) newOverrideY = 127;
                             if (newOverrideY < -128) newOverrideY = -128;
-                            sprintf(str, "%d", -newOverrideY);
-                            SetXYTextFast(statusDlg, false, str);
+                            // FIXME: why are we mutating textbox contents inside the edit message
+                            update_joystick_spinner(overrideX, newOverrideY);
                         }
                     }
-                    else
-                    {
-                        int newDist = (int)radialDistance;
-                        sscanf(str, "%d", &newDist);
-                        overrideX = (int)(xScale * (float)newDist * cosf(radialAngle));
-                        newOverrideY = -(int)(yScale * (float)newDist * sinf(radialAngle));
-                        if (newOverrideY > 127) newOverrideY = 127;
-                        if (newOverrideY < -128) newOverrideY = -128;
-                        if (overrideX > 127) overrideX = 127;
-                        if (overrideX < -128) overrideX = -128;
-                    }
+                    
                     if (overrideY != newOverrideY)
                     {
                         changed = true;
@@ -2361,9 +2266,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     // Resizing wouldn't work, because any resizing causes visible damage to the dialog's background
                     // due to some messages not getting through to repair it
                     StartThread(Control);
-
-                    // Invalidate cache
-                    validatedhTxtbox = FALSE;
                 }
                 break;
             case IDC_PLAY:
