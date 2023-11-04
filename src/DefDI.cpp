@@ -165,10 +165,8 @@ struct Status
     //	bool incrementingFrameNow;
     DWORD relativeXOn, relativeYOn;
     float radialAngle, radialDistance, radialRecalc;
-    bool dragging, draggingStick;
+    bool draggingStick;
     bool AngDisp;
-    int dragXStart, dragYStart;
-    int lastXDrag, lastYDrag;
     bool deactivateAfterClick, skipEditX, skipEditY;
     bool positioned, initialized;
     int xPosition, yPosition;
@@ -1692,7 +1690,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         {
         case WM_CONTEXTMENU:
             if (!ShowContextMenu(statusDlg, (HWND)wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)));
-        //DefWindowProc()
             break;
 
         case WM_ERASEBKGND:
@@ -1705,11 +1702,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_INITDIALOG:
             {
                 // reset some dialog state
-                lastXDrag = 0;
-                lastYDrag = 0;
-                dragging = false, draggingStick = false;
-                dragXStart = 0, dragYStart = 0;
-                lastXDrag = 0, lastYDrag = 0;
+                draggingStick = false;
                 xScale = 1.0f;
                 yScale = 1.0f;
                 deactivateAfterClick = false;
@@ -1849,21 +1842,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_TIMER:
             skipEditX = false;
             skipEditY = false;
-            if (dragging)
-            {
-                POINT pt;
-                GetCursorPos(&pt);
-                int newDragX = pt.x;
-                int newDragY = pt.y;
-                if (lastXDrag != newDragX - dragXStart || lastYDrag != newDragY - dragYStart)
-                {
-                    lastXDrag = newDragX - dragXStart;
-                    lastYDrag = newDragY - dragYStart;
-                    // do not
-                    SetWindowPos(statusDlg, 0, lastXDrag, lastYDrag, 0, 0,/*SWP_NOZORDER|*/SWP_NOSIZE | SWP_SHOWWINDOW);
-                }
-            }
-            else if (draggingStick)
+            if (draggingStick)
             {
                 POINT pt;
                 GetCursorPos(&pt);
@@ -2002,12 +1981,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_LBUTTONUP:
-            if (dragging)
-            {
-                printf("drag end\n");
-                dragging = false;
-                ReleaseCapture();
-            }
             if (draggingStick)
             {
                 draggingStick = false;
@@ -2018,24 +1991,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_LBUTTONDOWN:
             //this message is only sent when clicking on non-controls, which is perfect for dragging right
             printf("ld\n");
-            if (!IsMouseOverControl(statusDlg,IDC_STICKPIC))
-            {
-                if (menuConfig.movable)
-                {
-                    POINT pt;
-                    printf("drag start\n");
-                    dragging = true;
-                    GetCursorPos(&pt);
-                    dragXStart = pt.x;
-                    dragYStart = pt.y;
-
-                    RECT rect;
-                    GetWindowRect(statusDlg, &rect);
-                    dragXStart -= rect.left;
-                    dragYStart -= rect.top;
-                }
-            }
-            else
+            if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
             {
                 draggingStick = true;
                 SendMessage(statusDlg, WM_MOUSEMOVE, 0, 0); //updates stick
