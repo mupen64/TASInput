@@ -1570,13 +1570,7 @@ void Status::load_combos(const char* path)
 
 void Status::RefreshAnalogPicture()
 {
-    RECT rect, rect2;
-    GetWindowRect(GetDlgItem(statusDlg,IDC_STICKPIC), &rect);
-    GetWindowRect(statusDlg, &rect2);
-    rect.left -= rect2.left + 3;
-    rect.right -= rect2.left + 3;
-    rect.top -= rect2.top + 3;
-    rect.bottom -= rect2.top + 3;
+    RECT rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
     InvalidateRect(statusDlg, &rect, TRUE);
     UpdateWindow(statusDlg);
 }
@@ -1897,61 +1891,60 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
         case WM_PAINT:
             {
+                // get dimensions of target control in client(!!!) coordinates
+                RECT window_rect;
+                RECT joystick_rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
+                GetClientRect(statusDlg, &window_rect);
+                POINT joystick_rect_size = { joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top};
+
+                // set up double buffering
+                PAINTSTRUCT ps;
+                HDC hdc = BeginPaint(statusDlg, &ps);
+                HDC compat_dc = CreateCompatibleDC(hdc);
+                HBITMAP bmp = CreateCompatibleBitmap(hdc, joystick_rect_size.x, joystick_rect_size.y);
+                SelectObject(compat_dc, bmp);
+                
                 static HPEN outline_pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
                 static HPEN line_pen = CreatePen(PS_SOLID, 3, RGB(0, 0, 255));
                 static HPEN tip_pen = CreatePen(PS_SOLID, 7, RGB(255, 0, 0));
                 
-                PAINTSTRUCT ps;
-                HDC hdc_main = BeginPaint(statusDlg, &ps);
-                HDC hdc = CreateCompatibleDC(hdc_main);
+                int mid_x = joystick_rect_size.x / 2;
+                int mid_y = joystick_rect_size.y / 2;
+                int stick_x = (overrideX + 128) * joystick_rect_size.x / 256;
+                int stick_y = (-overrideY + 128) * joystick_rect_size.y / 256;
 
-                RECT window_rect, joystick_rect;
-                GetClientRect(statusDlg, &window_rect);
-                joystick_rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
-
-                int w = joystick_rect.right - joystick_rect.left;
-                int h = joystick_rect.bottom - joystick_rect.top;
-                int mid_x = joystick_rect.left + (joystick_rect.right - joystick_rect.left) / 2;
-                int mid_y = joystick_rect.top + (joystick_rect.bottom - joystick_rect.top) / 2;
-                int stick_x = joystick_rect.left + (overrideX + 128) * (joystick_rect.right - joystick_rect.left) / 256;
-                int stick_y = joystick_rect.top + (-overrideY + 128) * (joystick_rect.bottom - joystick_rect.top) / 256;
-
-                // standard double-buffering: buffer draw commands to offscreen bitmap
-                // bitmap it has to be compatible with  main dc, not buffer!
-                HBITMAP h_bmp = CreateCompatibleBitmap(hdc_main, w, h);
-                SelectObject(hdc, h_bmp);
-                
                 // clear background with color which makes background (hopefully)
                 // cool idea: maybe use user accent color for joystick tip?
-                FillRect(hdc, &joystick_rect, GetSysColorBrush(COLOR_WINDOW));
+                RECT normalized = { 0, 0, joystick_rect_size.x, joystick_rect_size.y};
+                FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_WINDOW));
 
                 // draw the back layer: ellipse and alignment lines
-                SelectObject(hdc, outline_pen);
-                Ellipse(hdc, joystick_rect.left, joystick_rect.top, joystick_rect.right, joystick_rect.bottom);
-                MoveToEx(hdc, joystick_rect.left, mid_y, NULL);
-                LineTo(hdc, joystick_rect.right, mid_y);
-                MoveToEx(hdc, mid_x, joystick_rect.top, NULL);
-                LineTo(hdc, mid_x, joystick_rect.bottom);
+                SelectObject(compat_dc, outline_pen);
+                Ellipse(compat_dc, 0, 0, joystick_rect_size.x, joystick_rect_size.y);
+                MoveToEx(compat_dc, 0, mid_y, NULL);
+                LineTo(compat_dc, joystick_rect_size.x, mid_y);
+                MoveToEx(compat_dc, mid_x, 0, NULL);
+                LineTo(compat_dc, mid_x, joystick_rect_size.y);
                 
                 // now joystick line
-                SelectObject(hdc, line_pen);
-                MoveToEx(hdc, mid_x, mid_y, nullptr);
-                LineTo(hdc, stick_x, stick_y);
+                SelectObject(compat_dc, line_pen);
+                MoveToEx(compat_dc, mid_x, mid_y, nullptr);
+                LineTo(compat_dc, stick_x, stick_y);
 
                 // and finally the joystick tip
-                SelectObject(hdc, tip_pen);
-                MoveToEx(hdc, stick_x, stick_y, NULL);
-                LineTo(hdc, stick_x, stick_y);
+                SelectObject(compat_dc, tip_pen);
+                MoveToEx(compat_dc, stick_x, stick_y, NULL);
+                LineTo(compat_dc, stick_x, stick_y);
 
                 // release pen from dc or it will be leaked
-                SelectObject(hdc, nullptr);
+                SelectObject(compat_dc, nullptr);
+
+                // now we can blit the new picture in one pass
+                BitBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y, compat_dc, 0, 0, SRCCOPY);
                 
-                BitBlt(hdc_main, joystick_rect.left, joystick_rect.top, w, h, hdc, joystick_rect.left, joystick_rect.top, SRCCOPY);
                 EndPaint(statusDlg, &ps);
-                //free everything to avoid memory leak
-                DeleteDC(hdc);
-                DeleteDC(hdc_main);
-                DeleteObject(h_bmp);
+                DeleteDC(compat_dc);
+                DeleteObject(bmp);
             }
 
             break;
