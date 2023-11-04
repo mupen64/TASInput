@@ -75,6 +75,23 @@ std::vector<Combo*> combos;
 
 t_menu_config menu_config;
 
+
+RECT get_window_rect_client_space(HWND parent, HWND child)
+{
+    RECT offset_client = {0};
+    MapWindowRect(child, parent, &offset_client);
+
+    RECT client = {0};
+    GetWindowRect(child, &client);
+    
+    return {
+        offset_client.left,
+        offset_client.top,
+        offset_client.left + (client.right - client.left),
+        offset_client.top + (client.bottom - client.top)
+    };
+}
+
 struct Status
 {
     Status()
@@ -1652,27 +1669,6 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
     return TRUE;
 }
 
-//LRESULT CALLBACK StatusDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
-//{
-//	// awkward way of getting our parameter, as this is a callback function...
-//	int i;
-//	if(msg == WM_INITDIALOG)
-//	{
-//		i = lParam;
-//		status[i].statusDlg = hDlg;
-//	}
-//	else
-//	{
-//		for(i=0; i<NUMBER_OF_CONTROLS; i++)
-//			if(hDlg == status[i].statusDlg)
-//				break;
-//		if(i == NUMBER_OF_CONTROLS)
-//		    return DefWindowProc (hDlg, msg, wParam, lParam);
-//	}
-//
-//	return status[i].StatusDlgMethod(msg, wParam, lParam);
-//}
-
 #define MAKE_DLG_PROC(i) \
 LRESULT CALLBACK StatusDlgProc##i (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
 { \
@@ -1901,57 +1897,61 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
         case WM_PAINT:
             {
+                static HPEN outline_pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+                static HPEN line_pen = CreatePen(PS_SOLID, 3, RGB(0, 0, 255));
+                static HPEN tip_pen = CreatePen(PS_SOLID, 7, RGB(255, 0, 0));
+                
                 PAINTSTRUCT ps;
-                HDC hdcmain = BeginPaint(statusDlg, &ps);
-                HDC hdc = CreateCompatibleDC(hdcmain); //buffer 
-                RECT rect, rect2;
-                GetWindowRect(GetDlgItem(statusDlg,IDC_STICKPIC), &rect);
-                GetWindowRect(statusDlg, &rect2);
-                //move to relative of whole window, adjusted because ellipse sucks and because bottom right is exclusive
-                rect.left -= rect2.left + 2;
-                rect.right -= rect2.left + 4;
-                rect.top -= rect2.top + 2;
-                rect.bottom -= rect2.top + 4;
+                HDC hdc_main = BeginPaint(statusDlg, &ps);
+                HDC hdc = CreateCompatibleDC(hdc_main);
 
-                int w = rect.right;
-                int h = rect.bottom;
-                HBITMAP hBmp = CreateCompatibleBitmap(hdcmain, w, h);
-                //!!! it has to be compatible with  main dc, not buffer!
-                SelectObject(hdc, hBmp); //use the bmp to draw
+                RECT window_rect, joystick_rect;
+                GetClientRect(statusDlg, &window_rect);
+                joystick_rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
 
-                FillRect(hdc, &rect, GetSysColorBrush(COLOR_BTNFACE)); //I clear background on my own
-                Ellipse(hdc, rect.left, rect.top, rect.right, rect.bottom);
+                int w = joystick_rect.right - joystick_rect.left;
+                int h = joystick_rect.bottom - joystick_rect.top;
+                int mid_x = joystick_rect.left + (joystick_rect.right - joystick_rect.left) / 2;
+                int mid_y = joystick_rect.top + (joystick_rect.bottom - joystick_rect.top) / 2;
+                int stick_x = joystick_rect.left + (overrideX + 128) * (joystick_rect.right - joystick_rect.left) / 256;
+                int stick_y = joystick_rect.top + (-overrideY + 128) * (joystick_rect.bottom - joystick_rect.top) / 256;
 
-                HPEN hpenOld, hpenBlue, hpenRed;
-                hpenBlue = CreatePen(PS_SOLID, 3, RGB(0, 0, 255)); // these need to be re-created every time...
-                hpenRed = CreatePen(PS_SOLID, 7, RGB(255, 0, 0));
-                hpenOld = (HPEN)SelectObject(hdc, hpenBlue);
+                // standard double-buffering: buffer draw commands to offscreen bitmap
+                // bitmap it has to be compatible with  main dc, not buffer!
+                HBITMAP h_bmp = CreateCompatibleBitmap(hdc_main, w, h);
+                SelectObject(hdc, h_bmp);
+                
+                // clear background with color which makes background (hopefully)
+                // cool idea: maybe use user accent color for joystick tip?
+                FillRect(hdc, &joystick_rect, GetSysColorBrush(COLOR_WINDOW));
 
-                MoveToEx(hdc, (rect.left + rect.right) >> 1, (rect.top + rect.bottom) >> 1, NULL);
-                int x = rect.left + (overrideX + 128) * (rect.right - rect.left) / 256;
-                int y = rect.top + (-overrideY + 128) * (rect.bottom - rect.top) / 256;
-                LineTo(hdc, x, y);
+                // draw the back layer: ellipse and alignment lines
+                SelectObject(hdc, outline_pen);
+                Ellipse(hdc, joystick_rect.left, joystick_rect.top, joystick_rect.right, joystick_rect.bottom);
+                MoveToEx(hdc, joystick_rect.left, mid_y, NULL);
+                LineTo(hdc, joystick_rect.right, mid_y);
+                MoveToEx(hdc, mid_x, joystick_rect.top, NULL);
+                LineTo(hdc, mid_x, joystick_rect.bottom);
+                
+                // now joystick line
+                SelectObject(hdc, line_pen);
+                MoveToEx(hdc, mid_x, mid_y, nullptr);
+                LineTo(hdc, stick_x, stick_y);
 
-                SelectObject(hdc, hpenOld);
-                DeleteObject(hpenBlue);
+                // and finally the joystick tip
+                SelectObject(hdc, tip_pen);
+                MoveToEx(hdc, stick_x, stick_y, NULL);
+                LineTo(hdc, stick_x, stick_y);
 
-                MoveToEx(hdc, rect.left, (rect.top + rect.bottom) >> 1, NULL);
-                LineTo(hdc, rect.right, (rect.top + rect.bottom) >> 1);
-                MoveToEx(hdc, (rect.left + rect.right) >> 1, rect.top, NULL);
-                LineTo(hdc, (rect.left + rect.right) >> 1, rect.bottom);
-
-                hpenOld = (HPEN)SelectObject(hdc, hpenRed);
-                MoveToEx(hdc, x, y, NULL);
-                LineTo(hdc, x, y);
-                SelectObject(hdc, hpenOld);
-                DeleteObject(hpenRed);
-                BitBlt(hdcmain, rect.left, rect.top, w, h, hdc, rect.left, rect.top, SRCCOPY);
+                // release pen from dc or it will be leaked
+                SelectObject(hdc, nullptr);
+                
+                BitBlt(hdc_main, joystick_rect.left, joystick_rect.top, w, h, hdc, joystick_rect.left, joystick_rect.top, SRCCOPY);
                 EndPaint(statusDlg, &ps);
                 //free everything to avoid memory leak
                 DeleteDC(hdc);
-                DeleteDC(hdcmain);
-                DeleteObject(hBmp);
-                DeleteObject(hpenOld);
+                DeleteDC(hdc_main);
+                DeleteObject(h_bmp);
             }
 
             break;
