@@ -106,21 +106,14 @@ extern DEFCONTROLLER Controller[NUMBER_OF_CONTROLS];
 
 extern HINSTANCE g_hInstance;
 
-//---- Popup menu
-enum PopupOptions
+typedef struct s_menu_config
 {
-    None,
-    OnTop,
-    Float,
-    Movable
-};
+	// dummy element to pad offset of next element to non-0 
+	bool dummy_element = false;
+    bool always_on_top = false;
+    bool float_from_parent = true;
+} t_menu_config;
 
-typedef struct MENUCONFIG
-{
-    bool onTop = false;
-    bool floatFromParent = true;
-    bool movable = true;
-} MENUCONFIG;
 //----
 
 void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* ControllerInput, int& M1Speed,

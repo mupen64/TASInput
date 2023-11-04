@@ -73,8 +73,7 @@ bool lock; //don't focus mupen
 std::vector<Combo*> combos;
 #define ACTIVE_COMBO combos[activeCombo]
 
-MENUCONFIG menuConfig;
-
+t_menu_config menu_config;
 
 struct Status
 {
@@ -154,6 +153,32 @@ struct Status
             if (statusDlg) DestroyWindow(statusDlg), statusDlg = NULL;
             if (statusThread) TerminateThread(statusThread, 0), statusThread = NULL;
             StartThread(Control);
+        }
+    }
+
+    void apply_menu_config()
+    {
+        auto gwl_style = GetWindowLongA(statusDlg, GWL_STYLE);
+        auto gwl_ex_style = GetWindowLongA(statusDlg, GWL_EXSTYLE);
+        
+        if (menu_config.always_on_top)
+        {
+            SetWindowPos(statusDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        }
+        else
+        {
+            SetWindowPos(statusDlg, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        }
+
+        if (menu_config.float_from_parent)
+        {
+            SetWindowLongA(statusDlg, GWL_STYLE,gwl_style & ~DS_SYSMODAL);
+            SetWindowLongA(statusDlg, GWL_EXSTYLE, gwl_ex_style & ~WS_EX_TOOLWINDOW);
+        }
+        else
+        {
+            SetWindowLongA(statusDlg, GWL_STYLE, gwl_style | DS_SYSMODAL);
+            SetWindowLongA(statusDlg, GWL_EXSTYLE, gwl_ex_style | WS_EX_TOOLWINDOW);
         }
     }
 
@@ -1594,54 +1619,35 @@ bool Status::IsAnyStatusDialogActive()
     return false;
 }
 
-//called after right-click menu closes, used to apply some changes
-void RefreshChanges(HWND hwnd)
-{
-    if (menuConfig.floatFromParent)
-    {
-        SetWindowLongA(hwnd, GWL_STYLE,DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE);
-        SetWindowLongA(hwnd, GWL_EXSTYLE, WS_EX_STATICEDGE);
-    }
-    else
-    {
-        SetWindowLongA(hwnd, GWL_STYLE,
-                       DS_SYSMODAL | DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE);
-        SetWindowLongA(hwnd, GWL_EXSTYLE, WS_EX_TOOLWINDOW | WS_EX_STATICEDGE);
-    }
-
-    if (menuConfig.onTop)
-        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-    else
-        SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-}
-
 bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 {
     if (hitwnd != hwnd || IsMouseOverControl(hwnd, IDC_STICKPIC) || (GetKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
         return TRUE;
-    RefreshChanges(hwnd);
-    SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW); //disable topmost for a second
+
+    // HACK: disable topmost so menu doesnt appear under tasinput
     hMenu = CreatePopupMenu();
-    AppendMenu(hMenu, menuConfig.onTop ? MF_CHECKED : 0, OnTop, "Stay on Top");
-    AppendMenu(hMenu, menuConfig.floatFromParent ? MF_CHECKED : 0, Float, "Show in Taskbar");
-    AppendMenu(hMenu, menuConfig.movable ? MF_CHECKED : 0, Movable, "Movable");
+    AppendMenu(hMenu, menu_config.always_on_top ? MF_CHECKED : 0, offsetof(t_menu_config, always_on_top), "Always on top");
+    AppendMenu(hMenu, menu_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_menu_config, float_from_parent), "Float from parent");
     lock = true;
-    int res = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
+    int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
     lock = false;
-    printf("trackmenu result %d\n", res);
-    switch (res)
+    
+    if (offset != 0)
     {
-    case OnTop:
-        menuConfig.onTop ^= 1;
-        break;
-    case Float:
-        menuConfig.floatFromParent ^= 1;
-        break;
-    case Movable:
-        menuConfig.movable ^= 1;
-        break;
+        printf("offset: %d\n", offset);
+        // offset is the offset into menu config struct of the field which was selected by user
+        auto arr = reinterpret_cast<bool*>(&menu_config);
+        arr[offset] ^= true;
     }
-    RefreshChanges(hwnd);
+    
+    for (auto status_dlg : status)
+    {
+        if (status_dlg.initialized && status_dlg.statusDlg)
+        {
+            status_dlg.apply_menu_config();
+        }
+    }
+    
     DestroyMenu(hMenu);
     return TRUE;
 }
@@ -1689,9 +1695,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         switch (msg)
         {
         case WM_CONTEXTMENU:
-            if (!ShowContextMenu(statusDlg, (HWND)wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)));
+            ShowContextMenu(statusDlg, (HWND)wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             break;
-
         case WM_ERASEBKGND:
             if (once)
             {
