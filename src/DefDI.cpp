@@ -166,7 +166,7 @@ struct Status
     //	bool incrementingFrameNow;
     DWORD relativeXOn, relativeYOn;
     float radialAngle, radialDistance, radialRecalc;
-    bool dragging, draggingStick, draggingPermaStick;
+    bool dragging, draggingStick;
     bool AngDisp;
     int dragXStart, dragYStart;
     int lastXDrag, lastYDrag;
@@ -203,7 +203,6 @@ struct Status
 
     void RefreshAnalogPicture();
 
-    void ActivateEmulatorWindow();
     bool IsWindowFromEmulatorProcessActive();
     static bool IsAnyStatusDialogActive();
     LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -1616,41 +1615,6 @@ static bool IsMouseOverControl(HWND hDlg, int dialogItemID)
     return FALSE;
 }
 
-void Status::ActivateEmulatorWindow()
-{
-    if (lock) return;
-    if (prevHWnd)
-    {
-        SetForegroundWindow(prevHWnd);
-        return;
-    }
-    SetFocus(NULL);
-
-    SetActiveWindow(NULL); // activates whatever the previous window was
-
-    HWND hWnd = GetForegroundWindow();
-    for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
-        if (hWnd == status[i].statusDlg)
-            hWnd = NULL;
-    if (!hWnd)
-    {
-        if (prevHWnd)
-            BringWindowToTop(prevHWnd); // fix taskbar flash... by just calling another method
-        return;
-    }
-
-    // try to find out which window belongs to the emulator (the input plugin specifications provide no means of getting this)
-    DWORD processID1, processID2;
-    GetWindowThreadProcessId(statusDlg, &processID1);
-    GetWindowThreadProcessId(hWnd, &processID2);
-    if (processID1 == processID2)
-        prevHWnd = hWnd;
-        // if it's from the same process, remember it (even if we already did this, in case the emulator has multiple windows)
-    else if (prevHWnd)
-        SetForegroundWindow(prevHWnd);
-    // if it's not, the last other window from the same process would be a better match
-}
-
 bool Status::IsWindowFromEmulatorProcessActive()
 {
     HWND hWnd = GetForegroundWindow();
@@ -1785,7 +1749,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 // reset some dialog state
                 lastXDrag = 0;
                 lastYDrag = 0;
-                dragging = false, draggingStick = false, draggingPermaStick = false;
+                dragging = false, draggingStick = false;
                 dragXStart = 0, dragYStart = 0;
                 lastXDrag = 0, lastYDrag = 0;
                 xScale = 1.0f;
@@ -1890,17 +1854,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     FreeCombos();
                     load_combos("combos.cmb");
                 }
-                // switch to emulator
-                if (IsWindowFromEmulatorProcessActive())
-                    ActivateEmulatorWindow();
-            }
-            break;
-
-        case WM_ACTIVATE:
-        case WM_SETFOCUS:
-            {
-                if (IsWindowFromEmulatorProcessActive())
-                    ActivateEmulatorWindow();
             }
             break;
         case SC_MINIMIZE:
@@ -1918,7 +1871,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 statusDlg = NULL;
             }
             break;
-
         // too bad we don't get useful events like WM_MOUSEMOVE or WM_LBUTTONDOWN...
         case WM_SETCURSOR:
             {
@@ -1953,8 +1905,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     UPDATEAUTO(IDC_CHECK_DLEFT, L_DPAD);
                     UPDATEAUTO(IDC_CHECK_DRIGHT, R_DPAD);
                     UPDATEAUTO(IDC_CHECK_DDOWN, D_DPAD);
-
-                    ActivateEmulatorWindow();
                 }
                 last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
             }
@@ -2034,7 +1984,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     if (gettingKeys)
                         Sleep(0);
-                    //ActivateEmulatorWindow();
+
                     if (!gettingKeys && !(comboTask & (C_RUNNING | C_LOOP)) && !copyButtons)
                     {
                         BUTTONS Keys;
@@ -2043,16 +1993,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         GetKeys(&Keys); //used in radial mode I think
                         fakeInput = false;
                         relativeControlNow = false;
-                        //ActivateEmulatorWindow();
-                    }
-                }
-                else
-                {
-                    if (((GetKeyState(VK_ESCAPE) & 0x8000) || (GetKeyState(VK_RETURN) & 0x8000) || (deactivateAfterClick
-                        && !(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))))
-                    {
-                        ActivateEmulatorWindow();
-                        deactivateAfterClick = false;
                     }
                 }
                 SetWindowPos(statusDlg, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
@@ -2151,19 +2091,11 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 printf("drag end\n");
                 dragging = false;
                 ReleaseCapture();
-                ActivateEmulatorWindow();
             }
             if (draggingStick)
             {
                 draggingStick = false;
                 ReleaseCapture();
-                if (IsWindowFromEmulatorProcessActive())
-                    ActivateEmulatorWindow();
-            }
-            if (draggingPermaStick)
-            {
-                draggingPermaStick = false;
-                KillTimer(statusDlg, IDT_TIMER3);
             }
             break;
 
@@ -2191,24 +2123,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 draggingStick = true;
                 SendMessage(statusDlg, WM_MOUSEMOVE, 0, 0); //updates stick
-                ActivateEmulatorWindow();
             }
             SetCapture(statusDlg); //let mouse escape window
 
-            break;
-        case WM_RBUTTONDOWN:
-            printf("rd\n");
-        //flip permadrag state and update dragging stick accordingly
-            if (IsMouseOverControl(statusDlg, IDC_STICKPIC))
-            {
-                draggingPermaStick = !draggingPermaStick;
-                if (draggingStick = draggingPermaStick)
-                {
-                    ActivateEmulatorWindow();
-                    SetTimer(statusDlg, IDT_TIMER3, 50, (TIMERPROC)NULL);
-                }
-                else KillTimer(statusDlg, IDT_TIMER3);
-            }
             break;
         case EDIT_END:
             EndEdit(activeCombo, (char*)lParam);
@@ -2351,8 +2268,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         RegSetValueEx(hKey, str, 0, dwDWType, (LPBYTE)&relativeYOn, dwDWSize);
                     }
                     RegCloseKey(hKey);
-
-                    ActivateEmulatorWindow();
                 }
                 break;
 
@@ -2385,66 +2300,50 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         RegSetValueEx(hKey, str, 0, dwDWType, (LPBYTE)&AngDisp, dwDWSize);
                     }
                     RegCloseKey(hKey);
-
-                    ActivateEmulatorWindow();
                 }
                 break;
             //on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
             case IDC_CHECK_A: buttonOverride.A_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.A_BUTTON = buttonAutofire2.A_BUTTON = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_B: buttonOverride.B_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.B_BUTTON = buttonAutofire2.B_BUTTON = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_START: buttonOverride.START_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.START_BUTTON = buttonAutofire2.START_BUTTON = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_Z: buttonOverride.Z_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.Z_TRIG = buttonAutofire2.Z_TRIG = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_L: buttonOverride.L_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.L_TRIG = buttonAutofire2.L_TRIG = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_R: buttonOverride.R_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.R_TRIG = buttonAutofire2.R_TRIG = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_CLEFT: buttonOverride.L_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.L_CBUTTON = buttonAutofire2.L_CBUTTON = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_CUP: buttonOverride.U_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.U_CBUTTON = buttonAutofire2.U_CBUTTON = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_CRIGHT: buttonOverride.R_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.R_CBUTTON = buttonAutofire2.R_CBUTTON = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_CDOWN: buttonOverride.D_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.D_CBUTTON = buttonAutofire2.D_CBUTTON = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_DLEFT: buttonOverride.L_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.L_DPAD = buttonAutofire2.L_DPAD = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_DUP: buttonOverride.U_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.U_DPAD = buttonAutofire2.U_DPAD = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_DRIGHT: buttonOverride.R_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.R_DPAD = buttonAutofire2.R_DPAD = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CHECK_DDOWN: buttonOverride.D_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 buttonAutofire.D_DPAD = buttonAutofire2.D_DPAD = 0;
-                ActivateEmulatorWindow();
                 break;
             case IDC_CLEARINPUT:
                 if (GetKeyState(VK_MENU) & 0x8000)
@@ -2456,12 +2355,10 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     SetDlgItemText(statusDlg, IDC_EDITY, "0");
                     SetDlgItemText(statusDlg, IDC_EDITX, "0");
                     RefreshAnalogPicture();
-                    ActivateEmulatorWindow();
                 }
                 else {
                     buttonOverride.Value = buttonAutofire.Value = buttonAutofire2.Value = 0;
                     GetKeys(0);
-                    ActivateEmulatorWindow();
                 }
                 break;
             case IDC_MOREBUTTON4:
