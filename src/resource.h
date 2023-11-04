@@ -795,7 +795,6 @@
 #define IDD_CONFIGDLG                   101
 #define VK_NUMPAD5                      0x65
 #define LANG_DIVEHI                     0x65
-#define IDD_MACRODLG                    102
 #define VK_NUMPAD6                      0x66
 #define VK_NUMPAD7                      0x67
 #define LANG_FULAH                      0x67

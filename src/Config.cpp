@@ -459,7 +459,6 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_BTOG_MAC1:
             dwMacroParam = MAKELPARAM(20, (WORD) NController);
-            DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_MACRODLG), hDlg, (DLGPROC)MacroDlgProc, dwMacroParam);
             break;
 
         case IDC_B_MAC2:
@@ -471,7 +470,6 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_BTOG_MAC2:
             dwMacroParam = MAKELPARAM(21, (WORD) NController);
-            DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_MACRODLG), hDlg, (DLGPROC)MacroDlgProc, dwMacroParam);
             break;
 
         case IDC_B_MAC3:
@@ -483,7 +481,6 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_BTOG_MAC3:
             dwMacroParam = MAKELPARAM(22, (WORD) NController);
-            DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_MACRODLG), hDlg, (DLGPROC)MacroDlgProc, dwMacroParam);
             break;
 
         case IDC_B_MAC4:
@@ -495,7 +492,6 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_BTOG_MAC4:
             dwMacroParam = MAKELPARAM(23, (WORD) NController);
-            DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_MACRODLG), hDlg, (DLGPROC)MacroDlgProc, dwMacroParam);
             break;
 
         case IDC_B_MAC5:
@@ -507,7 +503,6 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_BTOG_MAC5:
             dwMacroParam = MAKELPARAM(24, (WORD) NController);
-            DialogBoxParam(g_hInstance, MAKEINTRESOURCE(IDD_MACRODLG), hDlg, (DLGPROC)MacroDlgProc, dwMacroParam);
             break;
 
 
