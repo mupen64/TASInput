@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Config.h"
 #include "resource.h"
 #include "Combo.h"
+#include <format>
 
 #ifdef DEBUG
 #define PLUGIN_NAME "TAS Input debug"
@@ -1758,14 +1759,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 int initialStickX = overrideX;
                 int initialStickY = overrideY;
 
-                // set title
-                char str[256];
-                sprintf(str, "Analog Stick - Controller %d", Control + 1);
-                SetWindowText(GetDlgItem(statusDlg,IDC_ANALOGSTICKLABEL), str);
-                sprintf(str, "Buttons - Controller %d", Control + 1);
-                SetWindowText(GetDlgItem(statusDlg,IDC_BUTTONSLABEL), str);
-                sprintf(str, "Combos - Controller %d", Control + 1); // XXX
-                SetWindowText(GetDlgItem(statusDlg,IDC_COMBOLABEL), str);
                 if (AngDisp)
                 {
                     CheckDlgButton(statusDlg, IDC_CHECK_ANGDISP, TRUE);
@@ -1779,23 +1772,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     SetDlgItemText(statusDlg, IDC_STATICY, "Y");
                 }
 
-                // calculate rects
-                RECT dlgRect, picRect;
-                GetWindowRect(statusDlg, &dlgRect);
-                GetWindowRect(GetDlgItem(statusDlg,IDC_STICKPIC), &picRect);
-                picRect.left -= dlgRect.left;
-                picRect.right -= dlgRect.left;
-                picRect.top -= dlgRect.top;
-                picRect.bottom -= dlgRect.top;
-
-                // move window into position
-                if (!positioned)
-                {
-                    xPosition = Control * (dlgRect.right - dlgRect.left);
-                    yPosition = 0;
-                    positioned = true;
-                }
-                SetWindowPos(statusDlg, 0, xPosition, yPosition, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_SHOWWINDOW);
+                SetWindowText(statusDlg, std::format("TASInput - Controller {}", Control + 1).c_str());
 
                 // set ranges
                 if (!AngDisp)
@@ -1841,10 +1818,11 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 initialized = true;
 
                 // initial x/y text field values
-                sprintf(str, "%d", initialStickX);
-                SetDlgItemText(statusDlg, IDC_EDITX, str); // no need for "fast" version here this only happens one time
-                sprintf(str, "%d", -initialStickY);
-                SetDlgItemText(statusDlg, IDC_EDITY, str);
+                // TODO: unify slow and fast xy text update
+                //sprintf(str, "%d", initialStickX);
+                //SetDlgItemText(statusDlg, IDC_EDITX, str); // no need for "fast" version here this only happens one time
+                //sprintf(str, "%d", -initialStickY);
+                //SetDlgItemText(statusDlg, IDC_EDITY, str);
 
                 //Load combos
                 //I realised there's HasPanel() too, but doesn't make much difference
