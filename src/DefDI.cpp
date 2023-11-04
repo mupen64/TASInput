@@ -1781,6 +1781,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     FreeCombos();
                     load_combos("combos.cmb");
                 }
+                
+                SetTimer(statusDlg, IDT_TIMER_STATUS_0 + Control, 1, NULL);
             }
             break;
         case SC_MINIMIZE:
@@ -1790,11 +1792,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_DESTROY:
             {
                 initialized = false;
-                //			buttonOverride.Value = 0;
-                //			buttonAutofire.Value = 0;
-                //			overrideOn = false;
-                KillTimer(statusDlg, IDT_TIMER3);
-                // XXX: what about the other windows' timers? We don't necessarily want to kill them. But this... doesn't work anyway?
+                KillTimer(statusDlg, IDT_TIMER_STATUS_0 + Control);
                 statusDlg = NULL;
             }
             break;
@@ -2051,9 +2049,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     if (IsDlgButtonChecked(statusDlg, IDC_XRAD))
                     {
                         relativeXOn = 3;
-                        SetTimer(statusDlg, IDT_TIMER3, 50, (TIMERPROC)NULL);
                     }
-                    if (relativeXOn != 3) KillTimer(statusDlg, IDT_TIMER3);
                     // Workaround for wine: this will start or stop the application-breaking timer depending on radial mode enabled or not...
                     // no one uses radial anyway so we're good
 

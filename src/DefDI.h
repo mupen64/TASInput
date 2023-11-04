@@ -70,7 +70,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define BUTTONDOWN(name, key) (name[key] & 0x80)
 
-#define IDT_TIMER3 3
+#define IDT_TIMER_STATUS_0 5000
+#define IDT_TIMER_STATUS_1 5001
+#define IDT_TIMER_STATUS_2 5002
+#define IDT_TIMER_STATUS_3 5003
 
 //combo tasks
 #define C_IDLE 0
