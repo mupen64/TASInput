@@ -1483,7 +1483,6 @@
 #define stc19                           0x0452
 #define IDC_MOREBUTTON4                 1106
 #define stc20                           0x0453
-#define IDC_BUTTONSLABEL                1107
 #define stc21                           0x0454
 #define IDC_COMBOLABEL                  1108
 #define stc22                           0x0455

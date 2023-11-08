@@ -1750,7 +1750,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 }
 
                 // update autofire state
-                if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_BUTTONSLABEL))
+                if (rmb_just_down)
                 {
                     overrideOn = true; 
 
