@@ -74,7 +74,7 @@
             <LanguageStandard>stdcpplatest</LanguageStandard>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <OutputFile>..\bin\TASDI_Debug.dll</OutputFile>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -115,7 +115,7 @@
             <LanguageStandard>stdcpplatest</LanguageStandard>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <OutputFile>..\bin\TASDI.dll</OutputFile>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <ProgramDatabaseFile>../bin/$(TargetName).pdb</ProgramDatabaseFile>

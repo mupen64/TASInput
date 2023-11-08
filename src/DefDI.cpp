@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <windows.h>
 #include <commctrl.h>
 #include <windowsx.h>
+#include <shellscalingapi.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <stdio.h>
@@ -1710,6 +1711,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     FreeCombos();
                     load_combos("combos.cmb");
                 }
+
+                // windows likes to scale stick control in particular, so we force it to a specific size
+                SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
                 
                 SetTimer(statusDlg, IDT_TIMER_STATUS_0 + Control, 1, NULL);
             }
@@ -1959,21 +1963,21 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 break;
 
-            case IDC_XREL:
-            case IDC_XSEM:
-            case IDC_XABS:
-            case IDC_XRAD:
-            case IDC_YREL:
-            case IDC_YSEM:
-            case IDC_YABS:
+            case IDC_X_RELATIVE:
+            case IDC_X_SEMIRELATIVE:
+            case IDC_X_INSTANT:
+            case IDC_X_RADIAL:
+            case IDC_Y_RELATIVE:
+            case IDC_Y_SEMIRELATIVE:
+            case IDC_Y_INSTANT:
                 {
-                    if (IsDlgButtonChecked(statusDlg, IDC_XABS)) relativeXOn = 0;
-                    if (IsDlgButtonChecked(statusDlg, IDC_YABS)) relativeYOn = 0;
-                    if (IsDlgButtonChecked(statusDlg, IDC_XSEM)) relativeXOn = 1;
-                    if (IsDlgButtonChecked(statusDlg, IDC_YSEM)) relativeYOn = 1;
-                    if (IsDlgButtonChecked(statusDlg, IDC_XREL)) relativeXOn = 2;
-                    if (IsDlgButtonChecked(statusDlg, IDC_YREL)) relativeYOn = 2;
-                    if (IsDlgButtonChecked(statusDlg, IDC_XRAD))
+                    if (IsDlgButtonChecked(statusDlg, IDC_X_INSTANT)) relativeXOn = 0;
+                    if (IsDlgButtonChecked(statusDlg, IDC_Y_INSTANT)) relativeYOn = 0;
+                    if (IsDlgButtonChecked(statusDlg, IDC_X_SEMIRELATIVE)) relativeXOn = 1;
+                    if (IsDlgButtonChecked(statusDlg, IDC_Y_SEMIRELATIVE)) relativeYOn = 1;
+                    if (IsDlgButtonChecked(statusDlg, IDC_X_RELATIVE)) relativeXOn = 2;
+                    if (IsDlgButtonChecked(statusDlg, IDC_Y_RELATIVE)) relativeYOn = 2;
+                    if (IsDlgButtonChecked(statusDlg, IDC_X_RADIAL))
                     {
                         relativeXOn = 3;
                     }
