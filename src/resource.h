@@ -1463,6 +1463,7 @@
 #define stc7                            0x0446
 #define IDC_CHECK_CDOWN                 1094
 #define stc8                            0x0447
+#define IDC_CHECK_L2                    1095
 #define stc9                            0x0448
 #define stc10                           0x0449
 #define stc11                           0x044a
