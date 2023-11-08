@@ -56,7 +56,7 @@ HINSTANCE g_hInstance;
 GUID Guids[MAX_DEVICES];
 DEFCONTROLLER Controller[NUMBER_OF_CONTROLS];
 CONTROL* ControlDef[NUMBER_OF_CONTROLS];
-//LRESULT CALLBACK StatusDlgProc (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+HWND emulator_hwnd;
 LRESULT CALLBACK StatusDlgProc0(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc1(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc2(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -1231,7 +1231,7 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
 {
     HKEY hKey;
     DWORD dwSize, dwType;
-
+    emulator_hwnd = hMainWindow;
     for (BYTE i = 0; i < NUMBER_OF_CONTROLS; i++)
     {
         ControlDef[i] = &Controls[i];
@@ -1671,9 +1671,10 @@ MAKE_DLG_PROC(3)
 
 LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    static bool last_lmb_down = false;
     static bool last_rmb_down = false;
+    bool lmb_just_up = !(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000) && last_lmb_down;
     bool rmb_just_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000 && !last_rmb_down;
-
     
     if (initialized || msg == WM_INITDIALOG /*|| msg == WM_DESTROY || msg == WM_NCDESTROY*/)
         switch (msg)
@@ -1726,6 +1727,12 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         case WM_SETCURSOR:
             {
+                if (lmb_just_up)
+                {
+                    // activate mupen window to allow it to get key inputs
+                    SetForegroundWindow(emulator_hwnd);
+                }
+                
                 if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERX))
                 {
                     SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
@@ -1758,6 +1765,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     UPDATEAUTO(IDC_CHECK_DRIGHT, R_DPAD);
                     UPDATEAUTO(IDC_CHECK_DDOWN, D_DPAD);
                 }
+                last_lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
                 last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
             }
         break;
@@ -1880,6 +1888,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 // capturing doesnt work, it stops sending mouse messages to dialog :/
                 is_dragging_stick = true;
+                SetForegroundWindow(emulator_hwnd);
             }
             break;
         case WM_MOUSEMOVE:
