@@ -1803,9 +1803,17 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 // get dimensions of target control in client(!!!) coordinates
                 RECT window_rect;
                 RECT joystick_rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
+
+                // HACK: we compensate the static edge size
+                joystick_rect.left += 2;
+                joystick_rect.top += 2;
+                joystick_rect.right -= 4;
+                joystick_rect.bottom -= 4;
+
                 GetClientRect(statusDlg, &window_rect);
                 POINT joystick_rect_size = { joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top};
 
+                
                 // set up double buffering
                 PAINTSTRUCT ps;
                 HDC hdc = BeginPaint(statusDlg, &ps);
@@ -1825,7 +1833,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 // clear background with color which makes background (hopefully)
                 // cool idea: maybe use user accent color for joystick tip?
                 RECT normalized = { 0, 0, joystick_rect_size.x, joystick_rect_size.y};
-                FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_WINDOW));
+                FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_BTNFACE));
 
                 // draw the back layer: ellipse and alignment lines
                 SelectObject(compat_dc, outline_pen);
