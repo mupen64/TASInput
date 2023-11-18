@@ -1207,21 +1207,32 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                         }
                         if (js.rgdwPOV[count] == 27000)
                         {
+                            int id = -1;
                             switch (count)
                             {
                             case 0:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV0W;
+                                id = DIJOFS_POV0W;
                                 break;
                             case 1:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV1W;
+                                id = DIJOFS_POV1W;
                                 break;
                             case 2:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV2W;
+                                id = DIJOFS_POV2W;
                                 break;
                             case 3:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV3W;
+                                id = DIJOFS_POV3W;
                                 break;
                             }
+
+                            if (NController < sizeof(Controller) / sizeof(Controller[0])
+                                && NControl < sizeof(Controller[NController].Input) / sizeof(Controller[NController].Input[0]))
+                            {
+                                Controller[NController].Input[NControl].vkey = id;
+                            }
+                            else {
+                                MessageBox(nullptr, "Failed to set controller value", nullptr, MB_ICONERROR);
+                            }
+                            
                             GetAControlValue(hDlg, ControlValue, NController, NControl);
                             GetAControlName(NController, NControl, ControlName);
                             SetDlgItemText(hDlg, ControlValue, ControlName);
