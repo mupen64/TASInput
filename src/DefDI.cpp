@@ -406,8 +406,18 @@ void Status::GetKeys(BUTTONS* Keys)
         for (BYTE devicecount = 0; devicecount < Controller[Control].NDevices; devicecount++)
         {
             BYTE DeviceNum = (BYTE)Controller[Control].Devices[devicecount];
-            if (DInputDev[DeviceNum].lpDIDevice != NULL)
+
+            if (DeviceNum >= sizeof(DInputDev) / sizeof(DInputDev[0]))
             {
+                continue;
+            }
+
+            if (DInputDev[DeviceNum].lpDIDevice == NULL) 
+            {
+                continue;
+            }
+
+            
                 LONG count;
 
                 if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
@@ -715,7 +725,7 @@ void Status::GetKeys(BUTTONS* Keys)
                         }
                     }
                 }
-            }
+            
         }
 
         if (M2Speed)
