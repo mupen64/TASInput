@@ -1755,8 +1755,40 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             if (controller_input.Value != last_controller_input.Value)
             {
                 // Input changed, override everything with current
-                // TODO: Only override changes
-                current_input = controller_input;
+
+#define BTN(field)\
+                if (controller_input.field && !last_controller_input.field)\
+                {\
+                    current_input.field = 1;\
+                }\
+                if (!controller_input.field && last_controller_input.field)\
+                {\
+                    current_input.field = 0;\
+                }\
+
+#define JOY(field)\
+                if (controller_input.field != last_controller_input.field)\
+                {\
+                    current_input.field = controller_input.field;\
+                }\
+                
+                BTN(R_DPAD)
+                BTN(L_DPAD)
+                BTN(D_DPAD)
+                BTN(U_DPAD)
+                BTN(START_BUTTON)
+                BTN(Z_TRIG)
+                BTN(B_BUTTON)
+                BTN(A_BUTTON)
+                BTN(R_CBUTTON)
+                BTN(L_CBUTTON)
+                BTN(D_CBUTTON)
+                BTN(U_CBUTTON)
+                BTN(R_TRIG)
+                BTN(L_TRIG)
+                JOY(X_AXIS)
+                JOY(Y_AXIS)
+                
                 set_visuals(current_input);
             }
             
