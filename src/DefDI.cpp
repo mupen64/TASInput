@@ -101,8 +101,8 @@ struct Status
         relativeXOn = 0;
         relativeYOn = 0;
         radialAngle = -PI / 2;
-        skipEditX = false;
-        skipEditY = false;
+        skip_edit_x = false;
+        skip_edit_y = false;
         xScale = 1.0f;
         yScale = 1.0f;
         radialDistance = 0.0f;
@@ -196,7 +196,7 @@ struct Status
     DWORD relativeXOn, relativeYOn;
     float radialAngle, radialDistance, radialRecalc;
     bool is_dragging_stick;
-    bool deactivateAfterClick, skipEditX, skipEditY;
+    bool deactivateAfterClick, skip_edit_x, skip_edit_y;
     bool positioned, initialized;
     int xPosition, yPosition;
     float xScale, yScale;
@@ -220,11 +220,15 @@ struct Status
     void StartEdit(int);
     void EndEdit(int, char*);
 
-    void RefreshAnalogPicture();
     LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
-    void update_joystick_spinner(int x, int y);
+    
+    /**
+     * \brief Updates the UI
+     * \param input The values to be shown in the UI
+     */
+    void set_visuals(BUTTONS input);
+    
     void update_joystick_position();
-    void set_ui_buttons(BUTTONS input);
     BUTTONS get_controller_input();
     void GetKeys(BUTTONS* Keys);
     void SetKeys(BUTTONS ControllerInput);
@@ -831,12 +835,6 @@ continue_controller:
     }
 }
 
-void Status::update_joystick_spinner(int x, int y)
-{
-    SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(x).c_str());
-    SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(y).c_str());
-}
-
 void Status::update_joystick_position()
 {
     // we sometimes dont receive lmb up notification, so its better to just check here
@@ -870,12 +868,15 @@ void Status::update_joystick_position()
     if (current_input.Y_AXIS < 7 && current_input.Y_AXIS > -7)
         current_input.Y_AXIS = 0;
     radialRecalc = true;
-    update_joystick_spinner(current_input.X_AXIS, -current_input.Y_AXIS);
-    RefreshAnalogPicture();
+    set_visuals(current_input);
 }
 
-void Status::set_ui_buttons(BUTTONS input)
+
+void Status::set_visuals(BUTTONS input)
 {
+    SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(input.X_AXIS).c_str());
+    SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(input.Y_AXIS).c_str());
+    
     CheckDlgButton(statusDlg, IDC_CHECK_A, input.A_BUTTON);
     CheckDlgButton(statusDlg, IDC_CHECK_B, input.B_BUTTON);
     CheckDlgButton(statusDlg, IDC_CHECK_START, input.START_BUTTON);
@@ -890,6 +891,9 @@ void Status::set_ui_buttons(BUTTONS input)
     CheckDlgButton(statusDlg, IDC_CHECK_DLEFT, input.L_DPAD);
     CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, input.R_DPAD);
     CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, input.D_DPAD);
+
+    RECT rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
+    InvalidateRect(statusDlg, &rect, TRUE);
 }
 
 void Status::SetKeys(BUTTONS ControllerInput)
@@ -1535,13 +1539,6 @@ void Status::load_combos(const char* path)
     }
 }
 
-void Status::RefreshAnalogPicture()
-{
-    RECT rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
-    InvalidateRect(statusDlg, &rect, TRUE);
-    UpdateWindow(statusDlg);
-}
-
 DWORD WINAPI StatusDlgThreadProc(LPVOID lpParameter)
 {
     int Control = LOBYTE(*(int*)lpParameter);
@@ -1739,6 +1736,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 // Input changed, override everything with current
                 // TODO: Only override changes
                 current_input = controller_input;
+                set_visuals(current_input);
             }
             
             last_controller_input = controller_input;
@@ -1860,59 +1858,31 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             switch (LOWORD(wParam))
             {
             case IDC_EDITX:
-                if (!skipEditX)
                 {
-                    bool changed = false;
-                    char str[256];
-                    int newOverrideX = current_input.X_AXIS;
-                    GetDlgItemText(statusDlg, IDC_EDITX, str, 256);
-                    sscanf(str, "%d", &newOverrideX);
-                    if (newOverrideX > 127 || newOverrideX < -128)
-                    {
-                        if (newOverrideX > 127) newOverrideX = 127;
-                        if (newOverrideX < -128) newOverrideX = -128;
-                        // FIXME: why are we mutating textbox contents inside the edit message
-                        update_joystick_spinner(newOverrideX, -current_input.Y_AXIS);
-                    }
+                    BUTTONS last_input = current_input;
+                    char str[32] = {0};
+                    GetDlgItemText(statusDlg, IDC_EDITX, str, std::size(str));
+                    current_input.X_AXIS = std::atoi(str);
 
-                    if (current_input.X_AXIS != newOverrideX)
+                    // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
+                    if (current_input.X_AXIS != last_input.X_AXIS)
                     {
-                        changed = true;
-                        current_input.Y_AXIS = newOverrideX;
-                    }
-                    if (changed)
-                    {
-                        RefreshAnalogPicture();
+                        set_visuals(current_input);
                     }
                 }
                 break;
 
             case IDC_EDITY:
-                if (!skipEditY)
                 {
-                    bool changed = false;
-                    char str[256];
-                    int newOverrideY = current_input.Y_AXIS;
-                    GetDlgItemText(statusDlg, IDC_EDITY, str, 256);
-                    sscanf(str, "%d", &newOverrideY);
-                    newOverrideY = -newOverrideY;
-                    if (newOverrideY > 127 || newOverrideY < -128)
-                    {
-                        if (newOverrideY > 127) newOverrideY = 127;
-                        if (newOverrideY < -128) newOverrideY = -128;
-                        // FIXME: why are we mutating textbox contents inside the edit message
-                        update_joystick_spinner(current_input.Y_AXIS, newOverrideY);
-                    }
+                    BUTTONS last_input = current_input;
+                    char str[32] = {0};
+                    GetDlgItemText(statusDlg, IDC_EDITY, str, std::size(str));
+                    current_input.Y_AXIS = std::atoi(str);
 
-                    if (current_input.Y_AXIS != newOverrideY)
+                    // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
+                    if (current_input.Y_AXIS != last_input.Y_AXIS)
                     {
-                        changed = true;
-                        current_input.Y_AXIS = newOverrideY;
-                    }
-                    if (changed)
-                    {
-                        //overrideOn = true;  //same here
-                        RefreshAnalogPicture();
+                        set_visuals(current_input);
                     }
                 }
                 break;
@@ -1996,8 +1966,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 break;
             case IDC_CLEARINPUT:
                 current_input = {0};
-                RefreshAnalogPicture();
-                set_ui_buttons(current_input);
+                set_visuals(current_input);
                 break;
             case IDC_MOREBUTTON4:
             case IDC_MOREBUTTON5:
@@ -2143,3 +2112,4 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         }
     return FALSE; //Using DefWindowProc is prohibited but worked anyway
 }
+
