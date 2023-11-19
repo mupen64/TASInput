@@ -1645,8 +1645,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SetWindowText(statusDlg, std::format("TASInput - Controller {}", Control + 1).c_str());
 
                 // set ranges
-                SendDlgItemMessage(statusDlg, IDC_SPINX, UDM_SETRANGE, 0, MAKELONG(127, -128));
-                SendDlgItemMessage(statusDlg, IDC_SPINY, UDM_SETRANGE, 0, MAKELONG(-128, 127));
                 SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
                 SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, 1000);
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
@@ -1850,14 +1848,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 switch (LOWORD(wParam))
                 {
-                case IDC_SPINX:
-                case IDC_SPINY:
-                    {
-                        if (GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000)
-                            deactivateAfterClick = true;
-                    }
-                    break;
-
                 case IDC_SLIDERX:
                     {
                         int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_GETPOS, 0, 0);

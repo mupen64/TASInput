@@ -1424,10 +1424,8 @@
 #define IDC_CHECK_MAC_DU                1078
 #define frm4                            0x0437
 #define IDC_CHECK_MAC_DD                1079
-#define IDC_SPINX                       1079
 #define rct1                            0x0438
 #define IDC_CHECK_MAC_DL                1080
-#define IDC_SPINY                       1080
 #define rct2                            0x0439
 #define IDC_CHECK_MAC_DR                1081
 #define rct3                            0x043a
