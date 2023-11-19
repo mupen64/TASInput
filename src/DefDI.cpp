@@ -98,15 +98,10 @@ struct Status
         statusThread = NULL;
         dwThreadId = 0;
         show_m64_inputs = false;
-        relativeXOn = 0;
-        relativeYOn = 0;
-        radialAngle = -PI / 2;
         skip_edit_x = false;
         skip_edit_y = false;
         xScale = 1.0f;
         yScale = 1.0f;
-        radialDistance = 0.0f;
-        radialRecalc = true;
         statusDlg = NULL;
         prevHWnd = NULL;
         Extend = 0;
@@ -196,14 +191,10 @@ struct Status
     BUTTONS autofire_input_a = {0};
     BUTTONS autofire_input_b = {0};
     //	bool incrementingFrameNow;
-    DWORD relativeXOn, relativeYOn;
-    float radialAngle, radialDistance, radialRecalc;
     bool is_dragging_stick;
     bool deactivateAfterClick, skip_edit_x, skip_edit_y;
     bool positioned, initialized;
-    int xPosition, yPosition;
     float xScale, yScale;
-    //	int frameCounter;
     static int frameCounter;
     int comboStart;
     HWND statusDlg;
@@ -739,13 +730,13 @@ BUTTONS Status::get_controller_input()
                     mult2 = (float)Controller[Control].SensMax * (1.0f / 127.0f);
                 else
                     mult2 = 1.0f;
-                if (!relativeXOn)
+
                     controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS >
                         0
                             ? 0.5f
                             : -0.5f));
-                if (!relativeYOn && relativeXOn != 3)
-                    controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS >
+
+                controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS >
                         0
                             ? 0.5f
                             : -0.5f));
@@ -766,21 +757,19 @@ BUTTONS Status::get_controller_input()
                 }
                 if (!newX && controller_input.X_AXIS) newX = (controller_input.X_AXIS > 0) ? 1 : -1;
                 if (!newY && controller_input.Y_AXIS) newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
-                if (!relativeXOn)
-                    controller_input.X_AXIS = newX;
-                if (!relativeYOn && relativeXOn != 3)
-                    controller_input.Y_AXIS = newY;
+                controller_input.X_AXIS = newX;
+                controller_input.Y_AXIS = newY;
             }
             else
             {
-                if (controller_input.X_AXIS && !relativeXOn)
+                if (controller_input.X_AXIS)
                 {
                     int newX = (int)((float)controller_input.X_AXIS * xScale + (
                         controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
                     if (!newX && controller_input.X_AXIS) newX = (controller_input.X_AXIS > 0) ? 1 : -1;
                     controller_input.X_AXIS = min(127, max(-128,newX));
                 }
-                if (controller_input.Y_AXIS && !relativeYOn && relativeXOn != 3)
+                if (controller_input.Y_AXIS)
                 {
                     int newY = (int)((float)controller_input.Y_AXIS * yScale + (
                         controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
@@ -879,7 +868,6 @@ void Status::update_joystick_position()
         current_input.X_AXIS = 0;
     if (current_input.Y_AXIS < 7 && current_input.Y_AXIS > -7)
         current_input.Y_AXIS = 0;
-    radialRecalc = true;
     set_visuals(current_input);
 }
 
@@ -1451,12 +1439,6 @@ EXPORT void CALL RomOpen(void)
                 ControlDef[Control]->Present = TRUE;
             else
                 ControlDef[Control]->Present = FALSE;
-
-            char str[256];
-            sprintf(str, "Controller%dRelativeX", Control);
-            RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].relativeXOn, &dwDWSize);
-            sprintf(str, "Controller%dRelativeY", Control);
-            RegQueryValueEx(hKey, str, 0, &dwDWType, (LPBYTE)&status[Control].relativeYOn, &dwDWSize);
         }
     }
     RegCloseKey(hKey);
@@ -1939,41 +1921,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     }
                 }
                 break;
-
-            case IDC_X_RELATIVE:
-            case IDC_X_SEMIRELATIVE:
-            case IDC_X_INSTANT:
-            case IDC_X_RADIAL:
-            case IDC_Y_RELATIVE:
-            case IDC_Y_SEMIRELATIVE:
-            case IDC_Y_INSTANT:
-                {
-                    if (IsDlgButtonChecked(statusDlg, IDC_X_INSTANT)) relativeXOn = 0;
-                    if (IsDlgButtonChecked(statusDlg, IDC_Y_INSTANT)) relativeYOn = 0;
-                    if (IsDlgButtonChecked(statusDlg, IDC_X_SEMIRELATIVE)) relativeXOn = 1;
-                    if (IsDlgButtonChecked(statusDlg, IDC_Y_SEMIRELATIVE)) relativeYOn = 1;
-                    if (IsDlgButtonChecked(statusDlg, IDC_X_RELATIVE)) relativeXOn = 2;
-                    if (IsDlgButtonChecked(statusDlg, IDC_Y_RELATIVE)) relativeYOn = 2;
-                    if (IsDlgButtonChecked(statusDlg, IDC_X_RADIAL))
-                    {
-                        relativeXOn = 3;
-                    }
-
-                    radialRecalc = true;
-                    HKEY hKey;
-                    DWORD dwDWType = REG_DWORD;
-                    DWORD dwDWSize = sizeof(DWORD);
-                    if (RegOpenKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
-                    {
-                        char str[256];
-                        sprintf(str, "Controller%dRelativeX", Control);
-                        RegSetValueEx(hKey, str, 0, dwDWType, (LPBYTE)&relativeXOn, dwDWSize);
-                        sprintf(str, "Controller%dRelativeY", Control);
-                        RegSetValueEx(hKey, str, 0, dwDWType, (LPBYTE)&relativeYOn, dwDWSize);
-                    }
-                    RegCloseKey(hKey);
-                }
-                break;
             //on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
             case IDC_CHECK_A:
                 TOGGLE(A_BUTTON);
@@ -2037,8 +1984,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     comboTask = C_IDLE;
                     RECT rect;
                     GetWindowRect(statusDlg, &rect);
-                    xPosition = rect.left;
-                    yPosition = rect.top;
                     positioned = true;
 
                     // Extend the dialog by replacing it with a new one created from a different resource.
