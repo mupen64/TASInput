@@ -142,5 +142,10 @@ VOID CALLBACK StatusDlgProcTimer(UINT idEvent, UINT uMsg, DWORD dwUser, DWORD dw
 		}\
 	} \
 }
+#define TOGGLE(field)\
+{\
+current_input.field = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;\
+autofire_input_a.field = autofire_input_b.field = 0;\
+}\
 
 #endif

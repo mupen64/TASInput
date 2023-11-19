@@ -1944,46 +1944,46 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 break;
             //on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
             case IDC_CHECK_A:
-                current_input.A_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(A_BUTTON);
                 break;
             case IDC_CHECK_B:
-                current_input.B_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(B_BUTTON);
                 break;
             case IDC_CHECK_START:
-                current_input.START_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(START_BUTTON);
                 break;
             case IDC_CHECK_Z:
-                current_input.Z_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(Z_TRIG);
                 break;
             case IDC_CHECK_L:
-                current_input.L_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(L_TRIG);
                 break;
             case IDC_CHECK_R:
-                current_input.R_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(R_TRIG);
                 break;
             case IDC_CHECK_CLEFT:
-                current_input.L_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(L_CBUTTON);
                 break;
             case IDC_CHECK_CUP:
-                current_input.U_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(U_CBUTTON);
                 break;
             case IDC_CHECK_CRIGHT:
-                current_input.R_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(R_CBUTTON);
                 break;
             case IDC_CHECK_CDOWN:
-                current_input.D_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(D_CBUTTON);
                 break;
             case IDC_CHECK_DLEFT:
-                current_input.L_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(L_DPAD);
                 break;
             case IDC_CHECK_DUP:
-                current_input.U_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(U_DPAD);
                 break;
             case IDC_CHECK_DRIGHT:
-                current_input.R_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(R_DPAD);
                 break;
             case IDC_CHECK_DDOWN:
-                current_input.D_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
+                TOGGLE(D_DPAD);
                 break;
             case IDC_CLEARINPUT:
                 current_input = {0};
