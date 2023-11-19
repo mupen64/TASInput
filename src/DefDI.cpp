@@ -69,8 +69,6 @@ HMENU hMenu;
 HANDLE fakeStatusThread = NULL; // fake! used for testing plugin
 UINT systemDPI;
 
-bool lock; //don't focus mupen
-
 std::vector<Combo*> combos;
 #define ACTIVE_COMBO combos[activeCombo]
 
@@ -99,11 +97,7 @@ struct Status
     {
         statusThread = NULL;
         dwThreadId = 0;
-        copyButtons = false;
-        overrideOn = false;
-        overrideAllowed = false;
-        relativeControlNow = false;
-        gettingKeys = false;
+        show_m64_inputs = false;
         relativeXOn = 0;
         relativeYOn = 0;
         radialAngle = -PI / 2;
@@ -111,11 +105,6 @@ struct Status
         skipEditY = false;
         xScale = 1.0f;
         yScale = 1.0f;
-        //		frameCounter = 0;
-        buttonOverride.Value = 0;
-        buttonAutofire.Value = 0;
-        buttonAutofire2.Value = 0;
-        buttonDisplayed.Value = 0;
         radialDistance = 0.0f;
         radialRecalc = true;
         statusDlg = NULL;
@@ -199,9 +188,10 @@ struct Status
 
     HANDLE statusThread;
     DWORD dwThreadId, dwThreadParam;
-    int copyButtons;
-    int overrideX, overrideY;
-    bool overrideOn, overrideAllowed, relativeControlNow, gettingKeys;
+    bool is_getting_keys = false;
+    int show_m64_inputs;
+    BUTTONS last_controller_input = {0};
+    BUTTONS current_input = {0};
     //	bool incrementingFrameNow;
     DWORD relativeXOn, relativeYOn;
     float radialAngle, radialDistance, radialRecalc;
@@ -213,10 +203,6 @@ struct Status
     //	int frameCounter;
     static int frameCounter;
     int comboStart;
-    BUTTONS buttonOverride, buttonAutofire, buttonAutofire2;
-    BUTTONS buttonDisplayed;
-    BUTTONS LastControllerInput;
-    BUTTONS LastPureControllerInput; //without overrides/combo
     HWND statusDlg;
     HWND prevHWnd;
     HWND lBox;
@@ -224,7 +210,6 @@ struct Status
     int Extend;
     int comboTask;
     int activeCombo;
-    bool fakeInput;
 
     void FreeCombos();
 
@@ -239,7 +224,8 @@ struct Status
     LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
     void update_joystick_spinner(int x, int y);
     void update_joystick_position();
-    void UpdateVisuals(BUTTONS ControllerInput);
+    void set_ui_buttons(BUTTONS input);
+    BUTTONS get_controller_input();
     void GetKeys(BUTTONS* Keys);
     void SetKeys(BUTTONS ControllerInput);
 };
@@ -269,7 +255,7 @@ int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
         MOUSE_LBUTTONREDEFINITION = VK_RBUTTON;
         MOUSE_RBUTTONREDEFINITION = VK_LBUTTON;
     }
-
+    
     return TRUE;
 }
 
@@ -365,7 +351,6 @@ LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
             SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
             SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
             DestroyWindow(hwnd);
-            lock = false;
             break;
         }
     case WM_NCDESTROY:
@@ -374,19 +359,8 @@ LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
     return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
 
-//reallocate buffer to closest multiple of chunk size <- assumes it didn't overflow already
-//returns pointer to new buffer (or old extended pointer)
-BUTTONS* ExtendBuffer(BUTTONS* buf, int curSize) //size in bytes
+BUTTONS Status::get_controller_input()
 {
-    //realloc(buf, curSize + BUFFER_CHUNK); //bad because crashes on unaligned buffers, which may come from combo file
-    int newsize = (div(curSize, BUFFER_CHUNK).quot + 1) * BUFFER_CHUNK * 4;
-    return (BUTTONS*)realloc(buf, newsize);
-}
-
-void Status::GetKeys(BUTTONS* Keys)
-{
-    gettingKeys = true;
-
     BUTTONS controller_input = {0};
 
     if (Controller[Control].bActive == TRUE)
@@ -396,13 +370,6 @@ void Status::GetKeys(BUTTONS* Keys)
         HRESULT hr;
         int M1Speed = 0, M2Speed = 0;
         bool analogKey = false;
-
-        if (Keys == NULL)
-        {
-            gettingKeys = false;
-            SetKeys(controller_input);
-            return;
-        }
 
         for (BYTE devicecount = 0; devicecount < Controller[Control].NDevices; devicecount++)
         {
@@ -418,7 +385,6 @@ void Status::GetKeys(BUTTONS* Keys)
                 continue;
             }
 
-
             LONG count;
 
             if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
@@ -429,8 +395,7 @@ void Status::GetKeys(BUTTONS* Keys)
                     hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
                     while (hr == DIERR_INPUTLOST)
                         hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
-                    gettingKeys = false;
-                    return;
+                    return {0};
                 }
 
                 for (count = 0; count < NUMBER_OF_BUTTONS; count++)
@@ -480,13 +445,11 @@ void Status::GetKeys(BUTTONS* Keys)
                     hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
                     while (hr == DIERR_INPUTLOST)
                         hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
-                    gettingKeys = false;
-                    return;
+                    return {0};
                 }
                 if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState( sizeof(DIJOYSTATE), &js ))
                 {
-                    gettingKeys = false;
-                    return;
+                    return {0};
                 }
 
                 for (count = 0; count < NUMBER_OF_BUTTONS; count++)
@@ -814,86 +777,58 @@ void Status::GetKeys(BUTTONS* Keys)
         }
     }
 
+    return controller_input;
+}
+
+void Status::GetKeys(BUTTONS* Keys)
+{
     //here ControllerInput holds true physical controller, which gets modified by tasinput / combo
-    DWORD oldOverride = buttonOverride.Value; //so the keys don't stick...
-    if (!fakeInput && activeCombo != -1 && (comboTask == C_RUNNING || comboTask == C_LOOP))
-    {
-        int frame = frameCounter - comboStart;
-        if (frame > ACTIVE_COMBO->samples.size() - 1)
-        {
-            //if frame is out of range
-            if (comboTask == C_LOOP)
-            {
-                comboStart = frameCounter;
-                frame = 0;
-            }
-            else
-            {
-                if (!overrideOn) //if combo ends and tasinput state wasn't changed, clear
-                {
-                    buttonOverride.Value = 0;
-                    oldOverride = 0;
-                }
-                set_status("Idle");
-                comboTask = C_IDLE;
-                goto continue_controller;
-            }
-        }
-        char buf[64];
-        sprintf(buf, "Playing combo (%d/%d)", frame + 1, ACTIVE_COMBO->samples.size());
-        set_status(buf);
-        //allows to use joystick with combos
-        buttonOverride.Value |= ACTIVE_COMBO->samples[frame].Value;
-        // if joystick used, copy the values too (because simply ORing is not enough)
-        if (ACTIVE_COMBO->uses_joystick())
-        {
-            overrideX = controller_input.X_AXIS = ACTIVE_COMBO->samples[frame].X_AXIS;
-            overrideY = controller_input.Y_AXIS = ACTIVE_COMBO->samples[frame].Y_AXIS;
-        }
-    }
-    else if (comboTask == C_PAUSE) comboStart++;
+    // if (activeCombo != -1 && (comboTask == C_RUNNING || comboTask == C_LOOP))
+    // {
+    //     int frame = frameCounter - comboStart;
+    //     if (frame > ACTIVE_COMBO->samples.size() - 1)
+    //     {
+    //         //if frame is out of range
+    //         if (comboTask == C_LOOP)
+    //         {
+    //             comboStart = frameCounter;
+    //             frame = 0;
+    //         }
+    //         else
+    //         {
+    //             set_status("Idle");
+    //             comboTask = C_IDLE;
+    //             goto continue_controller;
+    //         }
+    //     }
+    //     char buf[64];
+    //     sprintf(buf, "Playing combo (%d/%d)", frame + 1, ACTIVE_COMBO->samples.size());
+    //     set_status(buf);
+    //     //allows to use joystick with combos
+    //     buttonOverride.Value |= ACTIVE_COMBO->samples[frame].Value;
+    //     // if joystick used, copy the values too (because simply ORing is not enough)
+    //     if (ACTIVE_COMBO->uses_joystick())
+    //     {
+    //         overrideX = controller_input.X_AXIS = ACTIVE_COMBO->samples[frame].X_AXIS;
+    //         overrideY = controller_input.Y_AXIS = ACTIVE_COMBO->samples[frame].Y_AXIS;
+    //     }
+    // }
+    // else if (comboTask == C_PAUSE) comboStart++;
 
 continue_controller:
-    //Allow unpressing with real controller low iq:
-    //1. realChanged has 1 where something changed
-    //2. mask out presses, leave releases
-    //3. remove the releases from override
-    DWORD realChanged = controller_input.Value ^ LastPureControllerInput.Value;
-    buttonOverride.Value &= ~(realChanged & LastPureControllerInput.Value);
+    
+    Keys->Value = current_input.Value;
 
-    LastPureControllerInput.Value = controller_input.Value;
-    controller_input.Value |= buttonOverride.Value;
-    //if((frameCounter/2)%2 == 0)
-    if (frameCounter % 2 == 0) //autofire stuff
-        controller_input.Value ^= buttonAutofire.Value;
-    else
-        controller_input.Value ^= buttonAutofire2.Value;
+    printf("Current Input: A: %d | X: %d | Y: %d\n", current_input.A_BUTTON, current_input.X_AXIS, current_input.Y_AXIS);
 
-    bool prevOverrideAllowed = overrideAllowed;
-    overrideAllowed = true;
-    if (comboTask != C_PAUSE)
-    {
-        if (!copyButtons && !fakeInput) SetKeys(controller_input); //don't overwrite after switching to read write
-        else LastControllerInput = controller_input;
-        copyButtons = false;
-    }
-    controller_input.X_AXIS = overrideX;
-    controller_input.Y_AXIS = overrideY;
-    //Pass Button Info to Emulator
-    Keys->Value = controller_input.Value;
-    //buttonOverride.Value = oldOverride;
-    //copy fetched data to combo too
-    if (comboTask == C_RECORD && !fakeInput)
+    if (comboTask == C_RECORD)
     {
         //extend if full and frame is not 0
         char buf[64];
         sprintf(buf, "Recording combo (%d)", frameCounter - comboStart + 1);
         set_status(buf);
-
         ACTIVE_COMBO->samples.push_back(*Keys);
     }
-
-    gettingKeys = false;
 }
 
 void Status::update_joystick_spinner(int x, int y)
@@ -920,62 +855,59 @@ void Status::update_joystick_position()
     ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
     RECT pic_rect;
     GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
-    overrideX = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
-    overrideY = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
+    current_input.X_AXIS = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
+    current_input.Y_AXIS = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
     // clamp joystick inside of control bounds
-    if (overrideX > 127 || overrideY > 127 || overrideX < -128 || overrideY < -129)
+    if (current_input.X_AXIS > 127 || current_input.Y_AXIS > 127 || current_input.X_AXIS < -128 || current_input.Y_AXIS < -129)
     {
-        int div = max(abs(overrideX), abs(overrideY));
-        overrideX = overrideX * (overrideX > 0 ? 127 : 128) / div;
-        overrideY = overrideY * (overrideY > 0 ? 127 : 128) / div;
+        int div = max(abs(current_input.X_AXIS), abs(current_input.Y_AXIS));
+        current_input.X_AXIS = current_input.X_AXIS * (current_input.X_AXIS > 0 ? 127 : 128) / div;
+        current_input.Y_AXIS = current_input.Y_AXIS * (current_input.Y_AXIS > 0 ? 127 : 128) / div;
     }
     // snap clicks to zero
-    if (overrideX < 7 && overrideX > -7)
-        overrideX = 0;
-    if (overrideY < 7 && overrideY > -7)
-        overrideY = 0;
-    update_joystick_spinner(overrideX, -overrideY);
+    if (current_input.X_AXIS < 7 && current_input.X_AXIS > -7)
+        current_input.X_AXIS = 0;
+    if (current_input.Y_AXIS < 7 && current_input.Y_AXIS > -7)
+        current_input.Y_AXIS = 0;
     radialRecalc = true;
-    overrideOn = true; //joystick dragged with mouse
+    update_joystick_spinner(current_input.X_AXIS, -current_input.Y_AXIS);
     RefreshAnalogPicture();
 }
 
-//updates buttons
-void Status::UpdateVisuals(BUTTONS ControllerInput)
+void Status::set_ui_buttons(BUTTONS input)
 {
-#define UPDATECHECK(idc,field) {if(buttonDisplayed.field != ControllerInput.field) CheckDlgButton(statusDlg, idc, ControllerInput.field);}
-    UPDATECHECK(IDC_CHECK_A, A_BUTTON);
-    UPDATECHECK(IDC_CHECK_B, B_BUTTON);
-    UPDATECHECK(IDC_CHECK_START, START_BUTTON);
-    UPDATECHECK(IDC_CHECK_L, L_TRIG);
-    UPDATECHECK(IDC_CHECK_R, R_TRIG);
-    UPDATECHECK(IDC_CHECK_Z, Z_TRIG);
-    UPDATECHECK(IDC_CHECK_CUP, U_CBUTTON);
-    UPDATECHECK(IDC_CHECK_CLEFT, L_CBUTTON);
-    UPDATECHECK(IDC_CHECK_CRIGHT, R_CBUTTON);
-    UPDATECHECK(IDC_CHECK_CDOWN, D_CBUTTON);
-    UPDATECHECK(IDC_CHECK_DUP, U_DPAD);
-    UPDATECHECK(IDC_CHECK_DLEFT, L_DPAD);
-    UPDATECHECK(IDC_CHECK_DRIGHT, R_DPAD);
-    UPDATECHECK(IDC_CHECK_DDOWN, D_DPAD);
-    buttonDisplayed.Value = ControllerInput.Value & 0xFFFF; //fuck off
+    CheckDlgButton(statusDlg, IDC_CHECK_A, input.A_BUTTON);
+    CheckDlgButton(statusDlg, IDC_CHECK_B, input.B_BUTTON);
+    CheckDlgButton(statusDlg, IDC_CHECK_START, input.START_BUTTON);
+    CheckDlgButton(statusDlg, IDC_CHECK_L, input.L_TRIG);
+    CheckDlgButton(statusDlg, IDC_CHECK_R, input.R_TRIG);
+    CheckDlgButton(statusDlg, IDC_CHECK_Z, input.Z_TRIG);
+    CheckDlgButton(statusDlg, IDC_CHECK_CUP, input.U_CBUTTON);
+    CheckDlgButton(statusDlg, IDC_CHECK_CLEFT, input.L_CBUTTON);
+    CheckDlgButton(statusDlg, IDC_CHECK_CRIGHT, input.R_CBUTTON);
+    CheckDlgButton(statusDlg, IDC_CHECK_CDOWN, input.D_CBUTTON);
+    CheckDlgButton(statusDlg, IDC_CHECK_DUP, input.U_DPAD);
+    CheckDlgButton(statusDlg, IDC_CHECK_DLEFT, input.L_DPAD);
+    CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, input.R_DPAD);
+    CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, input.D_DPAD);
 }
 
 void Status::SetKeys(BUTTONS ControllerInput)
 {
-    if (copyButtons) //copy m64 data to current input
+#if 0
+    if (show_m64_inputs) //copy m64 data to current input
     {
         buttonOverride.Value = ControllerInput.Value;
         buttonOverride.X_AXIS = buttonOverride.Y_AXIS = 0;
     }
-    copyButtons = true;
+    show_m64_inputs = true;
     bool changed = false;
     if (statusDlg)
     {
         //true if physical controller state is changed (because logical is handled in GetKeys)
         if (buttonDisplayed.Value != ControllerInput.Value)
         {
-            UpdateVisuals(ControllerInput);
+            set_ui_buttons(ControllerInput);
             buttonDisplayed.Value = ControllerInput.Value;
         }
         if (relativeXOn == 3 && radialRecalc)
@@ -992,7 +924,7 @@ void Status::SetKeys(BUTTONS ControllerInput)
         int addY = (int)((ControllerInput.Y_AXIS * yScale) / 12.0f);
 
         // calculate fractional (over time) change
-        if (relativeControlNow && relativeXOn && ControllerInput.X_AXIS)
+        if (relativeXOn && ControllerInput.X_AXIS)
         {
             static float incrX = 0.0f;
             incrX += ((ControllerInput.X_AXIS * xScale) / 12.0f) - addX;
@@ -1001,7 +933,7 @@ void Status::SetKeys(BUTTONS ControllerInput)
             else if (incrX < -1.0f)
                 addX--, incrX += 1.0f;
         }
-        if (relativeControlNow && (relativeYOn || relativeXOn == 3) && ControllerInput.Y_AXIS)
+        if ((relativeYOn || relativeXOn == 3) && ControllerInput.Y_AXIS)
         {
             static float incrY = 0.0f;
             incrY += ((ControllerInput.Y_AXIS * yScale) / 12.0f) - addY;
@@ -1013,7 +945,7 @@ void Status::SetKeys(BUTTONS ControllerInput)
 
         if (relativeXOn && overrideAllowed)
         {
-            if (relativeControlNow && ControllerInput.X_AXIS)
+            if (ControllerInput.X_AXIS)
             // increment x position by amount relative to attempted new x position
             {
                 if (relativeXOn != 3)
@@ -1074,7 +1006,7 @@ void Status::SetKeys(BUTTONS ControllerInput)
         }
         if ((relativeYOn || (relativeXOn == 3)) && overrideAllowed)
         {
-            if (relativeControlNow && (ControllerInput.Y_AXIS || (!relativeYOn && ControllerInput.Y_AXIS !=
+            if ((ControllerInput.Y_AXIS || (!relativeYOn && ControllerInput.Y_AXIS !=
                 LastControllerInput.Y_AXIS))) // increment y position by amount relative to attempted new y position
             {
                 if (relativeXOn != 3) // not a typo (relativeXOn holds radial mode setting)
@@ -1156,6 +1088,7 @@ void Status::SetKeys(BUTTONS ControllerInput)
         RefreshAnalogPicture();
     }
     overrideOn = false; //reset every frame
+#endif
 }
 
 
@@ -1554,7 +1487,6 @@ void Status::StartEdit(int id)
     //edit.left += pt.x;
     //edit.bottom += pt.y;
     //edit.right += pt.x;
-    lock = true;
     HWND editBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, edit.left, edit.top,
                                   edit.right - edit.left, edit.bottom - edit.top + 4, lBox, 0, g_hInstance, 0);
     ListBox_SetCurSel(lBox, -1); //just to be safe, it sometimes can be seen in background
@@ -1654,9 +1586,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
                "Always on top");
     AppendMenu(hMenu, menu_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_menu_config, float_from_parent),
                "Float from parent");
-    lock = true;
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
-    lock = false;
 
     if (offset != 0)
     {
@@ -1772,52 +1702,47 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 // update autofire state
                 if (rmb_just_down)
                 {
-                    overrideOn = true;
-
-                    UPDATEAUTO(IDC_CHECK_A, A_BUTTON);
-                    UPDATEAUTO(IDC_CHECK_B, B_BUTTON);
-                    UPDATEAUTO(IDC_CHECK_START, START_BUTTON);
-                    UPDATEAUTO(IDC_CHECK_L, L_TRIG);
-                    UPDATEAUTO(IDC_CHECK_R, R_TRIG);
-                    UPDATEAUTO(IDC_CHECK_Z, Z_TRIG);
-                    UPDATEAUTO(IDC_CHECK_CUP, U_CBUTTON);
-                    UPDATEAUTO(IDC_CHECK_CLEFT, L_CBUTTON);
-                    UPDATEAUTO(IDC_CHECK_CRIGHT, R_CBUTTON);
-                    UPDATEAUTO(IDC_CHECK_CDOWN, D_CBUTTON);
-                    UPDATEAUTO(IDC_CHECK_DUP, U_DPAD);
-                    UPDATEAUTO(IDC_CHECK_DLEFT, L_DPAD);
-                    UPDATEAUTO(IDC_CHECK_DRIGHT, R_DPAD);
-                    UPDATEAUTO(IDC_CHECK_DDOWN, D_DPAD);
+                    // TODO: reimplement autofire
+                    // overrideOn = true;
+                    //
+                    // UPDATEAUTO(IDC_CHECK_A, A_BUTTON);
+                    // UPDATEAUTO(IDC_CHECK_B, B_BUTTON);
+                    // UPDATEAUTO(IDC_CHECK_START, START_BUTTON);
+                    // UPDATEAUTO(IDC_CHECK_L, L_TRIG);
+                    // UPDATEAUTO(IDC_CHECK_R, R_TRIG);
+                    // UPDATEAUTO(IDC_CHECK_Z, Z_TRIG);
+                    // UPDATEAUTO(IDC_CHECK_CUP, U_CBUTTON);
+                    // UPDATEAUTO(IDC_CHECK_CLEFT, L_CBUTTON);
+                    // UPDATEAUTO(IDC_CHECK_CRIGHT, R_CBUTTON);
+                    // UPDATEAUTO(IDC_CHECK_CDOWN, D_CBUTTON);
+                    // UPDATEAUTO(IDC_CHECK_DUP, U_DPAD);
+                    // UPDATEAUTO(IDC_CHECK_DLEFT, L_DPAD);
+                    // UPDATEAUTO(IDC_CHECK_DRIGHT, R_DPAD);
+                    // UPDATEAUTO(IDC_CHECK_DDOWN, D_DPAD);
                 }
                 last_lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
                 last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
             }
             break;
         case WM_TIMER:
-            update_joystick_position();
-            skipEditX = false;
-            skipEditY = false;
 
-        // TODO: investigate what all this crap does, probably related to cursed radial mode
-            if (lock)
+            if (is_getting_keys)
             {
                 break;
             }
+            
+            // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events 
+            BUTTONS controller_input = get_controller_input();
 
-            if (gettingKeys)
-                Sleep(0);
-
-            if (!gettingKeys && !(comboTask & (C_RUNNING | C_LOOP)) && !copyButtons)
+            if (controller_input.Value != last_controller_input.Value)
             {
-                BUTTONS keys;
-                relativeControlNow = (msg == WM_TIMER);
-                fakeInput = true;
-                GetKeys(&keys); //used in radial mode I think
-                fakeInput = false;
-                relativeControlNow = false;
+                // Input changed, override everything with current
+                // TODO: Only override changes
+                current_input = controller_input;
             }
+            
+            last_controller_input = controller_input;
             break;
-
         case WM_PAINT:
             {
                 // get dimensions of target control in client(!!!) coordinates
@@ -1849,8 +1774,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
                 int mid_x = joystick_rect_size.x / 2;
                 int mid_y = joystick_rect_size.y / 2;
-                int stick_x = (overrideX + 128) * joystick_rect_size.x / 256;
-                int stick_y = (-overrideY + 128) * joystick_rect_size.y / 256;
+                int stick_x = (current_input.X_AXIS + 128) * joystick_rect_size.x / 256;
+                int stick_y = (-current_input.Y_AXIS + 128) * joystick_rect_size.y / 256;
 
                 // clear background with color which makes background (hopefully)
                 // cool idea: maybe use user accent color for joystick tip?
@@ -1897,7 +1822,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     {
                         if (GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000)
                             deactivateAfterClick = true;
-                        overrideOn = true;
                     }
                     break;
 
@@ -1940,7 +1864,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     bool changed = false;
                     char str[256];
-                    int newOverrideX = overrideX;
+                    int newOverrideX = current_input.X_AXIS;
                     GetDlgItemText(statusDlg, IDC_EDITX, str, 256);
                     sscanf(str, "%d", &newOverrideX);
                     if (newOverrideX > 127 || newOverrideX < -128)
@@ -1948,17 +1872,16 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         if (newOverrideX > 127) newOverrideX = 127;
                         if (newOverrideX < -128) newOverrideX = -128;
                         // FIXME: why are we mutating textbox contents inside the edit message
-                        update_joystick_spinner(newOverrideX, -overrideY);
+                        update_joystick_spinner(newOverrideX, -current_input.Y_AXIS);
                     }
 
-                    if (overrideX != newOverrideX)
+                    if (current_input.X_AXIS != newOverrideX)
                     {
                         changed = true;
-                        overrideX = newOverrideX;
+                        current_input.Y_AXIS = newOverrideX;
                     }
                     if (changed)
                     {
-                        //overrideOn = true; //no, because it's also called when editbox is being edited by m64 play, which doesn't mean joystick was draggeds
                         RefreshAnalogPicture();
                     }
                 }
@@ -1969,7 +1892,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     bool changed = false;
                     char str[256];
-                    int newOverrideY = overrideY;
+                    int newOverrideY = current_input.Y_AXIS;
                     GetDlgItemText(statusDlg, IDC_EDITY, str, 256);
                     sscanf(str, "%d", &newOverrideY);
                     newOverrideY = -newOverrideY;
@@ -1978,13 +1901,13 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         if (newOverrideY > 127) newOverrideY = 127;
                         if (newOverrideY < -128) newOverrideY = -128;
                         // FIXME: why are we mutating textbox contents inside the edit message
-                        update_joystick_spinner(overrideX, newOverrideY);
+                        update_joystick_spinner(current_input.Y_AXIS, newOverrideY);
                     }
 
-                    if (overrideY != newOverrideY)
+                    if (current_input.Y_AXIS != newOverrideY)
                     {
                         changed = true;
-                        overrideY = newOverrideY;
+                        current_input.Y_AXIS = newOverrideY;
                     }
                     if (changed)
                     {
@@ -2029,64 +1952,52 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 break;
             //on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
-            case IDC_CHECK_A: buttonOverride.A_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.A_BUTTON = buttonAutofire2.A_BUTTON = 0;
+            case IDC_CHECK_A:
+                current_input.A_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_B: buttonOverride.B_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.B_BUTTON = buttonAutofire2.B_BUTTON = 0;
+            case IDC_CHECK_B:
+                current_input.B_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_START: buttonOverride.START_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.START_BUTTON = buttonAutofire2.START_BUTTON = 0;
+            case IDC_CHECK_START:
+                current_input.START_BUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_Z: buttonOverride.Z_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.Z_TRIG = buttonAutofire2.Z_TRIG = 0;
+            case IDC_CHECK_Z:
+                current_input.Z_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_L: buttonOverride.L_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.L_TRIG = buttonAutofire2.L_TRIG = 0;
+            case IDC_CHECK_L:
+                current_input.L_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_R: buttonOverride.R_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.R_TRIG = buttonAutofire2.R_TRIG = 0;
+            case IDC_CHECK_R:
+                current_input.R_TRIG = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_CLEFT: buttonOverride.L_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.L_CBUTTON = buttonAutofire2.L_CBUTTON = 0;
+            case IDC_CHECK_CLEFT:
+                current_input.L_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_CUP: buttonOverride.U_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.U_CBUTTON = buttonAutofire2.U_CBUTTON = 0;
+            case IDC_CHECK_CUP:
+                current_input.U_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_CRIGHT: buttonOverride.R_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.R_CBUTTON = buttonAutofire2.R_CBUTTON = 0;
+            case IDC_CHECK_CRIGHT:
+                current_input.R_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_CDOWN: buttonOverride.D_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.D_CBUTTON = buttonAutofire2.D_CBUTTON = 0;
+            case IDC_CHECK_CDOWN:
+                current_input.D_CBUTTON = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_DLEFT: buttonOverride.L_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.L_DPAD = buttonAutofire2.L_DPAD = 0;
+            case IDC_CHECK_DLEFT:
+                current_input.L_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_DUP: buttonOverride.U_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.U_DPAD = buttonAutofire2.U_DPAD = 0;
+            case IDC_CHECK_DUP:
+                current_input.U_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_DRIGHT: buttonOverride.R_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.R_DPAD = buttonAutofire2.R_DPAD = 0;
+            case IDC_CHECK_DRIGHT:
+                current_input.R_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
-            case IDC_CHECK_DDOWN: buttonOverride.D_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
-                buttonAutofire.D_DPAD = buttonAutofire2.D_DPAD = 0;
+            case IDC_CHECK_DDOWN:
+                current_input.D_DPAD = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0;
                 break;
             case IDC_CLEARINPUT:
-                if (GetKeyState(VK_MENU) & 0x8000)
-                {
-                    overrideAllowed = true;
-                    overrideOn = true;
-                    overrideX = 0;
-                    overrideY = 0;
-                    SetDlgItemText(statusDlg, IDC_EDITY, "0");
-                    SetDlgItemText(statusDlg, IDC_EDITX, "0");
-                    RefreshAnalogPicture();
-                }
-                else
-                {
-                    buttonOverride.Value = buttonAutofire.Value = buttonAutofire2.Value = 0;
-                    GetKeys(0);
-                }
+                current_input = {0};
+                RefreshAnalogPicture();
+                set_ui_buttons(current_input);
                 break;
             case IDC_MOREBUTTON4:
             case IDC_MOREBUTTON5:
@@ -2210,12 +2121,10 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     data.nMaxFile = MAX_PATH;
                     data.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
                     data.lpstrFile = file;
-                    lock = true;
                     if (GetOpenFileName(&data))
                     {
                         load_combos(file);
                     }
-                    lock = false;
                     set_status("Imported combo data");
                     break;
                 }
