@@ -84,7 +84,7 @@ RECT get_window_rect_client_space(HWND parent, HWND child)
 
     RECT client = {0};
     GetWindowRect(child, &client);
-    
+
     return {
         offset_client.left,
         offset_client.top,
@@ -175,7 +175,7 @@ struct Status
     {
         auto gwl_style = GetWindowLongA(statusDlg, GWL_STYLE);
         auto gwl_ex_style = GetWindowLongA(statusDlg, GWL_EXSTYLE);
-        
+
         if (menu_config.always_on_top)
         {
             SetWindowPos(statusDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
@@ -187,7 +187,7 @@ struct Status
 
         if (menu_config.float_from_parent)
         {
-            SetWindowLongA(statusDlg, GWL_STYLE,gwl_style & ~DS_SYSMODAL);
+            SetWindowLongA(statusDlg, GWL_STYLE, gwl_style & ~DS_SYSMODAL);
             SetWindowLongA(statusDlg, GWL_EXSTYLE, gwl_ex_style & ~WS_EX_TOOLWINDOW);
         }
         else
@@ -359,14 +359,15 @@ LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
             }
             break;
         }
-    case WM_KILLFOCUS: {
-        char txt[MAX_PATH] = { 0 };
-        SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
-        SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
-        DestroyWindow(hwnd);
-        lock = false;
-        break;
-    }
+    case WM_KILLFOCUS:
+        {
+            char txt[MAX_PATH] = {0};
+            SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
+            SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
+            DestroyWindow(hwnd);
+            lock = false;
+            break;
+        }
     case WM_NCDESTROY:
         RemoveWindowSubclass(hwnd, EditBoxProc, sId);
     }
@@ -386,7 +387,7 @@ void Status::GetKeys(BUTTONS* Keys)
 {
     gettingKeys = true;
 
-    BUTTONS controller_input = { 0 };
+    BUTTONS controller_input = {0};
 
     if (Controller[Control].bActive == TRUE)
     {
@@ -412,320 +413,319 @@ void Status::GetKeys(BUTTONS* Keys)
                 continue;
             }
 
-            if (DInputDev[DeviceNum].lpDIDevice == NULL) 
+            if (DInputDev[DeviceNum].lpDIDevice == NULL)
             {
                 continue;
             }
 
-            
-                LONG count;
 
-                if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
+            LONG count;
+
+            if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
+            {
+                ZeroMemory(&buffer, sizeof(buffer));
+                if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(buffer),&buffer))
                 {
-                    ZeroMemory(&buffer, sizeof(buffer));
-                    if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(buffer),&buffer))
-                    {
+                    hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                    while (hr == DIERR_INPUTLOST)
                         hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
-                        while (hr == DIERR_INPUTLOST)
-                            hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
-                        gettingKeys = false;
-                        return;
-                    }
+                    gettingKeys = false;
+                    return;
+                }
 
-                    for (count = 0; count < NUMBER_OF_BUTTONS; count++)
+                for (count = 0; count < NUMBER_OF_BUTTONS; count++)
+                {
+                    if (Controller[Control].Input[count].Device == DeviceNum)
                     {
-                        if (Controller[Control].Input[count].Device == DeviceNum)
+                        switch (Controller[Control].Input[count].type)
                         {
-                            switch (Controller[Control].Input[count].type)
+                        //Record Keyboard Button Info from Device State Buffer
+                        case INPUT_TYPE_KEY_BUT:
+                            if (BUTTONDOWN(buffer, Controller[Control].Input[count].vkey))
                             {
-                            //Record Keyboard Button Info from Device State Buffer
-                            case INPUT_TYPE_KEY_BUT:
-                                if (BUTTONDOWN(buffer, Controller[Control].Input[count].vkey))
+                                switch (count)
                                 {
-                                    switch (count)
-                                    {
-                                    case 18:
-                                        M1Speed = Controller[Control].Input[count].button;
-                                        break;
+                                case 18:
+                                    M1Speed = Controller[Control].Input[count].button;
+                                    break;
 
-                                    case 19:
-                                        M2Speed = Controller[Control].Input[count].button;
-                                        break;
+                                case 19:
+                                    M2Speed = Controller[Control].Input[count].button;
+                                    break;
 
-                                    case 0:
-                                    case 1:
-                                    case 2:
-                                    case 3:
-                                        analogKey = true;
-                                    /* fall through */
-                                    default:
-                                        controller_input.Value |= Controller[Control].Input[count].button;
-                                        break;
-                                    }
+                                case 0:
+                                case 1:
+                                case 2:
+                                case 3:
+                                    analogKey = true;
+                                /* fall through */
+                                default:
+                                    controller_input.Value |= Controller[Control].Input[count].button;
+                                    break;
                                 }
-                                break;
-
-                            default:
-                                break;
                             }
+                            break;
+
+                        default:
+                            break;
                         }
                     }
                 }
+            }
 
-                else if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
+            else if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
+            {
+                if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->Poll())
                 {
-                    if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->Poll())
-                    {
+                    hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                    while (hr == DIERR_INPUTLOST)
                         hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
-                        while (hr == DIERR_INPUTLOST)
-                            hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
-                        gettingKeys = false;
-                        return;
-                    }
-                    if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState( sizeof(DIJOYSTATE), &js ))
-                    {
-                        gettingKeys = false;
-                        return;
-                    }
+                    gettingKeys = false;
+                    return;
+                }
+                if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState( sizeof(DIJOYSTATE), &js ))
+                {
+                    gettingKeys = false;
+                    return;
+                }
 
-                    for (count = 0; count < NUMBER_OF_BUTTONS; count++)
+                for (count = 0; count < NUMBER_OF_BUTTONS; count++)
+                {
+                    if (Controller[Control].Input[count].Device == DeviceNum)
                     {
-                        if (Controller[Control].Input[count].Device == DeviceNum)
+                        BYTE count2;
+                        switch (Controller[Control].Input[count].type)
                         {
-                            BYTE count2;
-                            switch (Controller[Control].Input[count].type)
+                        //Get Joystick button Info from Device State js stucture
+                        case INPUT_TYPE_JOY_BUT:
+                            if (BUTTONDOWN(js.rgbButtons, Controller[Control].Input[count].vkey))
                             {
-                            //Get Joystick button Info from Device State js stucture
-                            case INPUT_TYPE_JOY_BUT:
-                                if (BUTTONDOWN(js.rgbButtons, Controller[Control].Input[count].vkey))
+                                switch (count)
                                 {
-                                    switch (count)
-                                    {
-                                    case 18:
-                                        M1Speed = Controller[Control].Input[count].button;
-                                        break;
+                                case 18:
+                                    M1Speed = Controller[Control].Input[count].button;
+                                    break;
 
-                                    case 19:
-                                        M2Speed = Controller[Control].Input[count].button;
-                                        break;
+                                case 19:
+                                    M2Speed = Controller[Control].Input[count].button;
+                                    break;
 
-                                    case 0:
-                                    case 1:
-                                    case 2:
-                                    case 3:
-                                        analogKey = true;
-                                    /* fall through */
-                                    default:
-                                        controller_input.Value |= Controller[Control].Input[count].button;
-                                        break;
-                                    }
-                                }
-                                break;
-
-                            case INPUT_TYPE_JOY_AXIS:
-                                switch (Controller[Control].Input[count].vkey)
-                                {
-                                case DIJOFS_YN:
-                                    if (js.lY < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lY, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_YP:
-                                    if (js.lY > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lY, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_XN:
-                                    if (js.lX < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lX, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_XP:
-                                    if (js.lX > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lX, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_ZN:
-                                    if (js.lZ < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lZ, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_ZP:
-                                    if (js.lZ > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lZ, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_RYN:
-                                    if (js.lRy < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lRy, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_RYP:
-                                    if (js.lRy > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lRy, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_RXN:
-                                    if (js.lRx < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lRx, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_RXP:
-                                    if (js.lRx > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lRx, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_RZN:
-                                    if (js.lRz < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.lRz, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_RZP:
-                                    if (js.lRz > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.lRz, Control, count, &controller_input, M1Speed, M2Speed);
-                                    break;
-                                case DIJOFS_SLIDER0N:
-                                    if (js.rglSlider[0] < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.rglSlider[0], Control, count, &controller_input, M1Speed,
-                                                      M2Speed);
-                                    break;
-                                case DIJOFS_SLIDER0P:
-                                    if (js.rglSlider[0] > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.rglSlider[0], Control, count, &controller_input, M1Speed,
-                                                      M2Speed);
-                                    break;
-                                case DIJOFS_SLIDER1N:
-                                    if (js.rglSlider[1] < (LONG)-Controller[Control].SensMin)
-                                        GetNegAxisVal(js.rglSlider[1], Control, count, &controller_input, M1Speed,
-                                                      M2Speed);
-                                    break;
-                                case DIJOFS_SLIDER1P:
-                                    if (js.rglSlider[1] > (LONG)Controller[Control].SensMin)
-                                        GetPosAxisVal(js.rglSlider[1], Control, count, &controller_input, M1Speed,
-                                                      M2Speed);
+                                case 0:
+                                case 1:
+                                case 2:
+                                case 3:
+                                    analogKey = true;
+                                /* fall through */
+                                default:
+                                    controller_input.Value |= Controller[Control].Input[count].button;
                                     break;
                                 }
-                                break;
+                            }
+                            break;
 
-                            case INPUT_TYPE_JOY_POV:
-                                for (count2 = 0; count2 < NUMBER_OF_CONTROLS; count2++)
+                        case INPUT_TYPE_JOY_AXIS:
+                            switch (Controller[Control].Input[count].vkey)
+                            {
+                            case DIJOFS_YN:
+                                if (js.lY < (LONG)-Controller[Control].SensMin)
+                                    GetNegAxisVal(js.lY, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_YP:
+                                if (js.lY > (LONG)Controller[Control].SensMin)
+                                    GetPosAxisVal(js.lY, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_XN:
+                                if (js.lX < (LONG)-Controller[Control].SensMin)
+                                    GetNegAxisVal(js.lX, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_XP:
+                                if (js.lX > (LONG)Controller[Control].SensMin)
+                                    GetPosAxisVal(js.lX, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_ZN:
+                                if (js.lZ < (LONG)-Controller[Control].SensMin)
+                                    GetNegAxisVal(js.lZ, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_ZP:
+                                if (js.lZ > (LONG)Controller[Control].SensMin)
+                                    GetPosAxisVal(js.lZ, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_RYN:
+                                if (js.lRy < (LONG)-Controller[Control].SensMin)
+                                    GetNegAxisVal(js.lRy, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_RYP:
+                                if (js.lRy > (LONG)Controller[Control].SensMin)
+                                    GetPosAxisVal(js.lRy, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_RXN:
+                                if (js.lRx < (LONG)-Controller[Control].SensMin)
+                                    GetNegAxisVal(js.lRx, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_RXP:
+                                if (js.lRx > (LONG)Controller[Control].SensMin)
+                                    GetPosAxisVal(js.lRx, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_RZN:
+                                if (js.lRz < (LONG)-Controller[Control].SensMin)
+                                    GetNegAxisVal(js.lRz, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_RZP:
+                                if (js.lRz > (LONG)Controller[Control].SensMin)
+                                    GetPosAxisVal(js.lRz, Control, count, &controller_input, M1Speed, M2Speed);
+                                break;
+                            case DIJOFS_SLIDER0N:
+                                if (js.rglSlider[0] < (LONG)-Controller[Control].SensMin)
+                                    GetNegAxisVal(js.rglSlider[0], Control, count, &controller_input, M1Speed,
+                                                  M2Speed);
+                                break;
+                            case DIJOFS_SLIDER0P:
+                                if (js.rglSlider[0] > (LONG)Controller[Control].SensMin)
+                                    GetPosAxisVal(js.rglSlider[0], Control, count, &controller_input, M1Speed,
+                                                  M2Speed);
+                                break;
+                            case DIJOFS_SLIDER1N:
+                                if (js.rglSlider[1] < (LONG)-Controller[Control].SensMin)
+                                    GetNegAxisVal(js.rglSlider[1], Control, count, &controller_input, M1Speed,
+                                                  M2Speed);
+                                break;
+                            case DIJOFS_SLIDER1P:
+                                if (js.rglSlider[1] > (LONG)Controller[Control].SensMin)
+                                    GetPosAxisVal(js.rglSlider[1], Control, count, &controller_input, M1Speed,
+                                                  M2Speed);
+                                break;
+                            }
+                            break;
+
+                        case INPUT_TYPE_JOY_POV:
+                            for (count2 = 0; count2 < NUMBER_OF_CONTROLS; count2++)
+                            {
+                                if ((js.rgdwPOV[count2] != -1) && (LOWORD(js.rgdwPOV[count2]) != 0xFFFF))
                                 {
-                                    if ((js.rgdwPOV[count2] != -1) && (LOWORD(js.rgdwPOV[count2]) != 0xFFFF))
+                                    switch (Controller[Control].Input[count].vkey)
                                     {
-                                        switch (Controller[Control].Input[count].vkey)
+                                    case DIJOFS_POV0N:
+                                    case DIJOFS_POV1N:
+                                    case DIJOFS_POV2N:
+                                    case DIJOFS_POV3N:
+                                        if ((js.rgdwPOV[count2] >= 31500) || (js.rgdwPOV[count2] <= 4500))
                                         {
-                                        case DIJOFS_POV0N:
-                                        case DIJOFS_POV1N:
-                                        case DIJOFS_POV2N:
-                                        case DIJOFS_POV3N:
-                                            if ((js.rgdwPOV[count2] >= 31500) || (js.rgdwPOV[count2] <= 4500))
+                                            switch (count)
                                             {
-                                                switch (count)
-                                                {
-                                                case 18:
-                                                    M1Speed = Controller[Control].Input[count].button;
-                                                    break;
+                                            case 18:
+                                                M1Speed = Controller[Control].Input[count].button;
+                                                break;
 
-                                                case 19:
-                                                    M2Speed = Controller[Control].Input[count].button;
-                                                    break;
+                                            case 19:
+                                                M2Speed = Controller[Control].Input[count].button;
+                                                break;
 
-                                                case 0:
-                                                case 1:
-                                                case 2:
-                                                case 3:
-                                                    analogKey = true;
-                                                /* fall through */
-                                                default:
-                                                    controller_input.Value |= Controller[Control].Input[count].button;
-                                                    break;
-                                                }
+                                            case 0:
+                                            case 1:
+                                            case 2:
+                                            case 3:
+                                                analogKey = true;
+                                            /* fall through */
+                                            default:
+                                                controller_input.Value |= Controller[Control].Input[count].button;
+                                                break;
                                             }
-                                            break;
-                                        case DIJOFS_POV0E:
-                                        case DIJOFS_POV1E:
-                                        case DIJOFS_POV2E:
-                                        case DIJOFS_POV3E:
-                                            if ((js.rgdwPOV[count2] >= 4500) && (js.rgdwPOV[count2] <= 13500))
-                                            {
-                                                switch (count2)
-                                                {
-                                                case 18:
-                                                    M1Speed = Controller[Control].Input[count].button;
-                                                    break;
-
-                                                case 19:
-                                                    M2Speed = Controller[Control].Input[count].button;
-                                                    break;
-
-                                                case 0:
-                                                case 1:
-                                                case 2:
-                                                case 3:
-                                                    analogKey = true;
-                                                /* fall through */
-                                                default:
-                                                    controller_input.Value |= Controller[Control].Input[count].button;
-                                                    break;
-                                                }
-                                            }
-                                            break;
-                                        case DIJOFS_POV0S:
-                                        case DIJOFS_POV1S:
-                                        case DIJOFS_POV2S:
-                                        case DIJOFS_POV3S:
-                                            if ((js.rgdwPOV[count2] >= 13500) && (js.rgdwPOV[count2] <= 22500))
-                                            {
-                                                switch (count2)
-                                                {
-                                                case 18:
-                                                    M1Speed = Controller[Control].Input[count].button;
-                                                    break;
-
-                                                case 19:
-                                                    M2Speed = Controller[Control].Input[count].button;
-                                                    break;
-
-                                                case 0:
-                                                case 1:
-                                                case 2:
-                                                case 3:
-                                                    analogKey = true;
-                                                /* fall through */
-                                                default:
-                                                    controller_input.Value |= Controller[Control].Input[count].button;
-                                                    break;
-                                                }
-                                            }
-                                            break;
-                                        case DIJOFS_POV0W:
-                                        case DIJOFS_POV1W:
-                                        case DIJOFS_POV2W:
-                                        case DIJOFS_POV3W:
-                                            if ((js.rgdwPOV[count2] >= 22500) && (js.rgdwPOV[count2] <= 31500))
-                                            {
-                                                switch (count2)
-                                                {
-                                                case 18:
-                                                    M1Speed = Controller[Control].Input[count].button;
-                                                    break;
-
-                                                case 19:
-                                                    M2Speed = Controller[Control].Input[count].button;
-                                                    break;
-
-                                                case 0:
-                                                case 1:
-                                                case 2:
-                                                case 3:
-                                                    analogKey = true;
-                                                /* fall through */
-                                                default:
-                                                    controller_input.Value |= Controller[Control].Input[count].button;
-                                                    break;
-                                                }
-                                            }
-                                            break;
                                         }
+                                        break;
+                                    case DIJOFS_POV0E:
+                                    case DIJOFS_POV1E:
+                                    case DIJOFS_POV2E:
+                                    case DIJOFS_POV3E:
+                                        if ((js.rgdwPOV[count2] >= 4500) && (js.rgdwPOV[count2] <= 13500))
+                                        {
+                                            switch (count2)
+                                            {
+                                            case 18:
+                                                M1Speed = Controller[Control].Input[count].button;
+                                                break;
+
+                                            case 19:
+                                                M2Speed = Controller[Control].Input[count].button;
+                                                break;
+
+                                            case 0:
+                                            case 1:
+                                            case 2:
+                                            case 3:
+                                                analogKey = true;
+                                            /* fall through */
+                                            default:
+                                                controller_input.Value |= Controller[Control].Input[count].button;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case DIJOFS_POV0S:
+                                    case DIJOFS_POV1S:
+                                    case DIJOFS_POV2S:
+                                    case DIJOFS_POV3S:
+                                        if ((js.rgdwPOV[count2] >= 13500) && (js.rgdwPOV[count2] <= 22500))
+                                        {
+                                            switch (count2)
+                                            {
+                                            case 18:
+                                                M1Speed = Controller[Control].Input[count].button;
+                                                break;
+
+                                            case 19:
+                                                M2Speed = Controller[Control].Input[count].button;
+                                                break;
+
+                                            case 0:
+                                            case 1:
+                                            case 2:
+                                            case 3:
+                                                analogKey = true;
+                                            /* fall through */
+                                            default:
+                                                controller_input.Value |= Controller[Control].Input[count].button;
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case DIJOFS_POV0W:
+                                    case DIJOFS_POV1W:
+                                    case DIJOFS_POV2W:
+                                    case DIJOFS_POV3W:
+                                        if ((js.rgdwPOV[count2] >= 22500) && (js.rgdwPOV[count2] <= 31500))
+                                        {
+                                            switch (count2)
+                                            {
+                                            case 18:
+                                                M1Speed = Controller[Control].Input[count].button;
+                                                break;
+
+                                            case 19:
+                                                M2Speed = Controller[Control].Input[count].button;
+                                                break;
+
+                                            case 0:
+                                            case 1:
+                                            case 2:
+                                            case 3:
+                                                analogKey = true;
+                                            /* fall through */
+                                            default:
+                                                controller_input.Value |= Controller[Control].Input[count].button;
+                                                break;
+                                            }
+                                        }
+                                        break;
                                     }
                                 }
-
-                            default:
-                                break;
                             }
+
+                        default:
+                            break;
                         }
                     }
                 }
-            
+            }
         }
 
         if (M2Speed)
@@ -763,16 +763,20 @@ void Status::GetKeys(BUTTONS* Keys)
                 else
                     mult2 = 1.0f;
                 if (!relativeXOn)
-                    controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS > 0
-                        ? 0.5f
-                        : -0.5f));
+                    controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS >
+                        0
+                            ? 0.5f
+                            : -0.5f));
                 if (!relativeYOn && relativeXOn != 3)
-                    controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS > 0
-                        ? 0.5f
-                        : -0.5f));
+                    controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS >
+                        0
+                            ? 0.5f
+                            : -0.5f));
 
-                int newX = (int)((float)controller_input.X_AXIS * xScale + (controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
-                int newY = (int)((float)controller_input.Y_AXIS * yScale + (controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
+                int newX = (int)((float)controller_input.X_AXIS * xScale + (
+                    controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
+                int newY = (int)((float)controller_input.Y_AXIS * yScale + (
+                    controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
                 if (abs(newX) >= abs(newY) && (newX > 127 || newX < -128))
                 {
                     newY = newY * (newY > 0 ? 127 : 128) / abs(newX);
@@ -814,38 +818,38 @@ void Status::GetKeys(BUTTONS* Keys)
     DWORD oldOverride = buttonOverride.Value; //so the keys don't stick...
     if (!fakeInput && activeCombo != -1 && (comboTask == C_RUNNING || comboTask == C_LOOP))
     {
-            int frame = frameCounter - comboStart;
-            if (frame > ACTIVE_COMBO->samples.size() - 1)
+        int frame = frameCounter - comboStart;
+        if (frame > ACTIVE_COMBO->samples.size() - 1)
+        {
+            //if frame is out of range
+            if (comboTask == C_LOOP)
             {
-                //if frame is out of range
-                if (comboTask == C_LOOP)
-                {
-                    comboStart = frameCounter;
-                    frame = 0;
-                }
-                else
-                {
-                    if (!overrideOn) //if combo ends and tasinput state wasn't changed, clear
-                    {
-                        buttonOverride.Value = 0;
-                        oldOverride = 0;
-                    }
-                    set_status("Idle");
-                    comboTask = C_IDLE;
-                    goto continue_controller;
-                }
+                comboStart = frameCounter;
+                frame = 0;
             }
-            char buf[64];
-            sprintf(buf, "Playing combo (%d/%d)", frame + 1, ACTIVE_COMBO->samples.size());
-            set_status(buf);
-            //allows to use joystick with combos
-            buttonOverride.Value |= ACTIVE_COMBO->samples[frame].Value;
-            // if joystick used, copy the values too (because simply ORing is not enough)
-            if (ACTIVE_COMBO->uses_joystick()) 
+            else
             {
-                overrideX = controller_input.X_AXIS = ACTIVE_COMBO->samples[frame].X_AXIS;
-                overrideY = controller_input.Y_AXIS = ACTIVE_COMBO->samples[frame].Y_AXIS;
+                if (!overrideOn) //if combo ends and tasinput state wasn't changed, clear
+                {
+                    buttonOverride.Value = 0;
+                    oldOverride = 0;
+                }
+                set_status("Idle");
+                comboTask = C_IDLE;
+                goto continue_controller;
             }
+        }
+        char buf[64];
+        sprintf(buf, "Playing combo (%d/%d)", frame + 1, ACTIVE_COMBO->samples.size());
+        set_status(buf);
+        //allows to use joystick with combos
+        buttonOverride.Value |= ACTIVE_COMBO->samples[frame].Value;
+        // if joystick used, copy the values too (because simply ORing is not enough)
+        if (ACTIVE_COMBO->uses_joystick())
+        {
+            overrideX = controller_input.X_AXIS = ACTIVE_COMBO->samples[frame].X_AXIS;
+            overrideY = controller_input.Y_AXIS = ACTIVE_COMBO->samples[frame].Y_AXIS;
+        }
     }
     else if (comboTask == C_PAUSE) comboStart++;
 
@@ -891,7 +895,9 @@ continue_controller:
 
     gettingKeys = false;
 }
-void Status::update_joystick_spinner(int x, int y) {
+
+void Status::update_joystick_spinner(int x, int y)
+{
     SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(x).c_str());
     SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(y).c_str());
 }
@@ -1440,7 +1446,8 @@ void StartFake()
     {
         if (MessageBox(
             0, "You can only have 1 testing TASInput running at a time. Do you want to kill current TASInput instance?",
-            "Too many instances", MB_TOPMOST | MB_YESNO) == IDNO)return;
+            "Too many instances", MB_TOPMOST | MB_YESNO) == IDNO)
+            return;
         // kill tasinput
         RomClosed();
         return;
@@ -1449,7 +1456,8 @@ void StartFake()
     if (MessageBox(
         0,
         "This is an experimental feature. Are you sure you want to test this plugin? (All combos made with this temporary TASInput will be gone after closing if you don't save)",
-        "Test TASInput?", MB_TOPMOST | MB_YESNO) == IDNO) return;
+        "Test TASInput?", MB_TOPMOST | MB_YESNO) == IDNO)
+        return;
     DWORD dwThreadParam = 0, dwThreadId;
     fakeStatusThread = CreateThread(0, 0, StatusDlgThreadProc, &dwThreadParam, 0, &dwThreadId);
     romIsOpen = true;
@@ -1565,7 +1573,7 @@ void Status::EndEdit(int id, char* name)
     if (name != NULL)
     {
         ListBox_DeleteString(lBox, id);
-        
+
         if (name[0] == NULL)
         {
             combos.erase(combos.begin() + id);
@@ -1642,12 +1650,14 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 
     // HACK: disable topmost so menu doesnt appear under tasinput
     hMenu = CreatePopupMenu();
-    AppendMenu(hMenu, menu_config.always_on_top ? MF_CHECKED : 0, offsetof(t_menu_config, always_on_top), "Always on top");
-    AppendMenu(hMenu, menu_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_menu_config, float_from_parent), "Float from parent");
+    AppendMenu(hMenu, menu_config.always_on_top ? MF_CHECKED : 0, offsetof(t_menu_config, always_on_top),
+               "Always on top");
+    AppendMenu(hMenu, menu_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_menu_config, float_from_parent),
+               "Float from parent");
     lock = true;
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
     lock = false;
-    
+
     if (offset != 0)
     {
         printf("offset: %d\n", offset);
@@ -1655,7 +1665,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
         auto arr = reinterpret_cast<bool*>(&menu_config);
         arr[offset] ^= true;
     }
-    
+
     for (auto status_dlg : status)
     {
         if (status_dlg.initialized && status_dlg.statusDlg)
@@ -1663,7 +1673,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
             status_dlg.apply_menu_config();
         }
     }
-    
+
     DestroyMenu(hMenu);
     return TRUE;
 }
@@ -1686,7 +1696,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     static bool last_rmb_down = false;
     bool lmb_just_up = !(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000) && last_lmb_down;
     bool rmb_just_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000 && !last_rmb_down;
-    
+
     if (initialized || msg == WM_INITDIALOG /*|| msg == WM_DESTROY || msg == WM_NCDESTROY*/)
         switch (msg)
         {
@@ -1699,7 +1709,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 yScale = 1.0f;
                 is_dragging_stick = false;
                 deactivateAfterClick = false;
-                
+
                 SetWindowText(statusDlg, std::format("TASInput - Controller {}", Control + 1).c_str());
 
                 // set ranges
@@ -1724,7 +1734,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
                 // windows likes to scale stick control in particular, so we force it to a specific size
                 SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
-                
+
                 SetTimer(statusDlg, IDT_TIMER_STATUS_0 + Control, 1, NULL);
             }
             break;
@@ -1746,7 +1756,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     // activate mupen window to allow it to get key inputs
                     SetForegroundWindow(emulator_hwnd);
                 }
-                
+
                 if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERX))
                 {
                     SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
@@ -1762,7 +1772,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 // update autofire state
                 if (rmb_just_down)
                 {
-                    overrideOn = true; 
+                    overrideOn = true;
 
                     UPDATEAUTO(IDC_CHECK_A, A_BUTTON);
                     UPDATEAUTO(IDC_CHECK_B, B_BUTTON);
@@ -1782,18 +1792,18 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 last_lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
                 last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
             }
-        break;
+            break;
         case WM_TIMER:
             update_joystick_position();
             skipEditX = false;
             skipEditY = false;
 
-            // TODO: investigate what all this crap does, probably related to cursed radial mode
+        // TODO: investigate what all this crap does, probably related to cursed radial mode
             if (lock)
             {
                 break;
             }
-            
+
             if (gettingKeys)
                 Sleep(0);
 
@@ -1821,20 +1831,22 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 joystick_rect.bottom -= 4;
 
                 GetClientRect(statusDlg, &window_rect);
-                POINT joystick_rect_size = { joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top};
+                POINT joystick_rect_size = {
+                    joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top
+                };
 
-                
+
                 // set up double buffering
                 PAINTSTRUCT ps;
                 HDC hdc = BeginPaint(statusDlg, &ps);
                 HDC compat_dc = CreateCompatibleDC(hdc);
                 HBITMAP bmp = CreateCompatibleBitmap(hdc, joystick_rect_size.x, joystick_rect_size.y);
                 SelectObject(compat_dc, bmp);
-                
+
                 static HPEN outline_pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
                 static HPEN line_pen = CreatePen(PS_SOLID, 3, RGB(0, 0, 255));
                 static HPEN tip_pen = CreatePen(PS_SOLID, 7, RGB(255, 0, 0));
-                
+
                 int mid_x = joystick_rect_size.x / 2;
                 int mid_y = joystick_rect_size.y / 2;
                 int stick_x = (overrideX + 128) * joystick_rect_size.x / 256;
@@ -1842,7 +1854,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
                 // clear background with color which makes background (hopefully)
                 // cool idea: maybe use user accent color for joystick tip?
-                RECT normalized = { 0, 0, joystick_rect_size.x, joystick_rect_size.y};
+                RECT normalized = {0, 0, joystick_rect_size.x, joystick_rect_size.y};
                 FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_BTNFACE));
 
                 // draw the back layer: ellipse and alignment lines
@@ -1852,7 +1864,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 LineTo(compat_dc, joystick_rect_size.x, mid_y);
                 MoveToEx(compat_dc, mid_x, 0, NULL);
                 LineTo(compat_dc, mid_x, joystick_rect_size.y);
-                
+
                 // now joystick line
                 SelectObject(compat_dc, line_pen);
                 MoveToEx(compat_dc, mid_x, mid_y, nullptr);
@@ -1867,8 +1879,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SelectObject(compat_dc, nullptr);
 
                 // now we can blit the new picture in one pass
-                BitBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y, compat_dc, 0, 0, SRCCOPY);
-                
+                BitBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y,
+                       compat_dc, 0, 0, SRCCOPY);
+
                 EndPaint(statusDlg, &ps);
                 DeleteDC(compat_dc);
                 DeleteObject(bmp);
@@ -1915,7 +1928,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         case WM_MOUSEMOVE:
             update_joystick_position();
-        break;
+            break;
         case EDIT_END:
             EndEdit(activeCombo, (char*)lParam);
             break;
@@ -1937,7 +1950,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         // FIXME: why are we mutating textbox contents inside the edit message
                         update_joystick_spinner(newOverrideX, -overrideY);
                     }
-                    
+
                     if (overrideX != newOverrideX)
                     {
                         changed = true;
@@ -1967,7 +1980,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                         // FIXME: why are we mutating textbox contents inside the edit message
                         update_joystick_spinner(overrideX, newOverrideY);
                     }
-                    
+
                     if (overrideY != newOverrideY)
                     {
                         changed = true;
@@ -2069,7 +2082,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     SetDlgItemText(statusDlg, IDC_EDITX, "0");
                     RefreshAnalogPicture();
                 }
-                else {
+                else
+                {
                     buttonOverride.Value = buttonAutofire.Value = buttonAutofire2.Value = 0;
                     GetKeys(0);
                 }
