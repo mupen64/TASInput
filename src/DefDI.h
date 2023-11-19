@@ -128,17 +128,12 @@ BOOL WINAPI CheckForDeviceChange(HKEY hKey);
 LRESULT CALLBACK StatusDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lParam);
 VOID CALLBACK StatusDlgProcTimer(UINT idEvent, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
 
-#define UPDATEAUTO(idc,field) \
+#define AUTOFIRE(id,field) \
 { \
-	if(IsMouseOverControl(statusDlg,idc)) \
+	if(IsMouseOverControl(statusDlg,id)) \
 	{ \
-		CheckDlgButton(statusDlg,idc,buttonAutofire.field|buttonAutofire2.field ? 0 : 1); \
-		BUTTONS &autoFire1 = (frameCounter%2 == 0) ? buttonAutofire : buttonAutofire2; \
-		BUTTONS &autoFire2 = (frameCounter%2 == 0) ? buttonAutofire2 : buttonAutofire; \
-		autoFire1.field = 0; \
-		autoFire2.field = !(autoFire1.field|autoFire2.field); \
-		buttonOverride.field ^= 1; \
-		buttonDisplayed.field = autoFire2.field; \
+		CheckDlgButton(statusDlg, id, 1); \
+		autofire_input.field ^= 1; \
 	} \
 }
 

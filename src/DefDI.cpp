@@ -192,6 +192,8 @@ struct Status
     int show_m64_inputs;
     BUTTONS last_controller_input = {0};
     BUTTONS current_input = {0};
+    // Bitflags for buttons with autofire enabled
+    BUTTONS autofire_input = {0};
     //	bool incrementingFrameNow;
     DWORD relativeXOn, relativeYOn;
     float radialAngle, radialDistance, radialRecalc;
@@ -227,6 +229,13 @@ struct Status
      * \param input The values to be shown in the UI
      */
     void set_visuals(BUTTONS input);
+
+    /**
+     * \brief Processes the input with steps such as autofire or combo overrides
+     * \param input The input to process
+     * \return The processed input
+     */
+    BUTTONS get_processed_input(BUTTONS input);
     
     void update_joystick_position();
     BUTTONS get_controller_input();
@@ -821,7 +830,7 @@ void Status::GetKeys(BUTTONS* Keys)
 
 continue_controller:
     
-    Keys->Value = current_input.Value;
+    Keys->Value = get_processed_input(current_input).Value;
 
     printf("Current Input: A: %d | X: %d | Y: %d\n", current_input.A_BUTTON, current_input.X_AXIS, current_input.Y_AXIS);
 
@@ -833,6 +842,8 @@ continue_controller:
         set_status(buf);
         ACTIVE_COMBO->samples.push_back(*Keys);
     }
+
+    set_visuals(*Keys);
 }
 
 void Status::update_joystick_position()
@@ -872,8 +883,22 @@ void Status::update_joystick_position()
 }
 
 
+BUTTONS Status::get_processed_input(BUTTONS input)
+{
+    // TODO: implement combo overrides
+
+    if (frameCounter % 2 == 0)
+    {
+        input.Value |= autofire_input.Value;    
+    }
+    
+    return input;
+}
+
 void Status::set_visuals(BUTTONS input)
 {
+    input = get_processed_input(input);
+    
     SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(input.X_AXIS).c_str());
     SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(input.Y_AXIS).c_str());
     
@@ -1696,27 +1721,25 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     deactivateAfterClick = true;
                 }
 
-                // update autofire state
                 if (rmb_just_down)
                 {
-                    // TODO: reimplement autofire
-                    // overrideOn = true;
-                    //
-                    // UPDATEAUTO(IDC_CHECK_A, A_BUTTON);
-                    // UPDATEAUTO(IDC_CHECK_B, B_BUTTON);
-                    // UPDATEAUTO(IDC_CHECK_START, START_BUTTON);
-                    // UPDATEAUTO(IDC_CHECK_L, L_TRIG);
-                    // UPDATEAUTO(IDC_CHECK_R, R_TRIG);
-                    // UPDATEAUTO(IDC_CHECK_Z, Z_TRIG);
-                    // UPDATEAUTO(IDC_CHECK_CUP, U_CBUTTON);
-                    // UPDATEAUTO(IDC_CHECK_CLEFT, L_CBUTTON);
-                    // UPDATEAUTO(IDC_CHECK_CRIGHT, R_CBUTTON);
-                    // UPDATEAUTO(IDC_CHECK_CDOWN, D_CBUTTON);
-                    // UPDATEAUTO(IDC_CHECK_DUP, U_DPAD);
-                    // UPDATEAUTO(IDC_CHECK_DLEFT, L_DPAD);
-                    // UPDATEAUTO(IDC_CHECK_DRIGHT, R_DPAD);
-                    // UPDATEAUTO(IDC_CHECK_DDOWN, D_DPAD);
+                    AUTOFIRE(IDC_CHECK_A, A_BUTTON);
+                    AUTOFIRE(IDC_CHECK_B, B_BUTTON);
+                    AUTOFIRE(IDC_CHECK_START, START_BUTTON);
+                    AUTOFIRE(IDC_CHECK_L, L_TRIG);
+                    AUTOFIRE(IDC_CHECK_R, R_TRIG);
+                    AUTOFIRE(IDC_CHECK_Z, Z_TRIG);
+                    AUTOFIRE(IDC_CHECK_CUP, U_CBUTTON);
+                    AUTOFIRE(IDC_CHECK_CLEFT, L_CBUTTON);
+                    AUTOFIRE(IDC_CHECK_CRIGHT, R_CBUTTON);
+                    AUTOFIRE(IDC_CHECK_CDOWN, D_CBUTTON);
+                    AUTOFIRE(IDC_CHECK_DUP, U_DPAD);
+                    AUTOFIRE(IDC_CHECK_DLEFT, L_DPAD);
+                    AUTOFIRE(IDC_CHECK_DRIGHT, R_DPAD);
+                    AUTOFIRE(IDC_CHECK_DDOWN, D_DPAD);
+                    set_visuals(current_input);
                 }
+
                 last_lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
                 last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
             }
@@ -1966,6 +1989,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 break;
             case IDC_CLEARINPUT:
                 current_input = {0};
+                autofire_input = {0};
                 set_visuals(current_input);
                 break;
             case IDC_MOREBUTTON4:
