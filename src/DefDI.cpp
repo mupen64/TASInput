@@ -193,7 +193,8 @@ struct Status
     BUTTONS last_controller_input = {0};
     BUTTONS current_input = {0};
     // Bitflags for buttons with autofire enabled
-    BUTTONS autofire_input = {0};
+    BUTTONS autofire_input_a = {0};
+    BUTTONS autofire_input_b = {0};
     //	bool incrementingFrameNow;
     DWORD relativeXOn, relativeYOn;
     float radialAngle, radialDistance, radialRecalc;
@@ -886,11 +887,8 @@ void Status::update_joystick_position()
 BUTTONS Status::get_processed_input(BUTTONS input)
 {
     // TODO: implement combo overrides
-
-    if (frameCounter % 2 == 0)
-    {
-        input.Value |= autofire_input.Value;    
-    }
+    
+    input.Value |= frameCounter % 2 == 0 ? autofire_input_a.Value : autofire_input_b.Value;
     
     return input;
 }
@@ -1989,7 +1987,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 break;
             case IDC_CLEARINPUT:
                 current_input = {0};
-                autofire_input = {0};
+                autofire_input_a = {0};
+                autofire_input_b = {0};
                 set_visuals(current_input);
                 break;
             case IDC_MOREBUTTON4:

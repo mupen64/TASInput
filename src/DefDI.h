@@ -132,8 +132,14 @@ VOID CALLBACK StatusDlgProcTimer(UINT idEvent, UINT uMsg, DWORD dwUser, DWORD dw
 { \
 	if(IsMouseOverControl(statusDlg,id)) \
 	{ \
-		CheckDlgButton(statusDlg, id, 1); \
-		autofire_input.field ^= 1; \
+		if(autofire_input_a.field || autofire_input_b.field) \
+		{ \
+			autofire_input_a.field = autofire_input_b.field = 0; \
+		} else \
+		{ \
+			if (frameCounter % 2 == 0) autofire_input_a.field ^= 1; \
+			else autofire_input_b.field ^= 1;\
+		}\
 	} \
 }
 
