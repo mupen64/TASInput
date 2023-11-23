@@ -562,8 +562,8 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
 void WINAPI Start_Timer(HWND hDlg)
 {
-    SetTimer(hDlg, IDT_TIMER1, 10, (TIMERPROC)NULL);
-    SetTimer(hDlg, IDT_TIMER2, 5000, (TIMERPROC)NULL);
+    SetTimer(hDlg, IDT_TIMER1, 10, nullptr);
+    SetTimer(hDlg, IDT_TIMER2, 5000, nullptr);
 }
 
 void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)

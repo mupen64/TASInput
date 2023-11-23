@@ -137,7 +137,7 @@ VOID CALLBACK StatusDlgProcTimer(UINT idEvent, UINT uMsg, DWORD dwUser, DWORD dw
 			autofire_input_a.field = autofire_input_b.field = 0; \
 		} else \
 		{ \
-			if (frameCounter % 2 == 0) autofire_input_a.field ^= 1; \
+			if (frame_counter % 2 == 0) autofire_input_a.field ^= 1; \
 			else autofire_input_b.field ^= 1;\
 		}\
 	} \
