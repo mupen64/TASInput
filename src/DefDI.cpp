@@ -74,6 +74,22 @@ std::vector<Combo*> combos;
 
 t_menu_config menu_config;
 
+int get_joystick_increment(bool is_up)
+{
+    int increment = is_up ? -1 : 1;
+
+    if (GetKeyState(VK_CONTROL) & 0x8000)
+    {
+        increment *= 2;
+    }
+
+    if (GetKeyState(VK_MENU) & 0x8000)
+    {
+        increment *= 4;
+    }
+
+    return increment;
+}
 
 RECT get_window_rect_client_space(HWND parent, HWND child)
 {
@@ -854,20 +870,24 @@ void Status::update_joystick_position()
     ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
     RECT pic_rect;
     GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
-    current_input.X_AXIS = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
-    current_input.Y_AXIS = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
+    int x = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
+    int y = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
+    
     // clamp joystick inside of control bounds
-    if (current_input.X_AXIS > 127 || current_input.Y_AXIS > 127 || current_input.X_AXIS < -128 || current_input.Y_AXIS < -129)
+    if (x > 127 || y > 127 || x < -128 || y < -129)
     {
-        int div = max(abs(current_input.X_AXIS), abs(current_input.Y_AXIS));
-        current_input.X_AXIS = current_input.X_AXIS * (current_input.X_AXIS > 0 ? 127 : 128) / div;
-        current_input.Y_AXIS = current_input.Y_AXIS * (current_input.Y_AXIS > 0 ? 127 : 128) / div;
+        int div = max(abs(x), abs(y));
+        x = x * (x > 0 ? 127 : 128) / div;
+        y = y * (y > 0 ? 127 : 128) / div;
     }
     // snap clicks to zero
-    if (current_input.X_AXIS < 7 && current_input.X_AXIS > -7)
-        current_input.X_AXIS = 0;
-    if (current_input.Y_AXIS < 7 && current_input.Y_AXIS > -7)
-        current_input.Y_AXIS = 0;
+    if (x < 7 && x > -7)
+        x = 0;
+    if (y < 7 && y > -7)
+        y = 0;
+
+    current_input.X_AXIS = x;
+    current_input.Y_AXIS = y;
     set_visuals(current_input);
 }
 
@@ -1960,6 +1980,22 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 autofire_input_b = {0};
                 set_visuals(current_input);
                 break;
+        case IDC_X_DOWN:
+        case IDC_X_UP:
+            {
+                int increment = get_joystick_increment(LOWORD(wParam) == IDC_X_UP);
+                current_input.X_AXIS += increment;
+                set_visuals(current_input);
+            }
+            break;
+        case IDC_Y_DOWN:
+        case IDC_Y_UP:
+            {
+                int increment = get_joystick_increment(LOWORD(wParam) == IDC_Y_DOWN);
+                current_input.Y_AXIS += increment;
+                set_visuals(current_input);
+            }
+            break;
             case IDC_MOREBUTTON4:
             case IDC_MOREBUTTON5:
                 {
