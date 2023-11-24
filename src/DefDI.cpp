@@ -68,7 +68,6 @@ DWORD WINAPI StatusDlgThreadProc(LPVOID lpParameter);
 bool romIsOpen = false;
 HMENU hMenu;
 
-HANDLE fakeStatusThread = NULL; // fake! used for testing plugin
 UINT systemDPI;
 
 std::vector<Combo*> combos;
@@ -1385,47 +1384,12 @@ EXPORT void CALL ReadController(int Control, BYTE* Command)
 EXPORT void CALL RomClosed(void)
 {
     romIsOpen = false;
-    if (fakeStatusThread)
-    {
-        // really try to nuke it
-        printf("Rom opened with fake window");
-        DestroyWindow(status[0].statusDlg);
-        status[0].statusDlg = NULL;
-        status[0].FreeCombos();
-        TerminateThread(fakeStatusThread, 0);
-        fakeStatusThread = NULL;
-        return;
-    }
     for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
         status[i].StopThread();
 }
 
-void StartFake()
-{
-    if (fakeStatusThread)
-    {
-        if (MessageBox(
-            0, "You can only have 1 testing TASInput running at a time. Do you want to kill current TASInput instance?",
-            "Too many instances", MB_TOPMOST | MB_YESNO) == IDNO)
-            return;
-        // kill tasinput
-        RomClosed();
-        return;
-    }
-
-    if (MessageBox(
-        0,
-        "This is an experimental feature. Are you sure you want to test this plugin? (All combos made with this temporary TASInput will be gone after closing if you don't save)",
-        "Test TASInput?", MB_TOPMOST | MB_YESNO) == IDNO)
-        return;
-    DWORD dwThreadParam = 0, dwThreadId;
-    fakeStatusThread = CreateThread(0, 0, StatusDlgThreadProc, &dwThreadParam, 0, &dwThreadId);
-    romIsOpen = true;
-}
-
 EXPORT void CALL DllTest(HWND hParent)
 {
-    StartFake();
 }
 
 EXPORT void CALL RomOpen(void)
