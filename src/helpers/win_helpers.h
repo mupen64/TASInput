@@ -1,7 +1,9 @@
 #pragma once
+#include <chrono>
 #include <Windows.h>
 #include <CommCtrl.h>
 #include <cstdint>
+#include <thread>
 
 static void set_checkbox_state(const HWND hwnd, const int32_t id,
                                int32_t is_checked)
