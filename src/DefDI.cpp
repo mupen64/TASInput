@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <format>
 
 #include "NewConfig.h"
+#include "helpers/win_helpers.h"
 
 #ifdef DEBUG
 #define PLUGIN_NAME "TAS Input debug"
@@ -169,28 +170,11 @@ struct Status
 
     void on_config_changed()
     {
-        auto gwl_style = GetWindowLongA(statusDlg, GWL_STYLE);
-        auto gwl_ex_style = GetWindowLongA(statusDlg, GWL_EXSTYLE);
-
-        if (new_config.always_on_top)
-        {
-            SetWindowPos(statusDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-        }
-        else
-        {
-            SetWindowPos(statusDlg, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-        }
-
-        if (new_config.float_from_parent)
-        {
-            SetWindowLongA(statusDlg, GWL_STYLE, gwl_style & ~DS_SYSMODAL);
-            SetWindowLongA(statusDlg, GWL_EXSTYLE, gwl_ex_style & ~WS_EX_TOOLWINDOW);
-        }
-        else
-        {
-            SetWindowLongA(statusDlg, GWL_STYLE, gwl_style | DS_SYSMODAL);
-            SetWindowLongA(statusDlg, GWL_EXSTYLE, gwl_ex_style | WS_EX_TOOLWINDOW);
-        }
+        set_style(statusDlg, GWL_EXSTYLE, WS_EX_TOPMOST, new_config.always_on_top);
+        set_style(statusDlg, GWL_EXSTYLE, WS_EX_TOOLWINDOW, !new_config.float_from_parent);
+        set_style(statusDlg, GWL_STYLE, DS_SYSMODAL, !new_config.float_from_parent);
+        set_style(statusDlg, GWL_STYLE, WS_CAPTION, new_config.titlebar);
+        
         save_config();
     }
 
@@ -1564,6 +1548,9 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
                "Always on top");
     AppendMenu(hMenu, new_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_config, float_from_parent),
                "Float from parent");
+    AppendMenu(hMenu, new_config.titlebar ? MF_CHECKED : 0, offsetof(t_config, titlebar),
+           "Titlebar");
+
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
 
     if (offset != 0)
