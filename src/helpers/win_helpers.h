@@ -69,3 +69,17 @@ static void accurate_sleep(double seconds) {
 	auto start = high_resolution_clock::now();
 	while ((high_resolution_clock::now() - start).count() / 1e9 < seconds);
 }
+
+static void set_style(HWND hwnd, int domain, int style, bool value)
+{
+	auto base = GetWindowLongA(hwnd, domain);
+
+	if (value)
+	{
+		SetWindowLongA(hwnd, domain, base | style);
+	}
+	else
+	{
+		SetWindowLongA(hwnd, domain, base & ~style);
+	}
+}
