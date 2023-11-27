@@ -109,13 +109,7 @@ extern DEFCONTROLLER Controller[NUMBER_OF_CONTROLS];
 
 extern HINSTANCE g_hInstance;
 
-typedef struct s_menu_config
-{
-	// dummy element to pad offset of next element to non-0 
-	bool dummy_element = false;
-    bool always_on_top = false;
-    bool float_from_parent = true;
-} t_menu_config;
+
 
 //----
 

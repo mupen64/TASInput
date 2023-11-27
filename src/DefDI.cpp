@@ -38,6 +38,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Combo.h"
 #include <format>
 
+#include "NewConfig.h"
+
 #ifdef DEBUG
 #define PLUGIN_NAME "TAS Input debug"
 #else
@@ -72,8 +74,6 @@ UINT systemDPI;
 
 std::vector<Combo*> combos;
 #define ACTIVE_COMBO combos[activeCombo]
-
-t_menu_config menu_config;
 
 int get_joystick_increment(bool is_up)
 {
@@ -167,12 +167,12 @@ struct Status
         }
     }
 
-    void apply_menu_config()
+    void on_config_changed()
     {
         auto gwl_style = GetWindowLongA(statusDlg, GWL_STYLE);
         auto gwl_ex_style = GetWindowLongA(statusDlg, GWL_EXSTYLE);
 
-        if (menu_config.always_on_top)
+        if (new_config.always_on_top)
         {
             SetWindowPos(statusDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
         }
@@ -181,7 +181,7 @@ struct Status
             SetWindowPos(statusDlg, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
         }
 
-        if (menu_config.float_from_parent)
+        if (new_config.float_from_parent)
         {
             SetWindowLongA(statusDlg, GWL_STYLE, gwl_style & ~DS_SYSMODAL);
             SetWindowLongA(statusDlg, GWL_EXSTYLE, gwl_ex_style & ~WS_EX_TOOLWINDOW);
@@ -191,6 +191,7 @@ struct Status
             SetWindowLongA(statusDlg, GWL_STYLE, gwl_style | DS_SYSMODAL);
             SetWindowLongA(statusDlg, GWL_EXSTYLE, gwl_ex_style | WS_EX_TOOLWINDOW);
         }
+        save_config();
     }
 
     HANDLE status_thread;
@@ -1397,7 +1398,6 @@ EXPORT void CALL RomOpen(void)
     RomClosed();
     romIsOpen = true;
 
-
     HKEY hKey;
     DWORD dwSize, dwType, dwDWSize, dwDWType;
 
@@ -1560,25 +1560,24 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 
     // HACK: disable topmost so menu doesnt appear under tasinput
     hMenu = CreatePopupMenu();
-    AppendMenu(hMenu, menu_config.always_on_top ? MF_CHECKED : 0, offsetof(t_menu_config, always_on_top),
+    AppendMenu(hMenu, new_config.always_on_top ? MF_CHECKED : 0, offsetof(t_config, always_on_top),
                "Always on top");
-    AppendMenu(hMenu, menu_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_menu_config, float_from_parent),
+    AppendMenu(hMenu, new_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_config, float_from_parent),
                "Float from parent");
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
 
     if (offset != 0)
     {
-        printf("offset: %d\n", offset);
-        // offset is the offset into menu config struct of the field which was selected by user
-        auto arr = reinterpret_cast<bool*>(&menu_config);
-        arr[offset] ^= true;
+        // offset is the offset into menu config struct of the field which was selected by user, we need to convert it from byte offset to int-width offset 
+        auto arr = reinterpret_cast<int32_t*>(&new_config);
+        arr[offset / sizeof(int32_t)] ^= true;
     }
 
     for (auto status_dlg : status)
     {
         if (status_dlg.initialized && status_dlg.statusDlg)
         {
-            status_dlg.apply_menu_config();
+            status_dlg.on_config_changed();
         }
     }
 
@@ -1641,6 +1640,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
 
                 SetTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index, 1, nullptr);
+                load_config();
+                on_config_changed();
             }
             break;
         case SC_MINIMIZE:
