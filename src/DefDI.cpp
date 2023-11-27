@@ -900,7 +900,7 @@ void Status::set_visuals(BUTTONS input)
     CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, input.D_DPAD);
 
     RECT rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
-    InvalidateRect(statusDlg, &rect, TRUE);
+    InvalidateRect(statusDlg, &rect, FALSE);
 }
 
 void Status::SetKeys(BUTTONS ControllerInput)
