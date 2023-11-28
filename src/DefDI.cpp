@@ -1829,6 +1829,35 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
+    case WM_MOUSEWHEEL:
+        {
+            if (!IsMouseOverControl(statusDlg,IDC_STICKPIC))
+            {
+                break;
+            }
+            auto delta = GET_WHEEL_DELTA_WPARAM(wParam);
+            auto increment = delta < 0 ? -1 : 1;
+            
+            if (GetKeyState(VK_CONTROL) & 0x8000)
+            {
+                current_input.X_AXIS -= increment;
+            } else if(GetKeyState(VK_SHIFT) & 0x8000)
+            {
+                // We change the angle, keeping magnitude
+               float angle = atan2f(current_input.Y_AXIS, current_input.X_AXIS);
+               float mag = floorf(sqrtf(powf(current_input.X_AXIS, 2) + powf(current_input.Y_AXIS, 2)));
+               float new_ang = angle + (increment * (PI / 180.0f));
+               current_input.X_AXIS = (int)(mag * cosf(new_ang));
+               current_input.Y_AXIS = (int)(mag * sinf(new_ang));
+            }
+            else
+            {
+                current_input.Y_AXIS += increment;
+            }
+
+            set_visuals(current_input);
+        }
+        break;
         case WM_LBUTTONDOWN:
             printf("ld\n");
             if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
