@@ -102,8 +102,6 @@
 #define IDC_CHECK_MAC_DL                1080
 #define IDC_CHECK_MAC_DR                1081
 #define IDC_ANALOGSTICKLABEL            1082
-#define IDC_MOREBUTTON1                 1083
-#define IDC_MOREBUTTON2                 1085
 #define IDC_CHECK_B                     1086
 #define IDC_CHECK_A                     1087
 #define IDC_CHECK_R                     1088
@@ -114,20 +112,16 @@
 #define IDC_CHECK_CRIGHT                1093
 #define IDC_CHECK_CDOWN                 1094
 #define IDC_CHECK_L2                    1095
-#define IDC_MOREBUTTON3                 1098
 #define IDC_CHECK_DUP                   1100
 #define IDC_CHECK_DLEFT                 1101
 #define IDC_CHECK_DRIGHT                1102
 #define IDC_CHECK_DDOWN                 1103
 #define IDC_CHECK_START                 1104
-#define IDC_MOREBUTTON0                 1105
-#define IDC_MOREBUTTON4                 1106
 #define IDC_COMBOLABEL                  1108
 #define IDC_MACROBOX                    1109
 #define IDC_CHECK_DDOWN2                1109
 #define IDC_MACROLIST                   1111
 #define IDC_BUTTON1                     1112
-#define IDC_MOREBUTTON5                 1114
 #define IDC_CHECK_PLAYCOMBO             1116
 #define IDC_PLAY                        1116
 #define IDC_MACROCOMBOBOX               1117
@@ -135,7 +129,6 @@
 #define IDC_RADIO2                      1119
 #define IDC_RADIO4                      1120
 #define IDC_CLEARINPUT                  1122
-#define IDC_MOREBUTTON6                 1124
 #define IDC_CHECK1                      1125
 #define IDC_SLIDERX                     1126
 #define IDC_SLIDERY                     1127
@@ -159,6 +152,7 @@
 #define IDC_Y_UP                        2103
 #define IDC_LABEL_X						2104
 #define IDC_LABEL_Y						2105
+#define IDC_EXPAND						2106
 
 // Next default values for new objects
 // 

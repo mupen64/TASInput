@@ -1662,7 +1662,12 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, 1000);
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, 1000);
-
+                
+                if (Extend)
+                {
+                    SetDlgItemText(statusDlg, IDC_EXPAND, "Less");
+                }
+                
                 // begin accepting other messages
                 initialized = true;
 
@@ -2060,16 +2065,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 set_visuals(current_input);
             }
             break;
-            case IDC_MOREBUTTON4:
-            case IDC_MOREBUTTON5:
+            case IDC_EXPAND:
                 {
-                    switch (LOWORD(wParam)) // Extend
-                    {
-                    case IDC_MOREBUTTON4: Extend = 1;
-                        break;
-                    case IDC_MOREBUTTON5: Extend = 0;
-                        break;
-                    }
+                    Extend ^= true;
 
                     comboTask = C_IDLE;
                     RECT rect;
