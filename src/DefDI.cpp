@@ -174,10 +174,23 @@ struct Status
         set_style(statusDlg, GWL_EXSTYLE, WS_EX_TOOLWINDOW, !new_config.float_from_parent);
         set_style(statusDlg, GWL_STYLE, DS_SYSMODAL, !new_config.float_from_parent);
         set_style(statusDlg, GWL_STYLE, WS_CAPTION, new_config.titlebar);
-        
+
+        // If we remove the titlebar, window contents will get clipped due to the window size not expanding, so we need to account for that 
+        RECT rect = new_config.titlebar ? initial_window_rect : initial_client_rect;
+        SetWindowPos(statusDlg, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
         save_config();
     }
-
+    
+    /**
+     * \brief The initial client rectangle before any style changes are applied
+     */
+    RECT initial_client_rect;
+    
+    /**
+    * \brief The initial window rectangle before any style changes are applied
+    */
+    RECT initial_window_rect;
+    
     HANDLE status_thread;
     DWORD dw_thread_id;
     
@@ -1599,6 +1612,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         case WM_INITDIALOG:
             {
+                GetClientRect(statusDlg, &initial_client_rect);
+                GetWindowRect(statusDlg, &initial_window_rect);
+                
                 x_scale = 1.0f;
                 y_scale = 1.0f;
                 is_dragging_stick = false;
