@@ -1908,7 +1908,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
                 POINT cursor_position = {0};
                 GetCursorPos(&cursor_position);
-                if (WindowFromPoint(cursor_position) != statusDlg)
+                // NOTE: Windows doesn't consider STATIC controls when hittesting, so we need to check for the stick picture manually
+                if (WindowFromPoint(cursor_position) != statusDlg || IsMouseOverControl(statusDlg, IDC_STICKPIC))
                 {
                     break;
                 }
