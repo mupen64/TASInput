@@ -157,6 +157,8 @@
 #define IDC_X_UP                        2101
 #define IDC_Y_DOWN                      2102
 #define IDC_Y_UP                        2103
+#define IDC_LABEL_X						2104
+#define IDC_LABEL_Y						2105
 
 // Next default values for new objects
 // 
