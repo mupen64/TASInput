@@ -1,6 +1,7 @@
 ﻿#include "NewConfig.h"
 #include "helpers/io_helpers.h"
-#define CONFIG_PATH "newconfig.bin"
+
+#define CONFIG_PATH "tasinput.cfg"
 
 constexpr t_config default_config;
 t_config new_config;
@@ -26,7 +27,7 @@ void load_config()
     auto buffer = read_file_buffer(CONFIG_PATH);
     t_config loaded_config;
 
-    if (buffer.empty())
+    if (buffer.empty() || buffer.size() != sizeof(t_config))
     {
         // Failed, reset to default
         printf("No config found, using default\n");
