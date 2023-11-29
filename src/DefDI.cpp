@@ -245,6 +245,11 @@ struct Status
      * \return The processed input
      */
     BUTTONS get_processed_input(BUTTONS input);
+
+    /**
+     * \brief Activates the mupen window, releasing focus capture from the current window
+     */
+    void activate_emulator_window();
     
     void update_joystick_position();
     BUTTONS get_controller_input();
@@ -900,12 +905,29 @@ BUTTONS Status::get_processed_input(BUTTONS input)
     return input;
 }
 
+void Status::activate_emulator_window()
+{
+    if (GetFocus() == GetDlgItem(statusDlg, IDC_EDITX) ||GetFocus() == GetDlgItem(statusDlg, IDC_EDITY) )
+    {
+        return;
+    }
+    SetForegroundWindow(emulator_hwnd);
+}
+
 void Status::set_visuals(BUTTONS input)
 {
     input = get_processed_input(input);
-    
-    SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(input.X_AXIS).c_str());
-    SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(input.Y_AXIS).c_str());
+
+    // We don't want to mess with the user's selection
+    if (GetFocus() != GetDlgItem(statusDlg, IDC_EDITX))
+    {
+        SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(input.X_AXIS).c_str());
+    }
+
+    if (GetFocus() != GetDlgItem(statusDlg, IDC_EDITY))
+    {
+        SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(input.Y_AXIS).c_str());
+    }
     
     CheckDlgButton(statusDlg, IDC_CHECK_A, input.A_BUTTON);
     CheckDlgButton(statusDlg, IDC_CHECK_B, input.B_BUTTON);
@@ -1677,7 +1699,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 if (lmb_just_up)
                 {
                     // activate mupen window to allow it to get key inputs
-                    SetForegroundWindow(emulator_hwnd);
+                    activate_emulator_window();
                 }
 
                 if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERX))
@@ -1905,7 +1927,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
                 {
                     is_dragging_stick = true;
-                    SetForegroundWindow(emulator_hwnd);
+                    activate_emulator_window();
                 }
 
                 if (!new_config.client_drag)
@@ -1950,7 +1972,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     char str[32] = {0};
                     GetDlgItemText(statusDlg, IDC_EDITX, str, std::size(str));
                     current_input.X_AXIS = std::atoi(str);
-
+ 
                     // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
                     if (current_input.X_AXIS != last_input.X_AXIS)
                     {
