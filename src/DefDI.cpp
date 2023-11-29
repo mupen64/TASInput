@@ -190,6 +190,16 @@ struct Status
     * \brief The initial window rectangle before any style changes are applied
     */
     RECT initial_window_rect;
+
+    /**
+     * \brief Whether the window is currently being dragged
+     */
+    bool is_dragging_window;
+
+    /**
+     * \brief The position of the cursor relative to the window origin at the drag operation's start
+     */
+    POINT dragging_window_cursor_diff;
     
     HANDLE status_thread;
     DWORD dw_thread_id;
@@ -1563,7 +1573,9 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
                "Float from parent");
     AppendMenu(hMenu, new_config.titlebar ? MF_CHECKED : 0, offsetof(t_config, titlebar),
            "Titlebar");
-
+    AppendMenu(hMenu, new_config.client_drag ? MF_CHECKED : 0, offsetof(t_config, client_drag),
+               "Client drag");
+    
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
 
     if (offset != 0)
@@ -1700,7 +1712,14 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             }
             break;
         case WM_TIMER:
-
+            
+            if (is_dragging_window)
+            {
+                POINT cursor_position = {0};
+                GetCursorPos(&cursor_position);
+                SetWindowPos(statusDlg, nullptr, cursor_position.x - dragging_window_cursor_diff.x, cursor_position.y - dragging_window_cursor_diff.y, 0, 0, SWP_NOSIZE);
+            }
+            
             if (is_getting_keys)
             {
                 break;
@@ -1875,13 +1894,39 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
         case WM_LBUTTONDOWN:
-            printf("ld\n");
-            if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
             {
-                is_dragging_stick = true;
-                SetForegroundWindow(emulator_hwnd);
+                if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
+                {
+                    is_dragging_stick = true;
+                    SetForegroundWindow(emulator_hwnd);
+                }
+
+                if (!new_config.client_drag)
+                {
+                    break;
+                }
+
+                POINT cursor_position = {0};
+                GetCursorPos(&cursor_position);
+                if (WindowFromPoint(cursor_position) != statusDlg)
+                {
+                    break;
+                }
+
+                RECT window_rect = {0};
+                GetWindowRect(statusDlg, &window_rect);
+                
+                is_dragging_window = true;
+                dragging_window_cursor_diff = {
+                    cursor_position.x - window_rect.left,
+                    cursor_position.y - window_rect.top,
+                };
             }
             break;
+    case WM_LBUTTONUP:
+        {
+            is_dragging_window = false;
+        }
         case WM_MOUSEMOVE:
             update_joystick_position();
             break;
