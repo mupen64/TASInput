@@ -1575,7 +1575,9 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
            "Titlebar");
     AppendMenu(hMenu, new_config.client_drag ? MF_CHECKED : 0, offsetof(t_config, client_drag),
                "Client drag");
-    
+    AppendMenu(hMenu, new_config.hifi_joystick ? MF_CHECKED : 0, offsetof(t_config, hifi_joystick),
+           "High-quality joystick");
+
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
 
     if (offset != 0)
@@ -1796,30 +1798,32 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 PAINTSTRUCT ps;
                 HDC hdc = BeginPaint(statusDlg, &ps);
                 HDC compat_dc = CreateCompatibleDC(hdc);
-                HBITMAP bmp = CreateCompatibleBitmap(hdc, joystick_rect_size.x, joystick_rect_size.y);
+                int scale = new_config.hifi_joystick ? 4 : 1;
+                POINT bmp_size = {joystick_rect_size.x * scale, joystick_rect_size.y * scale };
+                HBITMAP bmp = CreateCompatibleBitmap(hdc, bmp_size.x, bmp_size.y);
                 SelectObject(compat_dc, bmp);
 
-                static HPEN outline_pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-                static HPEN line_pen = CreatePen(PS_SOLID, 3, RGB(0, 0, 255));
-                static HPEN tip_pen = CreatePen(PS_SOLID, 7, RGB(255, 0, 0));
+                HPEN outline_pen = CreatePen(PS_SOLID, 1 * scale, RGB(0, 0, 0));
+                HPEN line_pen = CreatePen(PS_SOLID, 3 * scale, RGB(0, 0, 255));
+                HPEN tip_pen = CreatePen(PS_SOLID, 7 * scale, RGB(255, 0, 0));
 
-                int mid_x = joystick_rect_size.x / 2;
-                int mid_y = joystick_rect_size.y / 2;
-                int stick_x = (current_input.X_AXIS + 128) * joystick_rect_size.x / 256;
-                int stick_y = (-current_input.Y_AXIS + 128) * joystick_rect_size.y / 256;
+                int mid_x = bmp_size.x / 2;
+                int mid_y = bmp_size.y / 2;
+                int stick_x = (current_input.X_AXIS + 128) * bmp_size.x / 256;
+                int stick_y = (-current_input.Y_AXIS + 128) * bmp_size.y / 256;
 
                 // clear background with color which makes background (hopefully)
                 // cool idea: maybe use user accent color for joystick tip?
-                RECT normalized = {0, 0, joystick_rect_size.x, joystick_rect_size.y};
+                RECT normalized = {0, 0, bmp_size.x, bmp_size.y};
                 FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_BTNFACE));
 
                 // draw the back layer: ellipse and alignment lines
                 SelectObject(compat_dc, outline_pen);
-                Ellipse(compat_dc, 0, 0, joystick_rect_size.x, joystick_rect_size.y);
+                Ellipse(compat_dc, 0, 0, bmp_size.x, bmp_size.y);
                 MoveToEx(compat_dc, 0, mid_y, NULL);
-                LineTo(compat_dc, joystick_rect_size.x, mid_y);
+                LineTo(compat_dc, bmp_size.x, mid_y);
                 MoveToEx(compat_dc, mid_x, 0, NULL);
-                LineTo(compat_dc, mid_x, joystick_rect_size.y);
+                LineTo(compat_dc, mid_x, bmp_size.y);
 
                 // now joystick line
                 SelectObject(compat_dc, line_pen);
@@ -1835,12 +1839,15 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SelectObject(compat_dc, nullptr);
 
                 // now we can blit the new picture in one pass
-                BitBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y,
-                       compat_dc, 0, 0, SRCCOPY);
-
+                SetStretchBltMode(hdc, HALFTONE);
+                SetStretchBltMode(compat_dc, HALFTONE);
+                StretchBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y, compat_dc, 0, 0, bmp_size.x, bmp_size.y, SRCCOPY);
                 EndPaint(statusDlg, &ps);
                 DeleteDC(compat_dc);
                 DeleteObject(bmp);
+                DeleteObject(outline_pen);
+                DeleteObject(line_pen);
+                DeleteObject(tip_pen);
             }
 
             break;
