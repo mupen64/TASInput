@@ -1637,9 +1637,16 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 {
     static bool last_lmb_down = false;
     static bool last_rmb_down = false;
-    bool lmb_just_up = !(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000) && last_lmb_down;
-    bool rmb_just_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000 && !last_rmb_down;
-
+    bool lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
+    bool rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
+    bool lmb_just_up = !lmb_down && last_lmb_down;
+    bool rmb_just_down = rmb_down && !last_rmb_down;
+    
+    if (!lmb_down)
+    {
+        is_dragging_window = false;
+    }
+    
     if (initialized || msg == WM_INITDIALOG /*|| msg == WM_DESTROY || msg == WM_NCDESTROY*/)
         switch (msg)
         {
@@ -1958,10 +1965,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 };
             }
             break;
-    case WM_LBUTTONUP:
-        {
-            is_dragging_window = false;
-        }
         case WM_MOUSEMOVE:
             update_joystick_position();
             break;
