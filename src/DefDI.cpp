@@ -75,7 +75,7 @@ HMENU hMenu;
 
 UINT systemDPI;
 
-std::vector<Combo*> combos;
+std::vector<Combos::Combo*> combos;
 #define ACTIVE_COMBO combos[activeCombo]
 
 int get_joystick_increment(bool is_up)
@@ -214,6 +214,40 @@ struct Status
     */
     BUTTONS last_controller_input = {0};
 
+    /**
+     * \brief The index of the currently active combo into the combos array, or -1 if none is active
+     */
+    int32_t active_combo_index = -1;
+
+    bool combo_active()
+    {
+        return active_combo_index != -1;
+    }
+
+    /**
+     * \brief Clears the combo list
+     */
+    void clear_combos();
+    
+    /**
+     * \brief Saves the combo list to a file
+     */
+    void save_combos();
+
+    /**
+     * \brief Loads the combo list from a file
+     */
+    void load_combos(const char*);
+
+    /**
+     * \brief Creates a new combo and inserts it into the combos list
+     * \return The combo's index in the combos list
+     */
+    int create_new_combo();
+    
+    void StartEdit(int);
+    void EndEdit(int, char*);
+    
     bool is_getting_keys = false;
     int show_m64_inputs;
     // Bitflags for buttons with autofire enabled
@@ -226,16 +260,10 @@ struct Status
     HWND listbox;
     int controller_index;
     int comboTask;
-    int activeCombo;
     
-    void FreeCombos();
 
     void set_status(std::string str);
-    void SaveCombos();
-    void load_combos(const char*);
-    int CreateNewCombo(int);
-    void StartEdit(int);
-    void EndEdit(int, char*);
+    
 
     LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
     
@@ -829,52 +857,17 @@ BUTTONS Status::get_controller_input()
 
 void Status::GetKeys(BUTTONS* Keys)
 {
-    //here ControllerInput holds true physical controller, which gets modified by tasinput / combo
-    // if (activeCombo != -1 && (comboTask == C_RUNNING || comboTask == C_LOOP))
-    // {
-    //     int frame = frameCounter - comboStart;
-    //     if (frame > ACTIVE_COMBO->samples.size() - 1)
-    //     {
-    //         //if frame is out of range
-    //         if (comboTask == C_LOOP)
-    //         {
-    //             comboStart = frameCounter;
-    //             frame = 0;
-    //         }
-    //         else
-    //         {
-    //             set_status("Idle");
-    //             comboTask = C_IDLE;
-    //             goto continue_controller;
-    //         }
-    //     }
-    //     char buf[64];
-    //     sprintf(buf, "Playing combo (%d/%d)", frame + 1, ACTIVE_COMBO->samples.size());
-    //     set_status(buf);
-    //     //allows to use joystick with combos
-    //     buttonOverride.Value |= ACTIVE_COMBO->samples[frame].Value;
-    //     // if joystick used, copy the values too (because simply ORing is not enough)
-    //     if (ACTIVE_COMBO->uses_joystick())
-    //     {
-    //         overrideX = controller_input.X_AXIS = ACTIVE_COMBO->samples[frame].X_AXIS;
-    //         overrideY = controller_input.Y_AXIS = ACTIVE_COMBO->samples[frame].Y_AXIS;
-    //     }
-    // }
-    // else if (comboTask == C_PAUSE) comboStart++;
-
-continue_controller:
-    
     Keys->Value = get_processed_input(current_input).Value;
-
-    printf("Current Input: A: %d | X: %d | Y: %d\n", current_input.A_BUTTON, current_input.X_AXIS, current_input.Y_AXIS);
 
     if (comboTask == C_RECORD)
     {
-        //extend if full and frame is not 0
-        char buf[64];
-        sprintf(buf, "Recording combo (%d)", frame_counter - combo_start_frame + 1);
-        set_status(buf);
-        ACTIVE_COMBO->samples.push_back(*Keys);
+        combos[active_combo_index]->samples.push_back(*Keys);
+        set_status(std::format("Recording... ({})", frame_counter - combo_start_frame + 1));
+    }
+
+    if (comboTask == C_PLAY)
+    {
+        
     }
 
     set_visuals(*Keys);
@@ -1485,7 +1478,7 @@ EXPORT void CALL WM_KeyUp(WPARAM wParam, LPARAM lParam)
 {
 }
 
-void Status::FreeCombos()
+void Status::clear_combos()
 {
     for (auto combo : combos)
     {
@@ -1494,46 +1487,34 @@ void Status::FreeCombos()
     combos.clear();
 }
 
-//sets information about current task
+int Status::create_new_combo()
+{
+    auto combo = new Combos::Combo();
+    combos.push_back(combo);
+    return ListBox_InsertString(listbox, -1, combo->name.c_str());
+}
+
 void Status::set_status(std::string str)
 {
     HWND hTask = GetDlgItem(statusDlg, IDC_STATUS);
     SendMessage(hTask, WM_SETTEXT, 0, (LPARAM)str.c_str());
 }
 
-//Creates new combo, if id!=1 duplicates existing (todo)
-int Status::CreateNewCombo(int id)
-{
-    auto combo = new Combo();
-    combos.push_back(combo);
-    return ListBox_InsertString(listbox, -1, combo->name.c_str());
-}
-
 //shows edit box
 void Status::StartEdit(int id)
 {
-    RECT edit; //, box;
+    RECT item_rect;
+    ListBox_GetItemRect(listbox, id, &item_rect);
+    HWND edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left, item_rect.top,
+                                  item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4, listbox, 0, g_hInstance, 0);
+    // Clear selection to prevent it from repainting randomly and fighting with our textbox
+    ListBox_SetCurSel(listbox, -1); 
+    SendMessage(edit_box,WM_SETFONT, (WPARAM)SendMessage(listbox, WM_GETFONT, 0, 0), 0);
+    SetWindowSubclass(edit_box, EditBoxProc, 0, 0);
     char txt[MAX_PATH];
-    ListBox_GetItemRect(listbox, id, &edit);
-    //If editBox isn't child of listbox (which would solve padding issues, but doesn't quite work)
-    //GetWindowRect(listbox, &box);
-    //POINT pt = { box.left, box.top };
-    //ScreenToClient(statusDlg, &pt);
-    //edit.top += pt.y;
-    //edit.left += pt.x;
-    //edit.bottom += pt.y;
-    //edit.right += pt.x;
-    HWND editBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, edit.left, edit.top,
-                                  edit.right - edit.left, edit.bottom - edit.top + 4, listbox, 0, g_hInstance, 0);
-    ListBox_SetCurSel(listbox, -1); //just to be safe, it sometimes can be seen in background
-
-    //FW_BOLD
-    //HFONT font = CreateFont(12, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_DONTCARE, "MS Shell Dlg 2");
-    SendMessage(editBox,WM_SETFONT, (WPARAM)SendMessage(listbox, WM_GETFONT, 0, 0), 0);
-    SetWindowSubclass(editBox, EditBoxProc, 0, 0); //to add more functionality
-    ListBox_GetText(listbox, activeCombo, txt);
-    SendMessage(editBox, WM_SETTEXT, 0, (LPARAM)txt);
-    PostMessage(statusDlg, WM_NEXTDLGCTL, (WPARAM)editBox, TRUE);
+    ListBox_GetText(listbox, active_combo_index, txt);
+    SendMessage(edit_box, WM_SETTEXT, 0, (LPARAM)txt);
+    PostMessage(statusDlg, WM_NEXTDLGCTL, (WPARAM)edit_box, TRUE);
 }
 
 void Status::EndEdit(int id, char* name)
@@ -1554,16 +1535,15 @@ void Status::EndEdit(int id, char* name)
     set_status("Idle");
 }
 
-//saves combos to combos.cmb
-void Status::SaveCombos()
+void Status::save_combos()
 {
-    save_combos("combos.cmb", combos);
+    Combos::save("combos.cmb", combos);
 }
 
 //load combos to listBox
 void Status::load_combos(const char* path)
 {
-    combos = find_combos("combos.cmb");
+    combos = Combos::find("combos.cmb");
 
     for (auto combo : combos)
     {
@@ -1685,7 +1665,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 listbox = GetDlgItem(statusDlg, IDC_MACROLIST);
                 if (listbox)
                 {
-                    FreeCombos();
+                    clear_combos();
                     load_combos("combos.cmb");
                 }
 
@@ -1970,7 +1950,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             update_joystick_position();
             break;
         case EDIT_END:
-            EndEdit(activeCombo, (char*)lParam);
+            EndEdit(active_combo_index, (char*)lParam);
             break;
         case WM_COMMAND:
             switch (LOWORD(wParam))
@@ -2077,16 +2057,16 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 break;
             case IDC_PLAY:
-                activeCombo = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-                if (activeCombo == -1)
+                active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
+                if (active_combo_index == -1)
                 {
-                    set_status("Select a combo first");
+                    set_status("No combo selected");
                     break;
                 }
                 set_status("Playing combo");
                 CheckDlgButton(statusDlg, IDC_LOOP, 0);
-                if (comboTask != C_PAUSE) combo_start_frame = frame_counter;
-                comboTask = C_RUNNING;
+                combo_start_frame = frame_counter;
+                comboTask = C_PLAY;
                 break;
             case IDC_STOP:
                 set_status("Idle");
@@ -2095,73 +2075,57 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 combo_start_frame = 0; //should avoid unnecessary bugs
                 break;
             case IDC_PAUSE:
-                if (comboTask == C_RUNNING || comboTask == C_LOOP)
+                if (comboTask == C_PLAY || comboTask == C_PLAY_LOOP)
                 {
                     set_status("Paused");
-                    CheckDlgButton(statusDlg, IDC_LOOP, 0);
-                    comboTask = C_PAUSE;
+                    comboTask = C_IDLE;
                 }
                 break;
             case IDC_LOOP:
-                if (comboTask == C_LOOP)
+                if (comboTask == C_PLAY_LOOP)
                 {
-                    set_status("Stopped looping");
-                    comboTask = C_RUNNING;
+                    set_status("Looping disabled");
+                    comboTask = C_PLAY;
                     break;
                 }
-                activeCombo = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-                if (activeCombo == -1)
+                active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
+                if (active_combo_index == -1)
                 {
-                    set_status("Select a combo first");
+                    set_status("No combo selected");
                     break;
                 }
-                if (comboTask != C_PAUSE) combo_start_frame = frame_counter;
-                comboTask = C_LOOP;
-                set_status("Looping combo");
+                comboTask = C_PLAY_LOOP;
+                set_status("Looping enabled");
                 break;
             case IDC_RECORD:
                 if (comboTask == C_RECORD)
                 {
                     set_status("Recording stopped");
                     comboTask = C_IDLE;
-                    //free(aCombo.data); //is it better to copy to new, aligned buffer or leave it?
-                }
-                else
-                {
-                    if (comboTask == C_IDLE || activeCombo == -1)
-                    {
-                        set_status("Recording new combo");
-                        activeCombo = CreateNewCombo(-1);
-                        ListBox_SetCurSel(listbox, activeCombo);
-                        combo_start_frame = frame_counter;
-                    }
-                    else
-                    {
-                        set_status("Overwriting combo");
-                        // FIXME: is this right?
-                        ACTIVE_COMBO->samples = {};
-                    }
-                    comboTask = C_RECORD;
-                }
-                break;
-            case IDC_EDIT:
-                activeCombo = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-                if (activeCombo == -1)
-                {
-                    set_status("Select a combo first");
                     break;
                 }
-                set_status("Editing...");
-                StartEdit(activeCombo);
+                
+                set_status("Recording new combo...");
+                active_combo_index = create_new_combo();
+                ListBox_SetCurSel(listbox, active_combo_index);
+                combo_start_frame = frame_counter;
+                comboTask = C_RECORD;
+                
+                break;
+            case IDC_EDIT:
+                active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
+                if (active_combo_index == -1)
+                {
+                    set_status("No combo selected");
+                    break;
+                }
+                StartEdit(active_combo_index);
                 break;
             case IDC_CLEAR:
                 comboTask = C_IDLE;
-                activeCombo = -1;
-                set_status("Clearing...");
-                CheckDlgButton(statusDlg, IDC_LOOP, 0);
-                FreeCombos();
+                active_combo_index = -1;
+                clear_combos();
                 ListBox_ResetContent(listbox);
-                set_status("Cleared all combos");
                 break;
             case IDC_IMPORT:
                 {
@@ -2182,8 +2146,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     break;
                 }
             case IDC_SAVE:
-                set_status("Saving...");
-                SaveCombos();
+                save_combos();
                 set_status("Saved to combos.cmb");
                 break;
             default:
