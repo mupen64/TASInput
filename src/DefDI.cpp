@@ -129,7 +129,7 @@ struct Status
 
         controller_index = ControllerNumber;
         dw_thread_id = controller_index;
-        DWORD dw_thread_param = MAKEWORD(controller_index, Extend);
+        DWORD dw_thread_param = MAKEWORD(controller_index, expanded);
 
         // CreateDialog() won't work, because the emulator eats our messages when it's paused
         // and can't call IsDialogMessage() because it doesn't know what our dialog is.
@@ -218,10 +218,11 @@ struct Status
     HWND statusDlg;
     HWND listbox;
     int controller_index;
-    int Extend = 0;
     int comboTask;
     int activeCombo;
 
+    bool expanded = false;
+    
     void FreeCombos();
 
     void set_status(std::string str);
@@ -1553,19 +1554,19 @@ DWORD WINAPI StatusDlgThreadProc(LPVOID lpParameter)
 {
     int Control = LOBYTE(*(int*)lpParameter);
     auto extend = HIBYTE(*(int*)lpParameter);
-    int DialogID = extend ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
+    int dialog_id = extend ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
 
     switch (Control)
     {
-    case 0: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc0);
+    case 0: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
         break;
-    case 1: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc1);
+    case 1: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
         break;
-    case 2: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc2);
+    case 2: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
         break;
-    case 3: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc3);
+    case 3: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
         break;
-    default: DialogBox(g_hInstance, MAKEINTRESOURCE(DialogID), NULL, (DLGPROC)StatusDlgProc0);
+    default: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
     }
     return 0;
 }
@@ -1670,7 +1671,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, 1000);
                 
-                if (Extend)
+                if (expanded)
                 {
                     SetDlgItemText(statusDlg, IDC_EXPAND, "Less");
                 }
@@ -2070,7 +2071,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
             case IDC_EXPAND:
                 {
-                    Extend ^= true;
+                    expanded ^= true;
 
                     comboTask = C_IDLE;
                     RECT rect;
