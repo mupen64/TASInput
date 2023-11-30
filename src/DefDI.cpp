@@ -1667,6 +1667,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     bool lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
     bool rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
     bool lmb_just_up = !lmb_down && last_lmb_down;
+    bool rmb_just_up = !rmb_down && last_rmb_down;
     bool rmb_just_down = rmb_down && !last_rmb_down;
 
     if (!lmb_down)
@@ -1733,7 +1734,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_SETCURSOR:
         {
-            if (lmb_just_up)
+            if (lmb_just_up || rmb_just_up)
             {
                 // activate mupen window to allow it to get key inputs
                 activate_emulator_window();
