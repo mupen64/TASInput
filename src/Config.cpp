@@ -38,18 +38,32 @@ KillTimer(hDlg, IDT_TIMER2);\
 SetWindowText(hDlg, Controller[NController].szName);\
 Dis_En_AbleApply(hDlg, bApply[NController] = TRUE)
 
+static BYTE NController, NControl, NDeviceCount;
+static HANDLE hFile;
+static HKEY hKey;
+static BOOL bApply[NUMBER_OF_CONTROLS];
+static TCHAR szDeviceNum[MAX_PATH] = TEXT(""), szInitialDir[MAX_PATH] = TEXT(""), szFilename[MAX_PATH] = TEXT("");
+static TCHAR CSWindowText[MAX_PATH];
+static DWORD dwSize, dwType, ControlValue, dwMacroParam;
+static ULONG lNumBytes;
+static DEFCONTROLLER tempController;
+static OPENFILENAME ofn = {0};
+
+void apply_settings()
+{
+    RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_WRITE, NULL, &hKey, 0);
+    if (RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
+                      dwSize) != ERROR_SUCCESS)
+    {
+        MessageBox(nullptr, "Error: Could not save current Contoller Config!", Controller[NController].szName, MB_ICONERROR | MB_OK);
+    }
+                          
+    RegCloseKey(hKey);
+}
+
 LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-    static BYTE NController, NControl, NDeviceCount;
-    static HANDLE hFile;
-    static HKEY hKey;
-    static BOOL bApply[NUMBER_OF_CONTROLS];
-    static TCHAR szDeviceNum[MAX_PATH] = TEXT(""), szInitialDir[MAX_PATH] = TEXT(""), szFilename[MAX_PATH] = TEXT("");
-    static TCHAR CSWindowText[MAX_PATH];
-    static DWORD dwSize, dwType, ControlValue, dwMacroParam;
-    static ULONG lNumBytes;
-    static DEFCONTROLLER tempController;
-    static OPENFILENAME ofn = {0};
+    
 
     dwType = REG_BINARY;
     dwSize = sizeof(DEFCONTROLLER);
@@ -507,28 +521,12 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
 
         case IDC_B_APPLY:
-            RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_WRITE, NULL, &hKey, 0);
-            if (RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
-                              dwSize) != ERROR_SUCCESS)
-                MessageBox(hDlg, "Error: Could not save current Contoller Config!", Controller[NController].szName,
-                           MB_ICONERROR | MB_OK);
-            RegCloseKey(hKey);
+            apply_settings();
             Dis_En_AbleApply(hDlg, bApply[NController] = FALSE);
             break;
 
         case IDOK:
-            //SendDlgItemMessage(hDlg, IDC_VALUE, WM_GETTEXT, 10, (LPARAM) (LPSTR) no);          
-            //MessageBox(NULL, "Cool", "Note:", MB_OK);
-
-            RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_WRITE, NULL, &hKey, 0);
-            for (NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
-            {
-                if (RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
-                                  dwSize) != ERROR_SUCCESS)
-                    MessageBox(hDlg, "Error: Could not save configuration!", Controller[NController].szName,
-                               MB_ICONERROR | MB_OK);
-            }
-            RegCloseKey(hKey);
+            apply_settings();
             EndDialog(hDlg, TRUE);
             break;
 
