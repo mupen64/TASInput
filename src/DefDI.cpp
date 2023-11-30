@@ -118,7 +118,6 @@ struct Status
     {
         show_m64_inputs = false;
         statusDlg = NULL;
-        comboTask = C_IDLE;
     }
 
     /**
@@ -225,6 +224,11 @@ struct Status
      */
     int64_t combo_frame = 0;
 
+    /**
+     * \brief Whether the currently playing combo is paused
+     */
+    bool combo_paused = false;
+    
     bool combo_active()
     {
         return active_combo_index != -1;
@@ -264,7 +268,7 @@ struct Status
     HWND statusDlg;
     HWND listbox;
     int controller_index;
-    int comboTask;
+    int comboTask = C_IDLE;
     
 
     void set_status(std::string str);
@@ -863,16 +867,10 @@ BUTTONS Status::get_controller_input()
 void Status::GetKeys(BUTTONS* Keys)
 {
     Keys->Value = get_processed_input(current_input).Value;
-    
-    if (comboTask == C_RECORD)
-    {
-        combos[active_combo_index]->samples.push_back(*Keys);
-        set_status(std::format("Recording... ({})", combos[active_combo_index]->samples.size()));
-    }
 
-    if (comboTask == C_PLAY)
+    if (comboTask == C_PLAY && !combo_paused)
     {
-        if (combo_frame >= combos[active_combo_index]->samples.size())
+        if (combo_frame >= combos[active_combo_index]->samples.size() - 1)
         {
             if (new_config.loop_combo)
             {
@@ -881,15 +879,25 @@ void Status::GetKeys(BUTTONS* Keys)
             {
                 set_status("Finished combo");
                 comboTask = C_IDLE;
+                // Reset input on last frame, or it sticks which feels weird
+                // We also need to reprocess the inputs since source data change 
+                current_input = {0};
+                Keys->Value = get_processed_input(current_input).Value;
                 goto end;
             }
         }
         
-        *Keys = combos[active_combo_index]->samples[combo_frame];
-        set_status(std::format("Playing... ({} / {})", combo_frame, combos[active_combo_index]->samples.size()));
+        set_status(std::format("Playing... ({} / {})", combo_frame + 1, combos[active_combo_index]->samples.size() - 1));
         combo_frame++;
     }
+
     end:
+    if (comboTask == C_RECORD)
+    {
+        // We process this last, because we need the processed inputs
+        combos[active_combo_index]->samples.push_back(*Keys);
+        set_status(std::format("Recording... ({})", combos[active_combo_index]->samples.size()));
+    }
     set_visuals(*Keys);
 }
 
@@ -935,9 +943,19 @@ void Status::update_joystick_position()
 
 BUTTONS Status::get_processed_input(BUTTONS input)
 {
-    // TODO: implement combo overrides
-    
     input.Value |= frame_counter % 2 == 0 ? autofire_input_a.Value : autofire_input_b.Value;
+
+    if (comboTask == C_PLAY && !combo_paused)
+    {
+        auto combo_input = combos[active_combo_index]->samples[combo_frame];
+        if (!combos[active_combo_index]->uses_joystick())
+        {
+            // We want to use our joystick inputs
+            combo_input.X_AXIS = input.X_AXIS;
+            combo_input.Y_AXIS = input.Y_AXIS;
+        }
+        input = combo_input;
+    }
     
     return input;
 }
@@ -2092,11 +2110,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 comboTask = C_IDLE;
                 break;
             case IDC_PAUSE:
-                if (comboTask == C_PLAY)
-                {
-                    set_status("Paused");
-                    comboTask = C_IDLE;
-                }
+                combo_paused ^= true;
                 break;
             case IDC_LOOP:
                 new_config.loop_combo ^= true;
