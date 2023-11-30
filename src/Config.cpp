@@ -28,6 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "DI.h"
 #include "DefDI.h"
 #include "Config.h"
+
+#include "NewConfig.h"
 #include "resource.h"
 #define RESET_SELECTION Controller[NController].Input[NControl].Device = 0;\
 Controller[NController].Input[NControl].type = INPUT_TYPE_NOT_USED;\
@@ -51,6 +53,11 @@ static OPENFILENAME ofn = {0};
 
 void apply_settings()
 {
+    for (int i = 0; i < NUMBER_OF_CONTROLS; ++i)
+    {
+        new_config.controller_active[i] = Controller[i].bActive;
+    }
+    
     RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_WRITE, NULL, &hKey, 0);
     if (RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
                       dwSize) != ERROR_SUCCESS)

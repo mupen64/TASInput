@@ -1328,39 +1328,36 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
     }
     else
     {
-        for (BYTE NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
+        for (size_t i = 0; i < NUMBER_OF_CONTROLS; i++)
         {
-            if (RegQueryValueEx(hKey, Controller[NController].szName, 0, &dwType, (LPBYTE)&Controller[NController],
+            ControlDef[i]->Present = new_config.controller_active[i];
+            
+            if (RegQueryValueEx(hKey, Controller[i].szName, 0, &dwType, (LPBYTE)&Controller[i],
                                 &dwSize) == ERROR_SUCCESS)
             {
-                if (Controller[NController].bActive)
-                    ControlDef[NController]->Present = TRUE;
-                else
-                    ControlDef[NController]->Present = FALSE;
 
-                if (Controller[NController].bMemPak)
-                    ControlDef[NController]->Plugin = PLUGIN_MEMPAK;
+                if (Controller[i].bMemPak)
+                    ControlDef[i]->Plugin = PLUGIN_MEMPAK;
                 else
-                    ControlDef[NController]->Plugin = PLUGIN_NONE;
+                    ControlDef[i]->Plugin = PLUGIN_NONE;
 
                 if (dwSize != sizeof(DEFCONTROLLER))
                 {
                     dwType = REG_BINARY;
                     dwSize = sizeof(DEFCONTROLLER);
-                    ZeroMemory(&Controller[NController], sizeof(DEFCONTROLLER));
+                    ZeroMemory(&Controller[i], sizeof(DEFCONTROLLER));
 
-                    Controller[NController].NDevices = 0;
-                    Controller[NController].bActive = NController == 0 ? TRUE : FALSE;
-                    ControlDef[NController]->Present = FALSE;
-                    ControlDef[NController]->Plugin = PLUGIN_NONE;
-                    Controller[NController].SensMax = 128;
-                    Controller[NController].SensMin = 32;
-                    Controller[NController].Input[18].button = 42;
-                    Controller[NController].Input[19].button = 20;
-                    wsprintf(Controller[NController].szName, "Controller %d", NController + 1);
+                    Controller[i].NDevices = 0;
+                    Controller[i].bActive = i == 0 ? TRUE : FALSE;
+                    ControlDef[i]->Plugin = PLUGIN_NONE;
+                    Controller[i].SensMax = 128;
+                    Controller[i].SensMin = 32;
+                    Controller[i].Input[18].button = 42;
+                    Controller[i].Input[19].button = 20;
+                    wsprintf(Controller[i].szName, "Controller %d", i + 1);
 
-                    RegDeleteValue(hKey, Controller[NController].szName);
-                    RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
+                    RegDeleteValue(hKey, Controller[i].szName);
+                    RegSetValueEx(hKey, Controller[i].szName, 0, dwType, (LPBYTE)&Controller[i],
                                   dwSize);
                 }
             }
@@ -1368,8 +1365,8 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
             {
                 dwType = REG_BINARY;
                 dwSize = sizeof(DEFCONTROLLER);
-                RegDeleteValue(hKey, Controller[NController].szName);
-                RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
+                RegDeleteValue(hKey, Controller[i].szName);
+                RegSetValueEx(hKey, Controller[i].szName, 0, dwType, (LPBYTE)&Controller[i],
                               dwSize);
             }
         }
@@ -1499,13 +1496,10 @@ EXPORT void CALL RomOpen(void)
 
     if (RegOpenKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, KEY_READ, &hKey) == ERROR_SUCCESS)
     {
-        for (BYTE Control = 0; Control < NUMBER_OF_CONTROLS; Control++)
+        for (size_t i = 0; i < NUMBER_OF_CONTROLS; i++)
         {
-            RegQueryValueEx(hKey, Controller[Control].szName, 0, &dwType, (LPBYTE)&Controller[Control], &dwSize);
-            if (Controller[Control].bActive)
-                ControlDef[Control]->Present = TRUE;
-            else
-                ControlDef[Control]->Present = FALSE;
+            ControlDef[i]->Present = new_config.controller_active[i];
+            RegQueryValueEx(hKey, Controller[i].szName, 0, &dwType, (LPBYTE)&Controller[i], &dwSize);
         }
     }
     RegCloseKey(hKey);
