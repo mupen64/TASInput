@@ -67,7 +67,7 @@ LRESULT CALLBACK StatusDlgProc0(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 LRESULT CALLBACK StatusDlgProc1(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc2(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc3(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-DWORD WINAPI StatusDlgThreadProc(LPVOID lpParameter);
+DWORD WINAPI StatusDlgThreadProc(LPVOID lp_parameter);
 bool romIsOpen = false;
 HMENU hMenu;
 
@@ -124,18 +124,20 @@ struct Status
 
     void StartThread(int ControllerNumber)
     {
+        load_config();
         HANDLE prev_status_thread = status_thread;
         HWND prev_status_dlg = statusDlg;
 
         controller_index = ControllerNumber;
-        dw_thread_id = controller_index;
-        DWORD dw_thread_param = MAKEWORD(controller_index, expanded);
 
         // CreateDialog() won't work, because the emulator eats our messages when it's paused
         // and can't call IsDialogMessage() because it doesn't know what our dialog is.
         // So, create a new thread and spawn a MODAL (to that thread) dialog,
         // to guarantee it always gets the messages it should.
-        status_thread = CreateThread(0, 0, StatusDlgThreadProc, &dw_thread_param, 0, &dw_thread_id);
+        // We need to heap-allocate the controller index since we're crossing thread boundaries with a variable
+        int32_t* param = new int32_t();
+        *param = controller_index;
+        status_thread = CreateThread(0, 0, StatusDlgThreadProc, param, 0, &dw_thread_id);
 
         if (prev_status_dlg)
             DestroyWindow(prev_status_dlg);
@@ -220,8 +222,6 @@ struct Status
     int controller_index;
     int comboTask;
     int activeCombo;
-
-    bool expanded = false;
     
     void FreeCombos();
 
@@ -1550,13 +1550,12 @@ void Status::load_combos(const char* path)
     }
 }
 
-DWORD WINAPI StatusDlgThreadProc(LPVOID lpParameter)
+DWORD WINAPI StatusDlgThreadProc(LPVOID lp_parameter)
 {
-    int Control = LOBYTE(*(int*)lpParameter);
-    auto extend = HIBYTE(*(int*)lpParameter);
-    int dialog_id = extend ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
+    int32_t controller_index = *(int32_t*)lp_parameter;
+    int dialog_id = new_config.dialog_expanded[controller_index] ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
 
-    switch (Control)
+    switch (controller_index)
     {
     case 0: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
         break;
@@ -1568,6 +1567,8 @@ DWORD WINAPI StatusDlgThreadProc(LPVOID lpParameter)
         break;
     default: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
     }
+
+    delete lp_parameter;
     return 0;
 }
 
@@ -1671,7 +1672,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, 1000);
                 
-                if (expanded)
+                if (new_config.dialog_expanded[controller_index])
                 {
                     SetDlgItemText(statusDlg, IDC_EXPAND, "Less");
                 }
@@ -1692,7 +1693,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
 
                 SetTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index, 1, nullptr);
-                load_config();
                 on_config_changed();
             }
             break;
@@ -2071,11 +2071,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
             case IDC_EXPAND:
                 {
-                    expanded ^= true;
-
-                    comboTask = C_IDLE;
-                    RECT rect;
-                    GetWindowRect(statusDlg, &rect);
+                    new_config.dialog_expanded[controller_index] ^= true;
+                    save_config();
 
                     // Extend the dialog by replacing it with a new one created from a different resource.
                     // Resizing wouldn't work, because any resizing causes visible damage to the dialog's background
