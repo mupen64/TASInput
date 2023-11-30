@@ -78,7 +78,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //combo tasks
 #define C_IDLE 0
 #define C_PLAY 1
-#define C_PLAY_LOOP 2
 #define C_RECORD 4
 
 //custom messages

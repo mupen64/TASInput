@@ -112,7 +112,6 @@ RECT get_window_rect_client_space(HWND parent, HWND child)
 }
 
 
-
 struct Status
 {
     Status()
@@ -167,6 +166,8 @@ struct Status
         RECT rect = new_config.titlebar ? initial_window_rect : initial_client_rect;
         SetWindowPos(statusDlg, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
         save_config();
+
+        CheckDlgButton(statusDlg, IDC_LOOP, new_config.loop_combo);
     }
 
     /**
@@ -219,6 +220,11 @@ struct Status
      */
     int32_t active_combo_index = -1;
 
+    /**
+     * \brief The frame count relative to the current combo's start
+     */
+    int64_t combo_frame = 0;
+
     bool combo_active()
     {
         return active_combo_index != -1;
@@ -255,7 +261,6 @@ struct Status
     BUTTONS autofire_input_b = {0};
     bool is_dragging_stick;
     bool initialized;
-    int64_t combo_start_frame;
     HWND statusDlg;
     HWND listbox;
     int controller_index;
@@ -858,18 +863,33 @@ BUTTONS Status::get_controller_input()
 void Status::GetKeys(BUTTONS* Keys)
 {
     Keys->Value = get_processed_input(current_input).Value;
-
+    
     if (comboTask == C_RECORD)
     {
         combos[active_combo_index]->samples.push_back(*Keys);
-        set_status(std::format("Recording... ({})", frame_counter - combo_start_frame + 1));
+        set_status(std::format("Recording... ({})", combos[active_combo_index]->samples.size()));
     }
 
     if (comboTask == C_PLAY)
     {
+        if (combo_frame >= combos[active_combo_index]->samples.size())
+        {
+            if (new_config.loop_combo)
+            {
+                combo_frame = 0;
+            } else
+            {
+                set_status("Finished combo");
+                comboTask = C_IDLE;
+                goto end;
+            }
+        }
         
+        *Keys = combos[active_combo_index]->samples[combo_frame];
+        set_status(std::format("Playing... ({} / {})", combo_frame, combos[active_combo_index]->samples.size()));
+        combo_frame++;
     }
-
+    end:
     set_visuals(*Keys);
 }
 
@@ -2064,38 +2084,23 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                     break;
                 }
                 set_status("Playing combo");
-                CheckDlgButton(statusDlg, IDC_LOOP, 0);
-                combo_start_frame = frame_counter;
+                combo_frame = 0;
                 comboTask = C_PLAY;
                 break;
             case IDC_STOP:
                 set_status("Idle");
-                CheckDlgButton(statusDlg, IDC_LOOP, 0);
                 comboTask = C_IDLE;
-                combo_start_frame = 0; //should avoid unnecessary bugs
                 break;
             case IDC_PAUSE:
-                if (comboTask == C_PLAY || comboTask == C_PLAY_LOOP)
+                if (comboTask == C_PLAY)
                 {
                     set_status("Paused");
                     comboTask = C_IDLE;
                 }
                 break;
             case IDC_LOOP:
-                if (comboTask == C_PLAY_LOOP)
-                {
-                    set_status("Looping disabled");
-                    comboTask = C_PLAY;
-                    break;
-                }
-                active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-                if (active_combo_index == -1)
-                {
-                    set_status("No combo selected");
-                    break;
-                }
-                comboTask = C_PLAY_LOOP;
-                set_status("Looping enabled");
+                new_config.loop_combo ^= true;
+                save_config();
                 break;
             case IDC_RECORD:
                 if (comboTask == C_RECORD)
@@ -2108,9 +2113,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 set_status("Recording new combo...");
                 active_combo_index = create_new_combo();
                 ListBox_SetCurSel(listbox, active_combo_index);
-                combo_start_frame = frame_counter;
                 comboTask = C_RECORD;
-                
                 break;
             case IDC_EDIT:
                 active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
