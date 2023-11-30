@@ -45,9 +45,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "helpers/win_helpers.h"
 
 #ifdef DEBUG
-#define PLUGIN_NAME "TAS Input debug"
+#define PLUGIN_NAME "TASInput 1.0 Debug"
 #else
-#define PLUGIN_NAME "TAS Input"
+#define PLUGIN_NAME "TASInput 1.0"
 #endif
 
 #define PI 3.14159265358979f
