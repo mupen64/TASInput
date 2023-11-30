@@ -33,6 +33,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "Controller.h"
 #include "DI.h"
 #include "DefDI.h"
+
+#include <assert.h>
+
 #include "Config.h"
 #include "resource.h"
 #include "Combo.h"
@@ -67,7 +70,6 @@ LRESULT CALLBACK StatusDlgProc0(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 LRESULT CALLBACK StatusDlgProc1(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc2(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc3(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-DWORD WINAPI StatusDlgThreadProc(LPVOID lp_parameter);
 bool romIsOpen = false;
 HMENU hMenu;
 
@@ -109,65 +111,49 @@ RECT get_window_rect_client_space(HWND parent, HWND child)
     };
 }
 
+
+
 struct Status
 {
     Status()
     {
-        status_thread = NULL;
-        dw_thread_id = 0;
         show_m64_inputs = false;
-        x_scale = 1.0f;
-        y_scale = 1.0f;
         statusDlg = NULL;
         comboTask = C_IDLE;
     }
 
-    void StartThread(int ControllerNumber)
+    /**
+     * \brief Starts the dialog
+     * \param controller_index The controller index the dialog is responsible for
+     */
+    void start(int32_t controller_index)
     {
         load_config();
-        HANDLE prev_status_thread = status_thread;
-        HWND prev_status_dlg = statusDlg;
-
-        controller_index = ControllerNumber;
-
-        // CreateDialog() won't work, because the emulator eats our messages when it's paused
-        // and can't call IsDialogMessage() because it doesn't know what our dialog is.
-        // So, create a new thread and spawn a MODAL (to that thread) dialog,
-        // to guarantee it always gets the messages it should.
-        // We need to heap-allocate the controller index since we're crossing thread boundaries with a variable
-        int32_t* param = new int32_t();
-        *param = controller_index;
-        status_thread = CreateThread(0, 0, StatusDlgThreadProc, param, 0, &dw_thread_id);
-
-        if (prev_status_dlg)
-            DestroyWindow(prev_status_dlg);
-        if (prev_status_thread)
-            TerminateThread(prev_status_thread, 0); // last because prevStatusThread might be the currently-running thread
+        this->controller_index = controller_index;
+        
+        int dialog_id = new_config.dialog_expanded[controller_index] ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
+        
+        switch (controller_index)
+        {
+        case 0: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
+            break;
+        case 1: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
+            break;
+        case 2: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
+            break;
+        case 3: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
+            break;
+        default: assert(false);
+        }
+        
     }
 
-    void StopThread()
+    /**
+     * \brief Stops the dialog
+     */
+    void stop()
     {
-        if (statusDlg)
-        {
-            DestroyWindow(statusDlg);
-            statusDlg = NULL;
-        }
-        if (status_thread)
-        {
-            FreeCombos(); //apparently this is a good idea
-            TerminateThread(status_thread, 0);
-            status_thread = NULL;
-        }
-    }
-
-    void EnsureRunning()
-    {
-        if (!statusDlg || !status_thread || !initialized)
-        {
-            if (statusDlg) DestroyWindow(statusDlg), statusDlg = NULL;
-            if (status_thread) TerminateThread(status_thread, 0), status_thread = NULL;
-            StartThread(controller_index);
-        }
+        EndDialog(statusDlg, 0);
     }
 
     void on_config_changed()
@@ -182,7 +168,12 @@ struct Status
         SetWindowPos(statusDlg, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
         save_config();
     }
-    
+
+    /**
+     * \brief The instance's UI thread
+     */
+    HANDLE thread = nullptr;
+
     /**
      * \brief The initial client rectangle before any style changes are applied
      */
@@ -202,20 +193,34 @@ struct Status
      * \brief The position of the cursor relative to the window origin at the drag operation's start
      */
     POINT dragging_window_cursor_diff;
-    
-    HANDLE status_thread;
-    DWORD dw_thread_id;
-    
+
+    /**
+     * \brief The controller-moved joystick magnitude multiplier for the X axis
+     */
+    float x_scale = 1.0f;
+
+    /**
+     * \brief The controller-moved joystick magnitude multiplier for the Y axis
+     */
+    float y_scale = 1.0f;
+
+    /**
+     * \brief The current internal input state before any processing
+     */
+    BUTTONS current_input = {0};
+
+    /**
+    * \brief The internal input state at the previous GetKeys call before any processing
+    */
+    BUTTONS last_controller_input = {0};
+
     bool is_getting_keys = false;
     int show_m64_inputs;
-    BUTTONS last_controller_input = {0};
-    BUTTONS current_input = {0};
     // Bitflags for buttons with autofire enabled
     BUTTONS autofire_input_a = {0};
     BUTTONS autofire_input_b = {0};
     bool is_dragging_stick;
     bool initialized;
-    float x_scale, y_scale;
     int64_t combo_start_frame;
     HWND statusDlg;
     HWND listbox;
@@ -258,8 +263,32 @@ struct Status
     void SetKeys(BUTTONS ControllerInput);
 };
 
-
 Status status[NUMBER_OF_CONTROLS];
+
+/**
+ * \brief Starts all dialogs with active controllers, ending any existing ones
+ */
+void start_dialogs()
+{
+    for(auto& val : status)
+    {
+        if (val.statusDlg)
+        {
+            EndDialog(val.statusDlg, 0);
+        }
+    }
+    
+    for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
+    {
+        if (Controller[i].bActive)
+        {
+            std::thread([i]
+            {
+                status[i].start(i);
+            }).detach();
+        }
+    }
+}
 
 int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
 {
@@ -312,13 +341,7 @@ EXPORT void CALL DllConfig(HWND hParent)
     else
         DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_CONFIGDLG), hParent, (DLGPROC)ConfigDlgProc);
 
-    // make config box restart the input status control if it's been closed
-    if (romIsOpen)
-        for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
-            if (Controller[i].bActive)
-                status[i].EnsureRunning();
-            else
-                status[i].StopThread();
+    // TODO: Do we have to restart the dialogs here like in old version?
 }
 
 EXPORT void CALL GetDllInfo(PLUGIN_INFO* PluginInfo)
@@ -1415,8 +1438,10 @@ EXPORT void CALL ReadController(int Control, BYTE* Command)
 EXPORT void CALL RomClosed(void)
 {
     romIsOpen = false;
-    for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
-        status[i].StopThread();
+    for (auto& val : status)
+    {
+        val.stop();
+    }
 }
 
 EXPORT void CALL DllTest(HWND hParent)
@@ -1449,11 +1474,7 @@ EXPORT void CALL RomOpen(void)
     }
     RegCloseKey(hKey);
 
-    for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
-        if (Controller[i].bActive)
-            status[i].StartThread(i);
-        else
-            status[i].controller_index = i;
+    start_dialogs();
 }
 
 EXPORT void CALL WM_KeyDown(WPARAM wParam, LPARAM lParam)
@@ -1550,27 +1571,6 @@ void Status::load_combos(const char* path)
     }
 }
 
-DWORD WINAPI StatusDlgThreadProc(LPVOID lp_parameter)
-{
-    int32_t controller_index = *(int32_t*)lp_parameter;
-    int dialog_id = new_config.dialog_expanded[controller_index] ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
-
-    switch (controller_index)
-    {
-    case 0: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
-        break;
-    case 1: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
-        break;
-    case 2: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
-        break;
-    case 3: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
-        break;
-    default: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
-    }
-
-    delete lp_parameter;
-    return 0;
-}
 
 static bool IsMouseOverControl(HWND hDlg, int dialogItemID)
 {
@@ -2073,11 +2073,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     new_config.dialog_expanded[controller_index] ^= true;
                     save_config();
-
-                    // Extend the dialog by replacing it with a new one created from a different resource.
-                    // Resizing wouldn't work, because any resizing causes visible damage to the dialog's background
-                    // due to some messages not getting through to repair it
-                    StartThread(controller_index);
+                    start_dialogs();
                 }
                 break;
             case IDC_PLAY:
