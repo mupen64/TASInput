@@ -1711,6 +1711,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             // windows likes to scale stick control in particular, so we force it to a specific size
             SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
 
+            // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile 
+            set_visuals(current_input);
+            
             SetTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index, 1, nullptr);
             on_config_changed();
 
