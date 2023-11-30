@@ -128,9 +128,9 @@ struct Status
     {
         load_config();
         this->controller_index = controller_index;
-        
+
         int dialog_id = new_config.dialog_expanded[controller_index] ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
-        
+
         switch (controller_index)
         {
         case 0: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
@@ -143,7 +143,6 @@ struct Status
             break;
         default: assert(false);
         }
-        
     }
 
     /**
@@ -178,7 +177,7 @@ struct Status
      * \brief The initial client rectangle before any style changes are applied
      */
     RECT initial_client_rect;
-    
+
     /**
     * \brief The initial window rectangle before any style changes are applied
     */
@@ -228,7 +227,7 @@ struct Status
      * \brief Whether the currently playing combo is paused
      */
     bool combo_paused = false;
-    
+
     bool combo_active()
     {
         return active_combo_index != -1;
@@ -238,7 +237,7 @@ struct Status
      * \brief Clears the combo list
      */
     void clear_combos();
-    
+
     /**
      * \brief Saves the combo list to a file
      */
@@ -254,28 +253,28 @@ struct Status
      * \return The combo's index in the combos list
      */
     int create_new_combo();
-    
+
     void StartEdit(int);
     void EndEdit(int, char*);
-    
+
     bool is_getting_keys = false;
     int show_m64_inputs;
     // Bitflags for buttons with autofire enabled
     BUTTONS autofire_input_a = {0};
     BUTTONS autofire_input_b = {0};
     bool is_dragging_stick;
-    bool initialized;
+    bool ready;
     HWND statusDlg;
-    HWND listbox;
+    HWND combo_listbox;
     int controller_index;
     int comboTask = C_IDLE;
-    
+
 
     void set_status(std::string str);
-    
+
 
     LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
-    
+
     /**
      * \brief Updates the UI
      * \param input The values to be shown in the UI
@@ -293,7 +292,7 @@ struct Status
      * \brief Activates the mupen window, releasing focus capture from the current window
      */
     void activate_emulator_window();
-    
+
     void update_joystick_position();
     BUTTONS get_controller_input();
     void GetKeys(BUTTONS* Keys);
@@ -307,14 +306,14 @@ Status status[NUMBER_OF_CONTROLS];
  */
 void start_dialogs()
 {
-    for(auto& val : status)
+    for (auto& val : status)
     {
         if (val.statusDlg)
         {
             EndDialog(val.statusDlg, 0);
         }
     }
-    
+
     for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
     {
         if (Controller[i].bActive)
@@ -347,7 +346,7 @@ int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
         MOUSE_LBUTTONREDEFINITION = VK_RBUTTON;
         MOUSE_RBUTTONREDEFINITION = VK_LBUTTON;
     }
-    
+
     return TRUE;
 }
 
@@ -676,7 +675,8 @@ BUTTONS Status::get_controller_input()
                                                 analogKey = true;
                                             /* fall through */
                                             default:
-                                                controller_input.Value |= Controller[controller_index].Input[count].button;
+                                                controller_input.Value |= Controller[controller_index].Input[count].
+                                                    button;
                                                 break;
                                             }
                                         }
@@ -704,7 +704,8 @@ BUTTONS Status::get_controller_input()
                                                 analogKey = true;
                                             /* fall through */
                                             default:
-                                                controller_input.Value |= Controller[controller_index].Input[count].button;
+                                                controller_input.Value |= Controller[controller_index].Input[count].
+                                                    button;
                                                 break;
                                             }
                                         }
@@ -732,7 +733,8 @@ BUTTONS Status::get_controller_input()
                                                 analogKey = true;
                                             /* fall through */
                                             default:
-                                                controller_input.Value |= Controller[controller_index].Input[count].button;
+                                                controller_input.Value |= Controller[controller_index].Input[count].
+                                                    button;
                                                 break;
                                             }
                                         }
@@ -760,7 +762,8 @@ BUTTONS Status::get_controller_input()
                                                 analogKey = true;
                                             /* fall through */
                                             default:
-                                                controller_input.Value |= Controller[controller_index].Input[count].button;
+                                                controller_input.Value |= Controller[controller_index].Input[count].
+                                                    button;
                                                 break;
                                             }
                                         }
@@ -812,15 +815,15 @@ BUTTONS Status::get_controller_input()
                 else
                     mult2 = 1.0f;
 
-                    controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS >
-                        0
-                            ? 0.5f
-                            : -0.5f));
+                controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS >
+                    0
+                        ? 0.5f
+                        : -0.5f));
 
                 controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS >
-                        0
-                            ? 0.5f
-                            : -0.5f));
+                    0
+                        ? 0.5f
+                        : -0.5f));
 
                 int newX = (int)((float)controller_input.X_AXIS * x_scale + (
                     controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
@@ -875,7 +878,8 @@ void Status::GetKeys(BUTTONS* Keys)
             if (new_config.loop_combo)
             {
                 combo_frame = 0;
-            } else
+            }
+            else
             {
                 set_status("Finished combo");
                 comboTask = C_IDLE;
@@ -886,12 +890,13 @@ void Status::GetKeys(BUTTONS* Keys)
                 goto end;
             }
         }
-        
-        set_status(std::format("Playing... ({} / {})", combo_frame + 1, combos[active_combo_index]->samples.size() - 1));
+
+        set_status(std::format("Playing... ({} / {})", combo_frame + 1,
+                               combos[active_combo_index]->samples.size() - 1));
         combo_frame++;
     }
 
-    end:
+end:
     if (comboTask == C_RECORD)
     {
         // We process this last, because we need the processed inputs
@@ -921,7 +926,7 @@ void Status::update_joystick_position()
     GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
     int x = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
     int y = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
-    
+
     // clamp joystick inside of control bounds
     if (x > 127 || y > 127 || x < -128 || y < -129)
     {
@@ -956,13 +961,13 @@ BUTTONS Status::get_processed_input(BUTTONS input)
         }
         input = combo_input;
     }
-    
+
     return input;
 }
 
 void Status::activate_emulator_window()
 {
-    if (GetFocus() == GetDlgItem(statusDlg, IDC_EDITX) ||GetFocus() == GetDlgItem(statusDlg, IDC_EDITY) )
+    if (GetFocus() == GetDlgItem(statusDlg, IDC_EDITX) || GetFocus() == GetDlgItem(statusDlg, IDC_EDITY))
     {
         return;
     }
@@ -983,7 +988,7 @@ void Status::set_visuals(BUTTONS input)
     {
         SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(input.Y_AXIS).c_str());
     }
-    
+
     CheckDlgButton(statusDlg, IDC_CHECK_A, input.A_BUTTON);
     CheckDlgButton(statusDlg, IDC_CHECK_B, input.B_BUTTON);
     CheckDlgButton(statusDlg, IDC_CHECK_START, input.START_BUTTON);
@@ -1529,7 +1534,7 @@ int Status::create_new_combo()
 {
     auto combo = new Combos::Combo();
     combos.push_back(combo);
-    return ListBox_InsertString(listbox, -1, combo->name.c_str());
+    return ListBox_InsertString(combo_listbox, -1, combo->name.c_str());
 }
 
 void Status::set_status(std::string str)
@@ -1542,15 +1547,17 @@ void Status::set_status(std::string str)
 void Status::StartEdit(int id)
 {
     RECT item_rect;
-    ListBox_GetItemRect(listbox, id, &item_rect);
-    HWND edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left, item_rect.top,
-                                  item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4, listbox, 0, g_hInstance, 0);
+    ListBox_GetItemRect(combo_listbox, id, &item_rect);
+    HWND edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left,
+                                   item_rect.top,
+                                   item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4,
+                                   combo_listbox, 0, g_hInstance, 0);
     // Clear selection to prevent it from repainting randomly and fighting with our textbox
-    ListBox_SetCurSel(listbox, -1); 
-    SendMessage(edit_box,WM_SETFONT, (WPARAM)SendMessage(listbox, WM_GETFONT, 0, 0), 0);
+    ListBox_SetCurSel(combo_listbox, -1);
+    SendMessage(edit_box,WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
     SetWindowSubclass(edit_box, EditBoxProc, 0, 0);
     char txt[MAX_PATH];
-    ListBox_GetText(listbox, active_combo_index, txt);
+    ListBox_GetText(combo_listbox, active_combo_index, txt);
     SendMessage(edit_box, WM_SETTEXT, 0, (LPARAM)txt);
     PostMessage(statusDlg, WM_NEXTDLGCTL, (WPARAM)edit_box, TRUE);
 }
@@ -1559,7 +1566,7 @@ void Status::EndEdit(int id, char* name)
 {
     if (name != NULL)
     {
-        ListBox_DeleteString(listbox, id);
+        ListBox_DeleteString(combo_listbox, id);
 
         if (name[0] == NULL)
         {
@@ -1567,7 +1574,7 @@ void Status::EndEdit(int id, char* name)
         }
         else
         {
-            ListBox_InsertString(listbox, id, name);
+            ListBox_InsertString(combo_listbox, id, name);
         }
     }
     set_status("Idle");
@@ -1585,7 +1592,7 @@ void Status::load_combos(const char* path)
 
     for (auto combo : combos)
     {
-        ListBox_InsertString(listbox, -1, combo->name.c_str());
+        ListBox_InsertString(combo_listbox, -1, combo->name.c_str());
     }
 }
 
@@ -1614,11 +1621,11 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
     AppendMenu(hMenu, new_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_config, float_from_parent),
                "Float from parent");
     AppendMenu(hMenu, new_config.titlebar ? MF_CHECKED : 0, offsetof(t_config, titlebar),
-           "Titlebar");
+               "Titlebar");
     AppendMenu(hMenu, new_config.client_drag ? MF_CHECKED : 0, offsetof(t_config, client_drag),
                "Client drag");
     AppendMenu(hMenu, new_config.hifi_joystick ? MF_CHECKED : 0, offsetof(t_config, hifi_joystick),
-           "High-quality joystick");
+               "High-quality joystick");
 
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
 
@@ -1631,7 +1638,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 
     for (auto status_dlg : status)
     {
-        if (status_dlg.initialized && status_dlg.statusDlg)
+        if (status_dlg.ready && status_dlg.statusDlg)
         {
             status_dlg.on_config_changed();
         }
@@ -1661,135 +1668,132 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     bool rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
     bool lmb_just_up = !lmb_down && last_lmb_down;
     bool rmb_just_down = rmb_down && !last_rmb_down;
-    
+
     if (!lmb_down)
     {
         is_dragging_window = false;
     }
-    
-    if (initialized || msg == WM_INITDIALOG /*|| msg == WM_DESTROY || msg == WM_NCDESTROY*/)
-        switch (msg)
+
+    switch (msg)
+    {
+    case WM_CONTEXTMENU:
+        ShowContextMenu(statusDlg, (HWND)wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        break;
+    case WM_INITDIALOG:
         {
-        case WM_CONTEXTMENU:
-            ShowContextMenu(statusDlg, (HWND)wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-            break;
-        case WM_INITDIALOG:
+            GetClientRect(statusDlg, &initial_client_rect);
+            GetWindowRect(statusDlg, &initial_window_rect);
+
+            x_scale = 1.0f;
+            y_scale = 1.0f;
+            is_dragging_stick = false;
+
+            SetWindowText(statusDlg, std::format("TASInput - Controller {}", controller_index + 1).c_str());
+
+            // set ranges
+            SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
+            SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, 1000);
+            SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
+            SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, 1000);
+
+            if (new_config.dialog_expanded[controller_index])
             {
-                GetClientRect(statusDlg, &initial_client_rect);
-                GetWindowRect(statusDlg, &initial_window_rect);
-                
-                x_scale = 1.0f;
-                y_scale = 1.0f;
-                is_dragging_stick = false;
-
-                SetWindowText(statusDlg, std::format("TASInput - Controller {}", controller_index + 1).c_str());
-
-                // set ranges
-                SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
-                SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, 1000);
-                SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
-                SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, 1000);
-                
-                if (new_config.dialog_expanded[controller_index])
-                {
-                    SetDlgItemText(statusDlg, IDC_EXPAND, "Less");
-                }
-                
-                // begin accepting other messages
-                initialized = true;
-
-                //Load combos
-                //I realised there's HasPanel() too, but doesn't make much difference
-                listbox = GetDlgItem(statusDlg, IDC_MACROLIST);
-                if (listbox)
-                {
-                    clear_combos();
-                    load_combos("combos.cmb");
-                }
-
-                // windows likes to scale stick control in particular, so we force it to a specific size
-                SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
-
-                SetTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index, 1, nullptr);
-                on_config_changed();
-            }
-            break;
-        case SC_MINIMIZE:
-            DestroyMenu(hMenu); // nuke context menu when minimized...
-            break;
-        case WM_NCDESTROY:
-        case WM_DESTROY:
-            {
-                initialized = false;
-                KillTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index);
-                statusDlg = NULL;
-            }
-            break;
-        case WM_SETCURSOR:
-            {
-                if (lmb_just_up)
-                {
-                    // activate mupen window to allow it to get key inputs
-                    activate_emulator_window();
-                }
-
-                if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERX))
-                {
-                    SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
-                }
-
-                if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERY))
-                {
-                    SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
-                }
-
-                if (rmb_just_down)
-                {
-                    AUTOFIRE(IDC_CHECK_A, A_BUTTON);
-                    AUTOFIRE(IDC_CHECK_B, B_BUTTON);
-                    AUTOFIRE(IDC_CHECK_START, START_BUTTON);
-                    AUTOFIRE(IDC_CHECK_L, L_TRIG);
-                    AUTOFIRE(IDC_CHECK_R, R_TRIG);
-                    AUTOFIRE(IDC_CHECK_Z, Z_TRIG);
-                    AUTOFIRE(IDC_CHECK_CUP, U_CBUTTON);
-                    AUTOFIRE(IDC_CHECK_CLEFT, L_CBUTTON);
-                    AUTOFIRE(IDC_CHECK_CRIGHT, R_CBUTTON);
-                    AUTOFIRE(IDC_CHECK_CDOWN, D_CBUTTON);
-                    AUTOFIRE(IDC_CHECK_DUP, U_DPAD);
-                    AUTOFIRE(IDC_CHECK_DLEFT, L_DPAD);
-                    AUTOFIRE(IDC_CHECK_DRIGHT, R_DPAD);
-                    AUTOFIRE(IDC_CHECK_DDOWN, D_DPAD);
-                    set_visuals(current_input);
-                }
-
-                last_lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
-                last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
-            }
-            break;
-        case WM_TIMER:
-            
-            if (is_dragging_window)
-            {
-                POINT cursor_position = {0};
-                GetCursorPos(&cursor_position);
-                SetWindowPos(statusDlg, nullptr, cursor_position.x - dragging_window_cursor_diff.x, cursor_position.y - dragging_window_cursor_diff.y, 0, 0, SWP_NOSIZE);
-            }
-            
-            if (is_getting_keys)
-            {
-                break;
+                SetDlgItemText(statusDlg, IDC_EXPAND, "Less");
             }
 
-            // We can't capture mouse correctly in a dialog,
-            // so we have to rely on WM_TIMER for updating the joystick position when the cursor is outside of client bounds
-            update_joystick_position();
-            
-            // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events 
-            BUTTONS controller_input = get_controller_input();
-
-            if (controller_input.Value != last_controller_input.Value)
+            combo_listbox = GetDlgItem(statusDlg, IDC_MACROLIST);
+            if (combo_listbox)
             {
-                // Input changed, override everything with current
+                clear_combos();
+                load_combos("combos.cmb");
+            }
+
+            // windows likes to scale stick control in particular, so we force it to a specific size
+            SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
+
+            SetTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index, 1, nullptr);
+            on_config_changed();
+
+            ready = true;
+        }
+        break;
+    case SC_MINIMIZE:
+        DestroyMenu(hMenu); // nuke context menu when minimized...
+        break;
+    case WM_NCDESTROY:
+    case WM_DESTROY:
+        {
+            ready = false;
+            KillTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index);
+            statusDlg = NULL;
+        }
+        break;
+    case WM_SETCURSOR:
+        {
+            if (lmb_just_up)
+            {
+                // activate mupen window to allow it to get key inputs
+                activate_emulator_window();
+            }
+
+            if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERX))
+            {
+                SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
+            }
+
+            if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERY))
+            {
+                SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
+            }
+
+            if (rmb_just_down)
+            {
+                AUTOFIRE(IDC_CHECK_A, A_BUTTON);
+                AUTOFIRE(IDC_CHECK_B, B_BUTTON);
+                AUTOFIRE(IDC_CHECK_START, START_BUTTON);
+                AUTOFIRE(IDC_CHECK_L, L_TRIG);
+                AUTOFIRE(IDC_CHECK_R, R_TRIG);
+                AUTOFIRE(IDC_CHECK_Z, Z_TRIG);
+                AUTOFIRE(IDC_CHECK_CUP, U_CBUTTON);
+                AUTOFIRE(IDC_CHECK_CLEFT, L_CBUTTON);
+                AUTOFIRE(IDC_CHECK_CRIGHT, R_CBUTTON);
+                AUTOFIRE(IDC_CHECK_CDOWN, D_CBUTTON);
+                AUTOFIRE(IDC_CHECK_DUP, U_DPAD);
+                AUTOFIRE(IDC_CHECK_DLEFT, L_DPAD);
+                AUTOFIRE(IDC_CHECK_DRIGHT, R_DPAD);
+                AUTOFIRE(IDC_CHECK_DDOWN, D_DPAD);
+                set_visuals(current_input);
+            }
+
+            last_lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
+            last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
+        }
+        break;
+    case WM_TIMER:
+
+        if (is_dragging_window)
+        {
+            POINT cursor_position = {0};
+            GetCursorPos(&cursor_position);
+            SetWindowPos(statusDlg, nullptr, cursor_position.x - dragging_window_cursor_diff.x,
+                         cursor_position.y - dragging_window_cursor_diff.y, 0, 0, SWP_NOSIZE);
+        }
+
+        if (is_getting_keys)
+        {
+            break;
+        }
+
+    // We can't capture mouse correctly in a dialog,
+    // so we have to rely on WM_TIMER for updating the joystick position when the cursor is outside of client bounds
+        update_joystick_position();
+
+    // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events 
+        BUTTONS controller_input = get_controller_input();
+
+        if (controller_input.Value != last_controller_input.Value)
+        {
+            // Input changed, override everything with current
 
 #define BTN(field)\
                 if (controller_input.field && !last_controller_input.field)\
@@ -1799,131 +1803,130 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 if (!controller_input.field && last_controller_input.field)\
                 {\
                     current_input.field = 0;\
-                }\
-
+                }
 #define JOY(field)\
                 if (controller_input.field != last_controller_input.field)\
                 {\
                     current_input.field = controller_input.field;\
-                }\
-                
-                BTN(R_DPAD)
-                BTN(L_DPAD)
-                BTN(D_DPAD)
-                BTN(U_DPAD)
-                BTN(START_BUTTON)
-                BTN(Z_TRIG)
-                BTN(B_BUTTON)
-                BTN(A_BUTTON)
-                BTN(R_CBUTTON)
-                BTN(L_CBUTTON)
-                BTN(D_CBUTTON)
-                BTN(U_CBUTTON)
-                BTN(R_TRIG)
-                BTN(L_TRIG)
-                JOY(X_AXIS)
-                JOY(Y_AXIS)
-                
-                set_visuals(current_input);
-            }
-            
-            last_controller_input = controller_input;
-            break;
-        case WM_PAINT:
-            {
-                // get dimensions of target control in client(!!!) coordinates
-                RECT window_rect;
-                RECT joystick_rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
-
-                // HACK: we compensate the static edge size
-                joystick_rect.left += 2;
-                joystick_rect.top += 2;
-                joystick_rect.right -= 4;
-                joystick_rect.bottom -= 4;
-
-                GetClientRect(statusDlg, &window_rect);
-                POINT joystick_rect_size = {
-                    joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top
-                };
-
-
-                // set up double buffering
-                PAINTSTRUCT ps;
-                HDC hdc = BeginPaint(statusDlg, &ps);
-                HDC compat_dc = CreateCompatibleDC(hdc);
-                int scale = new_config.hifi_joystick ? 4 : 1;
-                POINT bmp_size = {joystick_rect_size.x * scale, joystick_rect_size.y * scale };
-                HBITMAP bmp = CreateCompatibleBitmap(hdc, bmp_size.x, bmp_size.y);
-                SelectObject(compat_dc, bmp);
-
-                HPEN outline_pen = CreatePen(PS_SOLID, 1 * scale, RGB(0, 0, 0));
-                HPEN line_pen = CreatePen(PS_SOLID, 3 * scale, RGB(0, 0, 255));
-                HPEN tip_pen = CreatePen(PS_SOLID, 7 * scale, RGB(255, 0, 0));
-
-                int mid_x = bmp_size.x / 2;
-                int mid_y = bmp_size.y / 2;
-                int stick_x = (current_input.X_AXIS + 128) * bmp_size.x / 256;
-                int stick_y = (-current_input.Y_AXIS + 128) * bmp_size.y / 256;
-
-                // clear background with color which makes background (hopefully)
-                // cool idea: maybe use user accent color for joystick tip?
-                RECT normalized = {0, 0, bmp_size.x, bmp_size.y};
-                FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_BTNFACE));
-
-                // draw the back layer: ellipse and alignment lines
-                SelectObject(compat_dc, outline_pen);
-                Ellipse(compat_dc, 0, 0, bmp_size.x, bmp_size.y);
-                MoveToEx(compat_dc, 0, mid_y, NULL);
-                LineTo(compat_dc, bmp_size.x, mid_y);
-                MoveToEx(compat_dc, mid_x, 0, NULL);
-                LineTo(compat_dc, mid_x, bmp_size.y);
-
-                // now joystick line
-                SelectObject(compat_dc, line_pen);
-                MoveToEx(compat_dc, mid_x, mid_y, nullptr);
-                LineTo(compat_dc, stick_x, stick_y);
-
-                // and finally the joystick tip
-                SelectObject(compat_dc, tip_pen);
-                MoveToEx(compat_dc, stick_x, stick_y, NULL);
-                LineTo(compat_dc, stick_x, stick_y);
-
-                // release pen from dc or it will be leaked
-                SelectObject(compat_dc, nullptr);
-
-                // now we can blit the new picture in one pass
-                SetStretchBltMode(hdc, HALFTONE);
-                SetStretchBltMode(compat_dc, HALFTONE);
-                StretchBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y, compat_dc, 0, 0, bmp_size.x, bmp_size.y, SRCCOPY);
-                EndPaint(statusDlg, &ps);
-                DeleteDC(compat_dc);
-                DeleteObject(bmp);
-                DeleteObject(outline_pen);
-                DeleteObject(line_pen);
-                DeleteObject(tip_pen);
-            }
-
-            break;
-        case WM_NOTIFY:
-            {
-                switch (LOWORD(wParam))
-                {
-                case IDC_SLIDERX:
-                    {
-                        int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_GETPOS, 0, 0);
-                        x_scale = pos / 1000.0f;
-                    }
-                    break;
-
-                case IDC_SLIDERY:
-                    {
-                        int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETPOS, 0, 0);
-                        y_scale = pos / 1000.0f;
-                    }
-                    break;
                 }
+            BTN(R_DPAD)
+            BTN(L_DPAD)
+            BTN(D_DPAD)
+            BTN(U_DPAD)
+            BTN(START_BUTTON)
+            BTN(Z_TRIG)
+            BTN(B_BUTTON)
+            BTN(A_BUTTON)
+            BTN(R_CBUTTON)
+            BTN(L_CBUTTON)
+            BTN(D_CBUTTON)
+            BTN(U_CBUTTON)
+            BTN(R_TRIG)
+            BTN(L_TRIG)
+            JOY(X_AXIS)
+            JOY(Y_AXIS)
+
+            set_visuals(current_input);
+        }
+
+        last_controller_input = controller_input;
+        break;
+    case WM_PAINT:
+        {
+            // get dimensions of target control in client(!!!) coordinates
+            RECT window_rect;
+            RECT joystick_rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
+
+            // HACK: we compensate the static edge size
+            joystick_rect.left += 2;
+            joystick_rect.top += 2;
+            joystick_rect.right -= 4;
+            joystick_rect.bottom -= 4;
+
+            GetClientRect(statusDlg, &window_rect);
+            POINT joystick_rect_size = {
+                joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top
+            };
+
+
+            // set up double buffering
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(statusDlg, &ps);
+            HDC compat_dc = CreateCompatibleDC(hdc);
+            int scale = new_config.hifi_joystick ? 4 : 1;
+            POINT bmp_size = {joystick_rect_size.x * scale, joystick_rect_size.y * scale};
+            HBITMAP bmp = CreateCompatibleBitmap(hdc, bmp_size.x, bmp_size.y);
+            SelectObject(compat_dc, bmp);
+
+            HPEN outline_pen = CreatePen(PS_SOLID, 1 * scale, RGB(0, 0, 0));
+            HPEN line_pen = CreatePen(PS_SOLID, 3 * scale, RGB(0, 0, 255));
+            HPEN tip_pen = CreatePen(PS_SOLID, 7 * scale, RGB(255, 0, 0));
+
+            int mid_x = bmp_size.x / 2;
+            int mid_y = bmp_size.y / 2;
+            int stick_x = (current_input.X_AXIS + 128) * bmp_size.x / 256;
+            int stick_y = (-current_input.Y_AXIS + 128) * bmp_size.y / 256;
+
+            // clear background with color which makes background (hopefully)
+            // cool idea: maybe use user accent color for joystick tip?
+            RECT normalized = {0, 0, bmp_size.x, bmp_size.y};
+            FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_BTNFACE));
+
+            // draw the back layer: ellipse and alignment lines
+            SelectObject(compat_dc, outline_pen);
+            Ellipse(compat_dc, 0, 0, bmp_size.x, bmp_size.y);
+            MoveToEx(compat_dc, 0, mid_y, NULL);
+            LineTo(compat_dc, bmp_size.x, mid_y);
+            MoveToEx(compat_dc, mid_x, 0, NULL);
+            LineTo(compat_dc, mid_x, bmp_size.y);
+
+            // now joystick line
+            SelectObject(compat_dc, line_pen);
+            MoveToEx(compat_dc, mid_x, mid_y, nullptr);
+            LineTo(compat_dc, stick_x, stick_y);
+
+            // and finally the joystick tip
+            SelectObject(compat_dc, tip_pen);
+            MoveToEx(compat_dc, stick_x, stick_y, NULL);
+            LineTo(compat_dc, stick_x, stick_y);
+
+            // release pen from dc or it will be leaked
+            SelectObject(compat_dc, nullptr);
+
+            // now we can blit the new picture in one pass
+            SetStretchBltMode(hdc, HALFTONE);
+            SetStretchBltMode(compat_dc, HALFTONE);
+            StretchBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y,
+                       compat_dc, 0, 0, bmp_size.x, bmp_size.y, SRCCOPY);
+            EndPaint(statusDlg, &ps);
+            DeleteDC(compat_dc);
+            DeleteObject(bmp);
+            DeleteObject(outline_pen);
+            DeleteObject(line_pen);
+            DeleteObject(tip_pen);
+        }
+
+        break;
+    case WM_NOTIFY:
+        {
+            switch (LOWORD(wParam))
+            {
+            case IDC_SLIDERX:
+                {
+                    int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_GETPOS, 0, 0);
+                    x_scale = pos / 1000.0f;
+                }
+                break;
+
+            case IDC_SLIDERY:
+                {
+                    int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETPOS, 0, 0);
+                    y_scale = pos / 1000.0f;
+                }
+                break;
             }
-            break;
+        }
+        break;
     case WM_MOUSEWHEEL:
         {
             if (!IsMouseOverControl(statusDlg,IDC_STICKPIC))
@@ -1932,18 +1935,19 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             }
             auto delta = GET_WHEEL_DELTA_WPARAM(wParam);
             auto increment = delta < 0 ? -1 : 1;
-            
+
             if (GetKeyState(VK_CONTROL) & 0x8000)
             {
                 current_input.X_AXIS -= increment;
-            } else if(GetKeyState(VK_SHIFT) & 0x8000)
+            }
+            else if (GetKeyState(VK_SHIFT) & 0x8000)
             {
                 // We change the angle, keeping magnitude
-               float angle = atan2f(current_input.Y_AXIS, current_input.X_AXIS);
-               float mag = floorf(sqrtf(powf(current_input.X_AXIS, 2) + powf(current_input.Y_AXIS, 2)));
-               float new_ang = angle + (increment * (PI / 180.0f));
-               current_input.X_AXIS = (int)(mag * cosf(new_ang));
-               current_input.Y_AXIS = (int)(mag * sinf(new_ang));
+                float angle = atan2f(current_input.Y_AXIS, current_input.X_AXIS);
+                float mag = floorf(sqrtf(powf(current_input.X_AXIS, 2) + powf(current_input.Y_AXIS, 2)));
+                float new_ang = angle + (increment * (PI / 180.0f));
+                current_input.X_AXIS = (int)(mag * cosf(new_ang));
+                current_input.Y_AXIS = (int)(mag * sinf(new_ang));
             }
             else
             {
@@ -1953,124 +1957,124 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             set_visuals(current_input);
         }
         break;
-        case WM_LBUTTONDOWN:
+    case WM_LBUTTONDOWN:
+        {
+            if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
             {
-                if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
-                {
-                    is_dragging_stick = true;
-                    activate_emulator_window();
-                }
+                is_dragging_stick = true;
+                activate_emulator_window();
+            }
 
-                if (!new_config.client_drag)
-                {
-                    break;
-                }
+            if (!new_config.client_drag)
+            {
+                break;
+            }
 
-                POINT cursor_position = {0};
-                GetCursorPos(&cursor_position);
-                // NOTE: Windows doesn't consider STATIC controls when hittesting, so we need to check for the stick picture manually
-                if (WindowFromPoint(cursor_position) != statusDlg || IsMouseOverControl(statusDlg, IDC_STICKPIC))
-                {
-                    break;
-                }
+            POINT cursor_position = {0};
+            GetCursorPos(&cursor_position);
+            // NOTE: Windows doesn't consider STATIC controls when hittesting, so we need to check for the stick picture manually
+            if (WindowFromPoint(cursor_position) != statusDlg || IsMouseOverControl(statusDlg, IDC_STICKPIC))
+            {
+                break;
+            }
 
-                RECT window_rect = {0};
-                GetWindowRect(statusDlg, &window_rect);
-                
-                is_dragging_window = true;
-                dragging_window_cursor_diff = {
-                    cursor_position.x - window_rect.left,
-                    cursor_position.y - window_rect.top,
-                };
+            RECT window_rect = {0};
+            GetWindowRect(statusDlg, &window_rect);
+
+            is_dragging_window = true;
+            dragging_window_cursor_diff = {
+                cursor_position.x - window_rect.left,
+                cursor_position.y - window_rect.top,
+            };
+        }
+        break;
+    case WM_MOUSEMOVE:
+        update_joystick_position();
+        break;
+    case EDIT_END:
+        EndEdit(active_combo_index, (char*)lParam);
+        break;
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDC_EDITX:
+            {
+                BUTTONS last_input = current_input;
+                char str[32] = {0};
+                GetDlgItemText(statusDlg, IDC_EDITX, str, std::size(str));
+                current_input.X_AXIS = std::atoi(str);
+
+                // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
+                if (current_input.X_AXIS != last_input.X_AXIS)
+                {
+                    set_visuals(current_input);
+                }
             }
             break;
-        case WM_MOUSEMOVE:
-            update_joystick_position();
-            break;
-        case EDIT_END:
-            EndEdit(active_combo_index, (char*)lParam);
-            break;
-        case WM_COMMAND:
-            switch (LOWORD(wParam))
+
+        case IDC_EDITY:
             {
-            case IDC_EDITX:
-                {
-                    BUTTONS last_input = current_input;
-                    char str[32] = {0};
-                    GetDlgItemText(statusDlg, IDC_EDITX, str, std::size(str));
-                    current_input.X_AXIS = std::atoi(str);
- 
-                    // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
-                    if (current_input.X_AXIS != last_input.X_AXIS)
-                    {
-                        set_visuals(current_input);
-                    }
-                }
-                break;
+                BUTTONS last_input = current_input;
+                char str[32] = {0};
+                GetDlgItemText(statusDlg, IDC_EDITY, str, std::size(str));
+                current_input.Y_AXIS = std::atoi(str);
 
-            case IDC_EDITY:
+                // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
+                if (current_input.Y_AXIS != last_input.Y_AXIS)
                 {
-                    BUTTONS last_input = current_input;
-                    char str[32] = {0};
-                    GetDlgItemText(statusDlg, IDC_EDITY, str, std::size(str));
-                    current_input.Y_AXIS = std::atoi(str);
-
-                    // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
-                    if (current_input.Y_AXIS != last_input.Y_AXIS)
-                    {
-                        set_visuals(current_input);
-                    }
+                    set_visuals(current_input);
                 }
-                break;
-            //on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
-            case IDC_CHECK_A:
-                TOGGLE(A_BUTTON);
-                break;
-            case IDC_CHECK_B:
-                TOGGLE(B_BUTTON);
-                break;
-            case IDC_CHECK_START:
-                TOGGLE(START_BUTTON);
-                break;
-            case IDC_CHECK_Z:
-                TOGGLE(Z_TRIG);
-                break;
-            case IDC_CHECK_L:
-                TOGGLE(L_TRIG);
-                break;
-            case IDC_CHECK_R:
-                TOGGLE(R_TRIG);
-                break;
-            case IDC_CHECK_CLEFT:
-                TOGGLE(L_CBUTTON);
-                break;
-            case IDC_CHECK_CUP:
-                TOGGLE(U_CBUTTON);
-                break;
-            case IDC_CHECK_CRIGHT:
-                TOGGLE(R_CBUTTON);
-                break;
-            case IDC_CHECK_CDOWN:
-                TOGGLE(D_CBUTTON);
-                break;
-            case IDC_CHECK_DLEFT:
-                TOGGLE(L_DPAD);
-                break;
-            case IDC_CHECK_DUP:
-                TOGGLE(U_DPAD);
-                break;
-            case IDC_CHECK_DRIGHT:
-                TOGGLE(R_DPAD);
-                break;
-            case IDC_CHECK_DDOWN:
-                TOGGLE(D_DPAD);
-                break;
-            case IDC_CLEARINPUT:
-                current_input = {0};
-                autofire_input_a = {0};
-                autofire_input_b = {0};
-                set_visuals(current_input);
-                break;
+            }
+            break;
+        //on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
+        case IDC_CHECK_A:
+            TOGGLE(A_BUTTON);
+            break;
+        case IDC_CHECK_B:
+            TOGGLE(B_BUTTON);
+            break;
+        case IDC_CHECK_START:
+            TOGGLE(START_BUTTON);
+            break;
+        case IDC_CHECK_Z:
+            TOGGLE(Z_TRIG);
+            break;
+        case IDC_CHECK_L:
+            TOGGLE(L_TRIG);
+            break;
+        case IDC_CHECK_R:
+            TOGGLE(R_TRIG);
+            break;
+        case IDC_CHECK_CLEFT:
+            TOGGLE(L_CBUTTON);
+            break;
+        case IDC_CHECK_CUP:
+            TOGGLE(U_CBUTTON);
+            break;
+        case IDC_CHECK_CRIGHT:
+            TOGGLE(R_CBUTTON);
+            break;
+        case IDC_CHECK_CDOWN:
+            TOGGLE(D_CBUTTON);
+            break;
+        case IDC_CHECK_DLEFT:
+            TOGGLE(L_DPAD);
+            break;
+        case IDC_CHECK_DUP:
+            TOGGLE(U_DPAD);
+            break;
+        case IDC_CHECK_DRIGHT:
+            TOGGLE(R_DPAD);
+            break;
+        case IDC_CHECK_DDOWN:
+            TOGGLE(D_DPAD);
+            break;
+        case IDC_CLEARINPUT:
+            current_input = {0};
+            autofire_input_a = {0};
+            autofire_input_b = {0};
+            set_visuals(current_input);
+            break;
         case IDC_X_DOWN:
         case IDC_X_UP:
             {
@@ -2087,93 +2091,92 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 set_visuals(current_input);
             }
             break;
-            case IDC_EXPAND:
-                {
-                    new_config.dialog_expanded[controller_index] ^= true;
-                    save_config();
-                    start_dialogs();
-                }
-                break;
-            case IDC_PLAY:
-                active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-                if (active_combo_index == -1)
-                {
-                    set_status("No combo selected");
-                    break;
-                }
-                set_status("Playing combo");
-                combo_frame = 0;
-                comboTask = C_PLAY;
-                break;
-            case IDC_STOP:
-                set_status("Idle");
-                comboTask = C_IDLE;
-                break;
-            case IDC_PAUSE:
-                combo_paused ^= true;
-                break;
-            case IDC_LOOP:
-                new_config.loop_combo ^= true;
+        case IDC_EXPAND:
+            {
+                new_config.dialog_expanded[controller_index] ^= true;
                 save_config();
-                break;
-            case IDC_RECORD:
-                if (comboTask == C_RECORD)
-                {
-                    set_status("Recording stopped");
-                    comboTask = C_IDLE;
-                    break;
-                }
-                
-                set_status("Recording new combo...");
-                active_combo_index = create_new_combo();
-                ListBox_SetCurSel(listbox, active_combo_index);
-                comboTask = C_RECORD;
-                break;
-            case IDC_EDIT:
-                active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-                if (active_combo_index == -1)
-                {
-                    set_status("No combo selected");
-                    break;
-                }
-                StartEdit(active_combo_index);
-                break;
-            case IDC_CLEAR:
-                comboTask = C_IDLE;
-                active_combo_index = -1;
-                clear_combos();
-                ListBox_ResetContent(listbox);
-                break;
-            case IDC_IMPORT:
-                {
-                    set_status("Importing...");
-                    OPENFILENAME data = {0};
-                    char file[MAX_PATH] = "\0";
-                    data.lStructSize = sizeof(data);
-                    data.lpstrFilter = "Combo file (*.cmb)\0*.cmb\0\0";
-                    data.nFilterIndex = 1;
-                    data.nMaxFile = MAX_PATH;
-                    data.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-                    data.lpstrFile = file;
-                    if (GetOpenFileName(&data))
-                    {
-                        load_combos(file);
-                    }
-                    set_status("Imported combo data");
-                    break;
-                }
-            case IDC_SAVE:
-                save_combos();
-                set_status("Saved to combos.cmb");
-                break;
-            default:
-                break;
+                start_dialogs();
             }
             break;
+        case IDC_PLAY:
+            active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
+            if (active_combo_index == -1)
+            {
+                set_status("No combo selected");
+                break;
+            }
+            set_status("Playing combo");
+            combo_frame = 0;
+            comboTask = C_PLAY;
+            break;
+        case IDC_STOP:
+            set_status("Idle");
+            comboTask = C_IDLE;
+            break;
+        case IDC_PAUSE:
+            combo_paused ^= true;
+            break;
+        case IDC_LOOP:
+            new_config.loop_combo ^= true;
+            save_config();
+            break;
+        case IDC_RECORD:
+            if (comboTask == C_RECORD)
+            {
+                set_status("Recording stopped");
+                comboTask = C_IDLE;
+                break;
+            }
 
+            set_status("Recording new combo...");
+            active_combo_index = create_new_combo();
+            ListBox_SetCurSel(combo_listbox, active_combo_index);
+            comboTask = C_RECORD;
+            break;
+        case IDC_EDIT:
+            active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
+            if (active_combo_index == -1)
+            {
+                set_status("No combo selected");
+                break;
+            }
+            StartEdit(active_combo_index);
+            break;
+        case IDC_CLEAR:
+            comboTask = C_IDLE;
+            active_combo_index = -1;
+            clear_combos();
+            ListBox_ResetContent(combo_listbox);
+            break;
+        case IDC_IMPORT:
+            {
+                set_status("Importing...");
+                OPENFILENAME data = {0};
+                char file[MAX_PATH] = "\0";
+                data.lStructSize = sizeof(data);
+                data.lpstrFilter = "Combo file (*.cmb)\0*.cmb\0\0";
+                data.nFilterIndex = 1;
+                data.nMaxFile = MAX_PATH;
+                data.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+                data.lpstrFile = file;
+                if (GetOpenFileName(&data))
+                {
+                    load_combos(file);
+                }
+                set_status("Imported combo data");
+                break;
+            }
+        case IDC_SAVE:
+            save_combos();
+            set_status("Saved to combos.cmb");
+            break;
         default:
             break;
         }
+        break;
+
+    default:
+        break;
+    }
     return FALSE; //Using DefWindowProc is prohibited but worked anyway
 }
-
