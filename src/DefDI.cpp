@@ -1512,7 +1512,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             if (GetKeyState(VK_CONTROL) & 0x8000)
             {
-                current_input.X_AXIS -= increment;
+                current_input.Y_AXIS += increment;
             }
             else if (GetKeyState(VK_SHIFT) & 0x8000)
             {
@@ -1525,7 +1525,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             }
             else
             {
-                current_input.Y_AXIS += increment;
+                current_input.X_AXIS += increment;
             }
 
             set_visuals(current_input);
