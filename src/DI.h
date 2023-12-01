@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define _DI_H_INCLUDED__
 
 #define MAX_DEVICES 5
+#include "DefDI.h"
 
 extern BYTE nCurrentDevices;
 
@@ -44,5 +45,15 @@ BOOL WINAPI InitDirectInput(HWND hMainWindow);
 BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
 BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi, LPVOID pContext);
 
+
+/**
+ * \brief Gets the current input for a specific controller index
+ * \param controllers An array of controllers
+ * \param index The index into the array of the controls
+ * \param x_scale The multiplier for the X joystick axis
+ * \param y_scale The multiplier for the Y joystick axis
+ * \return The held controller input
+ */
+BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale);
 
 #endif
