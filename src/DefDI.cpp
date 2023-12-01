@@ -1412,10 +1412,10 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             RECT joystick_rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
 
             // HACK: we compensate the static edge size
-            joystick_rect.left += 2;
-            joystick_rect.top += 2;
-            joystick_rect.right -= 4;
-            joystick_rect.bottom -= 4;
+            joystick_rect.left += 1;
+            joystick_rect.top += 1;
+            joystick_rect.right -= 2;
+            joystick_rect.bottom -= 2;
 
             GetClientRect(statusDlg, &window_rect);
             POINT joystick_rect_size = {
