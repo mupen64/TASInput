@@ -1519,7 +1519,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 // We change the angle, keeping magnitude
                 float angle = atan2f(current_input.Y_AXIS, current_input.X_AXIS);
                 float mag = ceilf(sqrtf(powf(current_input.X_AXIS, 2) + powf(current_input.Y_AXIS, 2)));
-                float new_ang = angle + (increment * (180.0f / PI));
+                float new_ang = angle + (increment * (PI / 180.0f));
                 current_input.X_AXIS = mag * cosf(new_ang);
                 current_input.Y_AXIS = mag * sinf(new_ang);
             }
