@@ -194,6 +194,11 @@ struct Status
     POINT dragging_window_cursor_diff;
 
     /**
+     * \brief The window's position. Used for restoring the position after dialog changes and its position is reset by window manager 
+     */
+    POINT window_position = {0};
+    
+    /**
      * \brief The controller-moved joystick magnitude multiplier for the X axis
      */
     float x_scale = 1.0f;
@@ -1264,6 +1269,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             GetClientRect(statusDlg, &initial_client_rect);
             GetWindowRect(statusDlg, &initial_window_rect);
 
+            SetWindowPos(statusDlg, nullptr, window_position.x, window_position.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
             x_scale = 1.0f;
             y_scale = 1.0f;
             moving_stick = false;
@@ -1584,6 +1590,17 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case EDIT_END:
         EndEdit(active_combo_index, (char*)lParam);
+        break;
+    case WM_SIZE:
+    case WM_MOVE:
+        {
+            RECT window_rect = {0};
+            GetWindowRect(statusDlg, &window_rect);
+            window_position = {
+                window_rect.left,
+                window_rect.top,
+            };
+        }
         break;
     case WM_COMMAND:
         switch (LOWORD(wParam))
