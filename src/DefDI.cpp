@@ -167,7 +167,7 @@ struct Status
 
         CheckDlgButton(statusDlg, IDC_LOOP, new_config.loop_combo);
     }
-
+    
     /**
      * \brief The instance's UI thread
      */
@@ -228,6 +228,16 @@ struct Status
      */
     bool combo_paused = false;
 
+    /**
+     * \brief Whether the joystick is currently being moved
+     */
+    bool moving_stick = false;
+
+    /**
+     * \brief Whether the joystick moving flag won't be reset after releasing the mouse
+     */
+    bool moving_stick_lock = false;
+    
     bool combo_active()
     {
         return active_combo_index != -1;
@@ -262,7 +272,6 @@ struct Status
     // Bitflags for buttons with autofire enabled
     BUTTONS autofire_input_a = {0};
     BUTTONS autofire_input_b = {0};
-    bool is_dragging_stick;
     bool ready;
     HWND statusDlg;
     HWND combo_listbox;
@@ -486,12 +495,12 @@ end:
 void Status::update_joystick_position()
 {
     // we sometimes dont receive lmb up notification, so its better to just check here
-    if (!(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
+    if (!moving_stick_lock && !(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
     {
-        is_dragging_stick = false;
+        moving_stick = false;
     }
 
-    if (!is_dragging_stick)
+    if (!moving_stick)
     {
         return;
     }
@@ -1257,7 +1266,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             x_scale = 1.0f;
             y_scale = 1.0f;
-            is_dragging_stick = false;
+            moving_stick = false;
 
             SetWindowText(statusDlg, std::format("TASInput - Controller {}", controller_index + 1).c_str());
 
@@ -1531,11 +1540,19 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             set_visuals(current_input);
         }
         break;
+    case WM_RBUTTONDOWN:
+        if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
+        {
+            moving_stick ^= true;
+            moving_stick_lock ^= true;
+            activate_emulator_window();
+        }
+        break;
     case WM_LBUTTONDOWN:
         {
             if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
             {
-                is_dragging_stick = true;
+                moving_stick = true;
                 activate_emulator_window();
             }
 
