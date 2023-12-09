@@ -528,8 +528,8 @@ void Status::update_joystick_position()
     
     RECT pic_rect;
     GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
-    int x = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
-    int y = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
+    int x = (pt.x * UINT8_MAX / (signed)(pic_rect.right - pic_rect.left) - INT8_MAX + 1);
+    int y = -(pt.y * UINT8_MAX / (signed)(pic_rect.bottom - pic_rect.top) - INT8_MAX + 1);
 
     if (joystick_mode == JoystickMode::rel)
     {
@@ -537,20 +537,19 @@ void Status::update_joystick_position()
         y -= joystick_mouse_diff.y;
     }
     
-    // clamp joystick inside of control bounds
-    if (x > 127 || y > 127 || x < -128 || y < -129)
+    // Clamp the value to legal bounds
+    if (x > INT8_MAX || y > INT8_MAX || x < INT8_MIN || y < INT8_MIN)
     {
         int div = max(abs(x), abs(y));
-        x = x * (x > 0 ? 127 : 128) / div;
-        y = y * (y > 0 ? 127 : 128) / div;
+        x = x * INT8_MAX / div;
+        y = y * INT8_MAX / div;
     }
-    // snap clicks to zero
-    if (x < 7 && x > -7)
-        x = 0;
-    if (y < 7 && y > -7)
-        y = 0;
-
     
+    // snap clicks to zero
+    if (abs(x) <= 8)
+        x = 0;
+    if (abs(y) <= 8)
+        y = 0;
     
     current_input.X_AXIS = x;
     current_input.Y_AXIS = y;
