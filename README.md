@@ -9,6 +9,8 @@ Clicking on the joystick:
 `LMB`: Move the joystick to the cursor until LMB is released
     
 `RMB`: Move the joystick to the cursor until RMB is pressed again
+
+`MMB`: Move the joystick relative to its current position until MMB is released
     
 ---
 
