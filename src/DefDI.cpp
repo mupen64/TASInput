@@ -162,7 +162,14 @@ struct Status
 
     void on_config_changed()
     {
-        set_style(statusDlg, GWL_EXSTYLE, WS_EX_TOPMOST, new_config.always_on_top);
+        if (new_config.always_on_top)
+        {
+            SetWindowPos(statusDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        }
+        else
+        {
+            SetWindowPos(statusDlg, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        }
         set_style(statusDlg, GWL_EXSTYLE, WS_EX_TOOLWINDOW, !new_config.float_from_parent);
         set_style(statusDlg, GWL_STYLE, DS_SYSMODAL, !new_config.float_from_parent);
         set_style(statusDlg, GWL_STYLE, WS_CAPTION, new_config.titlebar);
