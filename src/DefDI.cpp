@@ -111,9 +111,16 @@ RECT get_window_rect_client_space(HWND parent, HWND child)
     };
 }
 
-
 struct Status
 {
+    enum class JoystickMode
+    {
+        none,
+        abs,
+        sticky,
+        rel
+    };
+    
     Status()
     {
         show_m64_inputs = false;
@@ -234,14 +241,14 @@ struct Status
     bool combo_paused = false;
 
     /**
-     * \brief Whether the joystick is currently being moved
+     * \brief The current joystick move mode
      */
-    bool moving_stick = false;
-
+    JoystickMode joystick_mode = JoystickMode::none;
+    
     /**
-     * \brief Whether the joystick moving flag won't be reset after releasing the mouse
+     * \brief The joystick position at the last middle mouse button down interaction
      */
-    bool moving_stick_lock = false;
+    POINT mmb_down_joystick_point = {0};
     
     bool combo_active()
     {
@@ -499,13 +506,18 @@ end:
 
 void Status::update_joystick_position()
 {
-    // we sometimes dont receive lmb up notification, so its better to just check here
-    if (!moving_stick_lock && !(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
+    // We don't receive "X_UP" messages when releasing buttons outside of the window, so we need to check here
+    if (joystick_mode == JoystickMode::abs && !(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
     {
-        moving_stick = false;
+        joystick_mode = JoystickMode::none;
+    }
+    
+    if (joystick_mode == JoystickMode::rel && !(GetAsyncKeyState(VK_MBUTTON) & 0x8000))
+    {
+        joystick_mode = JoystickMode::none;
     }
 
-    if (!moving_stick)
+    if (joystick_mode == JoystickMode::none)
     {
         return;
     }
@@ -513,11 +525,12 @@ void Status::update_joystick_position()
     POINT pt;
     GetCursorPos(&pt);
     ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
+    
     RECT pic_rect;
     GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
     int x = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
     int y = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
-
+    
     // clamp joystick inside of control bounds
     if (x > 127 || y > 127 || x < -128 || y < -129)
     {
@@ -531,6 +544,11 @@ void Status::update_joystick_position()
     if (y < 7 && y > -7)
         y = 0;
 
+    if (joystick_mode == JoystickMode::rel)
+    {
+        x = x + (mmb_down_joystick_point.x - x);
+    }
+    
     current_input.X_AXIS = x;
     current_input.Y_AXIS = y;
     set_visuals(current_input);
@@ -1272,7 +1290,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             SetWindowPos(statusDlg, nullptr, window_position.x, window_position.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
             x_scale = 1.0f;
             y_scale = 1.0f;
-            moving_stick = false;
 
             SetWindowText(statusDlg, std::format("TASInput - Controller {}", controller_index + 1).c_str());
 
@@ -1546,11 +1563,21 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             set_visuals(current_input);
         }
         break;
+    case WM_MBUTTONDOWN:
+        if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
+        {
+            joystick_mode = JoystickMode::rel;
+            mmb_down_joystick_point = {
+                current_input.X_AXIS,
+                current_input.Y_AXIS,
+            };
+            activate_emulator_window();
+        }
+        break;
     case WM_RBUTTONDOWN:
         if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
         {
-            moving_stick ^= true;
-            moving_stick_lock ^= true;
+            joystick_mode = joystick_mode == JoystickMode::none ? JoystickMode::sticky : JoystickMode::none;
             activate_emulator_window();
         }
         break;
@@ -1558,7 +1585,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         {
             if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
             {
-                moving_stick = true;
+                joystick_mode = JoystickMode::abs;
                 activate_emulator_window();
             }
 
