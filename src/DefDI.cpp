@@ -246,9 +246,9 @@ struct Status
     JoystickMode joystick_mode = JoystickMode::none;
     
     /**
-     * \brief The joystick position at the last middle mouse button down interaction
+     * \brief The difference between the mouse and joystick's mapped position at the last middle mouse button down interaction
      */
-    POINT mmb_down_joystick_point = {0};
+    POINT joystick_mouse_diff = {0};
     
     bool combo_active()
     {
@@ -530,6 +530,12 @@ void Status::update_joystick_position()
     GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
     int x = (pt.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
     int y = -(pt.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
+
+    if (joystick_mode == JoystickMode::rel)
+    {
+        x -= joystick_mouse_diff.x;
+        y -= joystick_mouse_diff.y;
+    }
     
     // clamp joystick inside of control bounds
     if (x > 127 || y > 127 || x < -128 || y < -129)
@@ -544,10 +550,7 @@ void Status::update_joystick_position()
     if (y < 7 && y > -7)
         y = 0;
 
-    if (joystick_mode == JoystickMode::rel)
-    {
-        x = x + (mmb_down_joystick_point.x - x);
-    }
+    
     
     current_input.X_AXIS = x;
     current_input.Y_AXIS = y;
@@ -1566,11 +1569,21 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_MBUTTONDOWN:
         if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
         {
-            joystick_mode = JoystickMode::rel;
-            mmb_down_joystick_point = {
-                current_input.X_AXIS,
-                current_input.Y_AXIS,
+            POINT cursor;
+            GetCursorPos(&cursor);
+            ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &cursor);
+
+            RECT pic_rect;
+            GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
+            int x = (cursor.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
+            int y = -(cursor.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
+            
+            joystick_mouse_diff = POINT {
+                x - current_input.X_AXIS,
+                y - current_input.Y_AXIS,
             };
+            
+            joystick_mode = JoystickMode::rel;
             activate_emulator_window();
         }
         break;
