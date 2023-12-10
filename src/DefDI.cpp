@@ -1000,8 +1000,9 @@ void Status::save_combos()
 //load combos to listBox
 void Status::load_combos(const char* path)
 {
-    combos = Combos::find("combos.cmb");
+    combos = Combos::find(path);
 
+    ListBox_ResetContent(combo_listbox);
     for (auto combo : combos)
     {
         ListBox_InsertString(combo_listbox, -1, combo->name.c_str());
