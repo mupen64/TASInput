@@ -19,16 +19,13 @@ namespace Combos
         {
             auto combo = new Combo();
 
-            char name[260] = "Unnamed Combo";
+            std::string name;
 
-            int i = 0;
             while (current != '\0')
             {
-                name[i] = current;
+                name.push_back(current);
                 current = fgetc(f);
-                i++;
             }
-            name[i++] = '\0';
 
             combo->name = name;
 
