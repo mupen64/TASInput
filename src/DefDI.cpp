@@ -257,6 +257,11 @@ struct Status
      */
     POINT joystick_mouse_diff = {0};
     
+    /**
+     * \brief Handle of the edit box used for renaming combos
+     */
+    HWND combo_edit_box = nullptr;
+    
     bool combo_active()
     {
         return active_combo_index != -1;
@@ -575,7 +580,7 @@ BUTTONS Status::get_processed_input(BUTTONS input)
 
 void Status::activate_emulator_window()
 {
-    if (GetFocus() == GetDlgItem(statusDlg, IDC_EDITX) || GetFocus() == GetDlgItem(statusDlg, IDC_EDITY))
+    if (GetFocus() == GetDlgItem(statusDlg, IDC_EDITX) || GetFocus() == GetDlgItem(statusDlg, IDC_EDITY) || (combo_edit_box != nullptr && GetFocus() == combo_edit_box))
     {
         return;
     }
@@ -955,18 +960,18 @@ void Status::StartEdit(int id)
 {
     RECT item_rect;
     ListBox_GetItemRect(combo_listbox, id, &item_rect);
-    HWND edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left,
+    combo_edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left,
                                    item_rect.top,
                                    item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4,
                                    combo_listbox, 0, g_hInstance, 0);
     // Clear selection to prevent it from repainting randomly and fighting with our textbox
     ListBox_SetCurSel(combo_listbox, -1);
-    SendMessage(edit_box,WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
-    SetWindowSubclass(edit_box, EditBoxProc, 0, 0);
+    SendMessage(combo_edit_box,WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
+    SetWindowSubclass(combo_edit_box, EditBoxProc, 0, 0);
     char txt[MAX_PATH];
     ListBox_GetText(combo_listbox, active_combo_index, txt);
-    SendMessage(edit_box, WM_SETTEXT, 0, (LPARAM)txt);
-    PostMessage(statusDlg, WM_NEXTDLGCTL, (WPARAM)edit_box, TRUE);
+    SendMessage(combo_edit_box, WM_SETTEXT, 0, (LPARAM)txt);
+    PostMessage(statusDlg, WM_NEXTDLGCTL, (WPARAM)combo_edit_box, TRUE);
 }
 
 void Status::EndEdit(int id, char* name)
@@ -1432,6 +1437,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case EDIT_END:
         EndEdit(active_combo_index, (char*)lParam);
+        combo_edit_box = nullptr;
         break;
     case WM_SIZE:
     case WM_MOVE:
