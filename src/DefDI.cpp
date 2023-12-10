@@ -428,16 +428,6 @@ EXPORT void CALL SetKeys(int Control, BUTTONS ControllerInput)
         status[Control].SetKeys(ControllerInput);
 }
 
-//check if given combo data uses joystick
-bool ParseCombo(BUTTONS* data, int len)
-{
-    for (int i = 0; i != len; i++)
-    {
-        if (data[i].X_AXIS || data[i].Y_AXIS) return true;
-    }
-    return false;
-}
-
 LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR sId, DWORD_PTR dwRefData)
 {
     switch (msg)
