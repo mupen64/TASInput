@@ -444,14 +444,11 @@ LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
     {
     case WM_GETDLGCODE:
         {
-            char txt[MAX_PATH] = "\0";
             if (wParam == VK_RETURN)
             {
-                SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
-                SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
-                DestroyWindow(hwnd);
+                goto apply;
             }
-            else if (wParam == VK_ESCAPE)
+            if (wParam == VK_ESCAPE)
             {
                 DestroyWindow(hwnd);
             }
@@ -459,16 +456,22 @@ LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
         }
     case WM_KILLFOCUS:
         {
-            char txt[MAX_PATH] = {0};
-            SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
-            SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
-            DestroyWindow(hwnd);
-            break;
+            goto apply;
         }
     case WM_NCDESTROY:
         RemoveWindowSubclass(hwnd, EditBoxProc, sId);
     }
     return DefSubclassProc(hwnd, msg, wParam, lParam);
+
+    apply:
+    
+    char txt[MAX_PATH] = "\0";
+    SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
+    SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
+    DestroyWindow(hwnd);
+
+    return DefSubclassProc(hwnd, msg, wParam, lParam);
+
 }
 
 
