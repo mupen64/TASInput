@@ -1156,6 +1156,14 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_SETCURSOR:
         {
+            if (is_dragging_window)
+            {
+                POINT cursor_position = {0};
+                GetCursorPos(&cursor_position);
+                SetWindowPos(statusDlg, nullptr, cursor_position.x - dragging_window_cursor_diff.x,
+                             cursor_position.y - dragging_window_cursor_diff.y, 0, 0, SWP_NOSIZE | SWP_NOREDRAW);
+            }
+            
             if (lmb_just_up || rmb_just_up)
             {
                 // activate mupen window to allow it to get key inputs
@@ -1196,15 +1204,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_TIMER:
-
-        if (is_dragging_window)
-        {
-            POINT cursor_position = {0};
-            GetCursorPos(&cursor_position);
-            SetWindowPos(statusDlg, nullptr, cursor_position.x - dragging_window_cursor_diff.x,
-                         cursor_position.y - dragging_window_cursor_diff.y, 0, 0, SWP_NOSIZE);
-        }
-
         if (is_getting_keys)
         {
             break;
