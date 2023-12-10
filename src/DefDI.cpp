@@ -994,6 +994,7 @@ void Status::EndEdit(int id, char* name)
         }
         else
         {
+            combos[id]->name = name;
             ListBox_InsertString(combo_listbox, id, name);
         }
     }
