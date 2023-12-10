@@ -238,6 +238,11 @@ struct Status
     int32_t active_combo_index = -1;
 
     /**
+     * \brief The index of the currently renamed combo into the combos array, or -1 if none is being renamed
+     */
+    int32_t renaming_combo_index = -1;
+    
+    /**
      * \brief The frame count relative to the current combo's start
      */
     int64_t combo_frame = 0;
@@ -969,7 +974,7 @@ void Status::StartEdit(int id)
     SendMessage(combo_edit_box,WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
     SetWindowSubclass(combo_edit_box, EditBoxProc, 0, 0);
     char txt[MAX_PATH];
-    ListBox_GetText(combo_listbox, active_combo_index, txt);
+    ListBox_GetText(combo_listbox, id, txt);
     SendMessage(combo_edit_box, WM_SETTEXT, 0, (LPARAM)txt);
     PostMessage(statusDlg, WM_NEXTDLGCTL, (WPARAM)combo_edit_box, TRUE);
 }
@@ -1437,7 +1442,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         update_joystick_position();
         break;
     case EDIT_END:
-        EndEdit(active_combo_index, (char*)lParam);
+        EndEdit(renaming_combo_index, (char*)lParam);
         combo_edit_box = nullptr;
         break;
     case WM_SIZE:
@@ -1591,13 +1596,13 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             comboTask = C_RECORD;
             break;
         case IDC_EDIT:
-            active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-            if (active_combo_index == -1)
+            renaming_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
+            if (renaming_combo_index == -1)
             {
                 set_status("No combo selected");
                 break;
             }
-            StartEdit(active_combo_index);
+            StartEdit(renaming_combo_index);
             break;
         case IDC_CLEAR:
             comboTask = C_IDLE;
