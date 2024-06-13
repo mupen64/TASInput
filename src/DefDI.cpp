@@ -233,6 +233,16 @@ struct Status
     BUTTONS last_controller_input = {0};
 
     /**
+    * \brief Ignores the next joystick increment, used for relative mode tracking
+    */
+    bool ignore_next_down[2] = {0};
+
+    /**
+    * \brief Ignores the next joystick decrement, used for relative mode tracking
+    */
+    bool ignore_next_up[2] = {0};
+    
+    /**
      * \brief The index of the currently active combo into the combos array, or -1 if none is active
      */
     int32_t active_combo_index = -1;
@@ -1038,6 +1048,8 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 
     // HACK: disable topmost so menu doesnt appear under tasinput
     hMenu = CreatePopupMenu();
+    AppendMenu(hMenu, new_config.relative_mode ? MF_CHECKED : 0, offsetof(t_config, relative_mode),
+           "Relative");
     AppendMenu(hMenu, new_config.always_on_top ? MF_CHECKED : 0, offsetof(t_config, always_on_top),
                "Always on top");
     AppendMenu(hMenu, new_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_config, float_from_parent),
@@ -1229,10 +1241,40 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 {\
                     current_input.field = 0;\
                 }
-#define JOY(field)\
+#define JOY(field, i)\
                 if (controller_input.field != last_controller_input.field)\
                 {\
-                    current_input.field = controller_input.field;\
+                    if(new_config.relative_mode)\
+                    {\
+                        if(controller_input.field > last_controller_input.field)\
+                        {\
+                            if(ignore_next_down[i])\
+                            {\
+                                ignore_next_down[i] = false;\
+                            }\
+                            else\
+                            {\
+                                current_input.field = current_input.field + 5;\
+                                ignore_next_up[i] = true;\
+                            }\
+                        }\
+                        else if(controller_input.field < last_controller_input.field)\
+                        {\
+                            if(ignore_next_up[i])\
+                            {\
+                                ignore_next_up[i] = false;\
+                            }\
+                            else\
+                            {\
+                                current_input.field = current_input.field - 5;\
+                                ignore_next_down[i] = true;\
+                            }\
+                        }\
+                    }\
+                    else\
+                    {\
+                        current_input.field = controller_input.field;\
+                    }\
                 }
             BTN(R_DPAD)
             BTN(L_DPAD)
@@ -1248,13 +1290,13 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             BTN(U_CBUTTON)
             BTN(R_TRIG)
             BTN(L_TRIG)
-            JOY(X_AXIS)
-            JOY(Y_AXIS)
+            JOY(X_AXIS, 0)
+            JOY(Y_AXIS, 1)
 
             set_visuals(current_input);
         }
-
         last_controller_input = controller_input;
+
         break;
     case WM_PAINT:
         {

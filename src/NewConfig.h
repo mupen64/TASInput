@@ -12,6 +12,8 @@ typedef struct s_config
     int32_t dialog_expanded[4] = { 0, 0, 0, 0};
     int32_t controller_active[4] = {1, 0, 0, 0};
     int32_t loop_combo = false;
+    // Increments joystick position by the value of the magnitude slider when moving via keyboard or gamepad 
+    int32_t relative_mode = false;
 } t_config;
 
 extern t_config new_config;
