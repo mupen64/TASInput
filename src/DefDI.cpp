@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <format>
 
 #include "NewConfig.h"
+#include "helpers/math_helpers.h"
 #include "helpers/win_helpers.h"
 
 #ifdef DEBUG
@@ -211,16 +212,6 @@ struct Status
      * \brief The window's position. Used for restoring the position after dialog changes and its position is reset by window manager 
      */
     POINT window_position = {0};
-    
-    /**
-     * \brief The controller-moved joystick magnitude multiplier for the X axis
-     */
-    float x_scale = 1.0f;
-
-    /**
-     * \brief The controller-moved joystick magnitude multiplier for the Y axis
-     */
-    float y_scale = 1.0f;
 
     /**
      * \brief The current internal input state before any processing
@@ -1120,16 +1111,14 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             GetWindowRect(statusDlg, &initial_window_rect);
 
             SetWindowPos(statusDlg, nullptr, window_position.x, window_position.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
-            x_scale = 1.0f;
-            y_scale = 1.0f;
 
             SetWindowText(statusDlg, std::format("TASInput - Controller {}", controller_index + 1).c_str());
 
             // set ranges
-            SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
-            SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, 1000);
-            SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, (LPARAM)MAKELONG(10, 2010));
-            SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, 1000);
+            SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETRANGE, TRUE, MAKELONG(10, 2010));
+            SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, remap(new_config.x_scale[controller_index], 0, 1, 10, 2010));
+            SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETRANGE, TRUE, MAKELONG(10, 2010));
+            SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, remap(new_config.y_scale[controller_index], 0, 1, 10, 2010));
 
             if (new_config.dialog_expanded[controller_index])
             {
@@ -1163,6 +1152,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         {
             ready = false;
             KillTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index);
+            save_config();
             statusDlg = NULL;
         }
         break;
@@ -1226,7 +1216,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         update_joystick_position();
 
         // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events 
-        BUTTONS controller_input = get_controller_input(Controller, controller_index, x_scale, y_scale);
+        BUTTONS controller_input = get_controller_input(Controller, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
 
         if (controller_input.Value != last_controller_input.Value)
         {
@@ -1380,15 +1370,19 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             {
             case IDC_SLIDERX:
                 {
+                    auto min = SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_GETRANGEMIN, 0, 0);
+                    auto max = SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_GETRANGEMAX, 0, 0);
                     int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_GETPOS, 0, 0);
-                    x_scale = pos / 1000.0f;
+                    new_config.x_scale[controller_index] = remap(pos, min, max, 0, 1);
                 }
                 break;
 
             case IDC_SLIDERY:
                 {
+                    auto min = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETRANGEMIN, 0, 0);
+                    auto max = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETRANGEMAX, 0, 0);
                     int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETPOS, 0, 0);
-                    y_scale = pos / 1000.0f;
+                    new_config.y_scale[controller_index] = remap(pos, min, max, 0, 1);
                 }
                 break;
             }

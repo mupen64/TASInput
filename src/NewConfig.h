@@ -3,7 +3,7 @@
 
 typedef struct s_config
 {
-    int32_t version = 3;
+    int32_t version = 4;
     int32_t always_on_top = false;
     int32_t float_from_parent = true;
     int32_t titlebar = true;
@@ -14,6 +14,8 @@ typedef struct s_config
     int32_t loop_combo = false;
     // Increments joystick position by the value of the magnitude slider when moving via keyboard or gamepad 
     int32_t relative_mode = false;
+    float x_scale[4] = { 1, 1, 1, 1};
+    float y_scale[4] = { 1, 1, 1, 1};
 } t_config;
 
 extern t_config new_config;

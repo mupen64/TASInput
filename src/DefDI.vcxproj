@@ -175,6 +175,7 @@
         <ClInclude Include="DefDI.h"/>
         <ClInclude Include="DI.h"/>
         <ClInclude Include="helpers\io_helpers.h" />
+        <ClInclude Include="helpers\math_helpers.h" />
         <ClInclude Include="helpers\string_helpers.h" />
         <ClInclude Include="helpers\win_helpers.h" />
         <ClInclude Include="NewConfig.h" />
