@@ -910,6 +910,21 @@ EXPORT void CALL DllTest(HWND hParent)
 
 EXPORT void CALL RomOpen(void)
 {
+    // Show a warning when no controllers are active
+    size_t active_controllers = 0;
+    for (size_t i = 0; i < NUMBER_OF_CONTROLS; i++)
+    {
+        if (new_config.controller_active[i])
+        {
+            active_controllers++;
+        }
+    }
+
+    if (active_controllers == 0)
+    {
+        MessageBox(emulator_hwnd, "No controllers are active. Please enable at least one controller in the plugin settings, or emulation will not work correctly.", "Warning", MB_ICONWARNING | MB_OK);
+    }
+    
     RomClosed();
     romIsOpen = true;
 
