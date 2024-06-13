@@ -7,7 +7,7 @@ typedef struct s_config
     int32_t always_on_top = false;
     int32_t float_from_parent = true;
     int32_t titlebar = true;
-    int32_t client_drag = false;
+    int32_t client_drag = true;
     int32_t hifi_joystick = false;
     int32_t dialog_expanded[4] = { 0, 0, 0, 0};
     int32_t controller_active[4] = {1, 0, 0, 0};
