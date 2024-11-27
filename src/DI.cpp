@@ -25,6 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <dinput.h>
 #include "controller.h"
 #include "DI.h"
+
+#include <format>
+
 #include "DefDI.h"
 #include "resource.h"
 #include <math.h>
@@ -65,11 +68,9 @@ BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
     auto hMainWindow = (HWND)pvRef;
     BOOL bOK = TRUE;
 
-
     if (nCurrentDevices >= MAX_DEVICES)
         return DIENUM_STOP;
 
-    //if( (GET_DIDEVICE_TYPE(lpddi->dwDevType) == DIDEVTYPE_KEYBOARD) ) 
     if ((lpddi->dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
     {
         memcpy(&DInputDev[nCurrentDevices].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
@@ -83,8 +84,7 @@ BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
                 bOK = FALSE;
         }
     }
-
-    if ((lpddi->dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
+    else if ((lpddi->dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
     {
         memcpy(&DInputDev[nCurrentDevices].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
         if (!FAILED(hr = g_lpDI->CreateDevice( lpddi->guidInstance,
@@ -100,9 +100,14 @@ BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
                 bOK = FALSE;
         }
     }
+    else
+    {
+        return DIENUM_CONTINUE;
+    }
+
     if (DInputDev[nCurrentDevices].lpDIDevice == NULL)
     {
-        MessageBox(0, "Fatal device error, please report issue on github", "error", MB_ICONERROR);
+        MessageBox(0, std::format("Fatal device error, please report issue on github. Type {}, name: {} / {}", lpddi->dwDevType, lpddi->tszInstanceName, lpddi->tszProductName).c_str(), "error", MB_ICONERROR);
         return DIENUM_CONTINUE;
     }
 
@@ -162,10 +167,10 @@ void WINAPI FreeDirectInput()
 BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale)
 {
     auto controller = controllers[index];
-    
+
     if (!controller.bActive)
         return {0};
-    
+
     BUTTONS controller_input = {0};
     BYTE buffer[256]; //Keyboard Info 
     DIJOYSTATE js; //Joystick Info
@@ -533,14 +538,14 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
                 mult2 = 1.0f;
 
             controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS >
-                0
-                    ? 0.5f
-                    : -0.5f));
+                                                                                      0
+                                                                                          ? 0.5f
+                                                                                          : -0.5f));
 
             controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS >
-                0
-                    ? 0.5f
-                    : -0.5f));
+                                                                                      0
+                                                                                          ? 0.5f
+                                                                                          : -0.5f));
 
             int newX = (int)((float)controller_input.X_AXIS * x_scale + (
                 controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
@@ -579,6 +584,6 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
             }
         }
     }
-    
+
     return controller_input;
 }
