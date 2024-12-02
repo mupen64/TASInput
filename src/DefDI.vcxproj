@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0"
+    xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Label="ProjectConfigurations">
         <ProjectConfiguration Include="Debug|Win32">
             <Configuration>Debug</Configuration>
@@ -9,91 +10,110 @@
             <Configuration>Release</Configuration>
             <Platform>Win32</Platform>
         </ProjectConfiguration>
+        <ProjectConfiguration Include="Debug|x64">
+            <Configuration>Debug</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="Release|x64">
+            <Configuration>Release</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <ProjectGuid>{FEADD90C-0176-4BD9-86AA-32322B7EDACB}</ProjectGuid>
         <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     </PropertyGroup>
-    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-        <ConfigurationType>DynamicLibrary</ConfigurationType>
-        <PlatformToolset>v143</PlatformToolset>
-        <UseOfMfc>false</UseOfMfc>
-        <CharacterSet>MultiByte</CharacterSet>
-    </PropertyGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
         <ConfigurationType>DynamicLibrary</ConfigurationType>
+        <UseDebugLibraries>true</UseDebugLibraries>
         <PlatformToolset>v143</PlatformToolset>
-        <UseOfMfc>false</UseOfMfc>
         <CharacterSet>MultiByte</CharacterSet>
     </PropertyGroup>
-    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+        <ConfigurationType>DynamicLibrary</ConfigurationType>
+        <UseDebugLibraries>false</UseDebugLibraries>
+        <PlatformToolset>v143</PlatformToolset>
+        <WholeProgramOptimization>true</WholeProgramOptimization>
+        <CharacterSet>MultiByte</CharacterSet>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+        <ConfigurationType>DynamicLibrary</ConfigurationType>
+        <UseDebugLibraries>true</UseDebugLibraries>
+        <PlatformToolset>v143</PlatformToolset>
+        <CharacterSet>MultiByte</CharacterSet>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+        <ConfigurationType>DynamicLibrary</ConfigurationType>
+        <UseDebugLibraries>false</UseDebugLibraries>
+        <PlatformToolset>v143</PlatformToolset>
+        <WholeProgramOptimization>true</WholeProgramOptimization>
+        <CharacterSet>MultiByte</CharacterSet>
+    </PropertyGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
     <ImportGroup Label="ExtensionSettings">
     </ImportGroup>
     <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform"/>
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+            Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
+            Label="LocalAppDataPlatform" />
     </ImportGroup>
     <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform"/>
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+            Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
+            Label="LocalAppDataPlatform" />
     </ImportGroup>
-    <PropertyGroup Label="UserMacros"/>
-    <PropertyGroup>
-        <_ProjectFileVersion>16.0.29911.84</_ProjectFileVersion>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-        <OutDir>..\bin\</OutDir>
-        <IntDir>..\bin\</IntDir>
-        <LinkIncremental>false</LinkIncremental>
-        <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-        <TargetName>TASInput</TargetName>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-        <OutDir>..\bin\</OutDir>
-        <IntDir>..\bin\</IntDir>
-        <LinkIncremental>false</LinkIncremental>
-        <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-        <TargetName>TASInput</TargetName>
-    </PropertyGroup>
+
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+    <ImportGroup Label="ExtensionSettings">
+    </ImportGroup>
+    <ImportGroup Label="Shared">
+    </ImportGroup>
+    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+            Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
+            Label="LocalAppDataPlatform" />
+    </ImportGroup>
+    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+            Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
+            Label="LocalAppDataPlatform" />
+    </ImportGroup>
+    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+            Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
+            Label="LocalAppDataPlatform" />
+    </ImportGroup>
+    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+            Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
+            Label="LocalAppDataPlatform" />
+    </ImportGroup>
+    <PropertyGroup Label="UserMacros" />
+
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
         <ClCompile>
             <Optimization>Disabled</Optimization>
             <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
             <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-            <PrecompiledHeader/>
-            <PrecompiledHeaderOutputFile>.\Debug/DefDI.pch</PrecompiledHeaderOutputFile>
-            <AssemblerListingLocation>.\Debug/</AssemblerListingLocation>
-            <ObjectFileName>.\Debug/</ObjectFileName>
-            <ProgramDataBaseFileName>../bin/$(TargetName).pdb</ProgramDataBaseFileName>
             <BrowseInformation>true</BrowseInformation>
             <WarningLevel>Level3</WarningLevel>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-            <AdditionalOptions>-D DEBUG %(AdditionalOptions)</AdditionalOptions>
-            <SmallerTypeCheck>false</SmallerTypeCheck>
             <LanguageStandard>stdcpplatest</LanguageStandard>
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
-            <OutputFile>..\bin\TASInput_debug.dll</OutputFile>
+            <OutputFile>TASInput_x32_debug.dll</OutputFile>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <GenerateDebugInformation>true</GenerateDebugInformation>
-            <ProgramDatabaseFile>../bin/$(TargetName).pdb</ProgramDatabaseFile>
-            <ImportLibrary>.\Debug/DefDI.lib</ImportLibrary>
-            <TargetMachine>MachineX86</TargetMachine>
         </Link>
         <Midl>
             <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <MkTypLibCompatible>true</MkTypLibCompatible>
             <SuppressStartupBanner>true</SuppressStartupBanner>
-            <TargetEnvironment>Win32</TargetEnvironment>
-            <TypeLibraryName>.\Debug/DefDI.tlb</TypeLibraryName>
-            <HeaderFileName/>
         </Midl>
-        <ResourceCompile>
-            <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-            <Culture>0x0409</Culture>
-        </ResourceCompile>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
         <ClCompile>
@@ -104,10 +124,6 @@
             <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
             <FunctionLevelLinking>true</FunctionLevelLinking>
             <PrecompiledHeader>NotUsing</PrecompiledHeader>
-            <PrecompiledHeaderOutputFile>.\Release/DefDI.pch</PrecompiledHeaderOutputFile>
-            <AssemblerListingLocation>.\Release/</AssemblerListingLocation>
-            <ObjectFileName>.\Release/</ObjectFileName>
-            <ProgramDataBaseFileName>../bin/$(TargetName).pdb</ProgramDataBaseFileName>
             <WarningLevel>Level3</WarningLevel>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <DebugInformationFormat>None</DebugInformationFormat>
@@ -116,11 +132,8 @@
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
-            <OutputFile>..\bin\TASInput.dll</OutputFile>
+            <OutputFile>TASInput_x32.dll</OutputFile>
             <SuppressStartupBanner>true</SuppressStartupBanner>
-            <ProgramDatabaseFile>../bin/$(TargetName).pdb</ProgramDatabaseFile>
-            <ImportLibrary>.\Release/DefDI.lib</ImportLibrary>
-            <TargetMachine>MachineX86</TargetMachine>
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <GenerateDebugInformation>false</GenerateDebugInformation>
         </Link>
@@ -128,63 +141,117 @@
             <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <MkTypLibCompatible>true</MkTypLibCompatible>
             <SuppressStartupBanner>true</SuppressStartupBanner>
-            <TargetEnvironment>Win32</TargetEnvironment>
-            <TypeLibraryName>.\Release/DefDI.tlb</TypeLibraryName>
-            <HeaderFileName/>
         </Midl>
-        <ResourceCompile>
+    </ItemDefinitionGroup>
+    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <ClCompile>
+            <Optimization>Disabled</Optimization>
+            <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+            <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+            <BrowseInformation>true</BrowseInformation>
+            <WarningLevel>Level3</WarningLevel>
+            <SuppressStartupBanner>true</SuppressStartupBanner>
+            <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
+        </ClCompile>
+        <Link>
+            <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <OutputFile>TASInput_x64_debug.dll</OutputFile>
+            <SuppressStartupBanner>true</SuppressStartupBanner>
+            <GenerateDebugInformation>true</GenerateDebugInformation>
+        </Link>
+        <Midl>
+            <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <MkTypLibCompatible>true</MkTypLibCompatible>
+            <SuppressStartupBanner>true</SuppressStartupBanner>
+        </Midl>
+    </ItemDefinitionGroup>
+    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <ClCompile>
+            <Optimization>MaxSpeed</Optimization>
+            <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+            <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <StringPooling>true</StringPooling>
+            <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+            <FunctionLevelLinking>true</FunctionLevelLinking>
+            <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            <WarningLevel>Level3</WarningLevel>
+            <SuppressStartupBanner>true</SuppressStartupBanner>
+            <DebugInformationFormat>None</DebugInformationFormat>
+            <DiagnosticsFormat>Caret</DiagnosticsFormat>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
+        </ClCompile>
+        <Link>
+            <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <OutputFile>TASInput_x64.dll</OutputFile>
+            <SuppressStartupBanner>true</SuppressStartupBanner>
+            <EnableCOMDATFolding>true</EnableCOMDATFolding>
+            <GenerateDebugInformation>false</GenerateDebugInformation>
+        </Link>
+        <Midl>
             <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-            <Culture>0x0409</Culture>
-        </ResourceCompile>
+            <MkTypLibCompatible>true</MkTypLibCompatible>
+            <SuppressStartupBanner>true</SuppressStartupBanner>
+        </Midl>
     </ItemDefinitionGroup>
     <ItemGroup>
         <ClCompile Include="Combo.cpp" />
-        
+
         <ClCompile Include="Config.cpp">
             <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">EnableFastChecks</BasicRuntimeChecks>
+            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
+            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                EnableFastChecks</BasicRuntimeChecks>
             <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BrowseInformation>
             <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
+            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
         </ClCompile>
         <ClCompile Include="DefDI.cpp">
             <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">EnableFastChecks</BasicRuntimeChecks>
+            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
+            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                EnableFastChecks</BasicRuntimeChecks>
             <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BrowseInformation>
             <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
+            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
         </ClCompile>
         <ClCompile Include="DI.cpp">
             <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">EnableFastChecks</BasicRuntimeChecks>
+            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
+            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                EnableFastChecks</BasicRuntimeChecks>
             <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BrowseInformation>
             <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
+            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
         </ClCompile>
         <ClCompile Include="helpers\io_helpers.cpp" />
         <ClCompile Include="NewConfig.cpp" />
-        
+
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="Combo.h" />
-        <ClInclude Include="Config.h"/>
-        <ClInclude Include="Controller.h"/>
-        <ClInclude Include="DefDI.h"/>
-        <ClInclude Include="DI.h"/>
+        <ClInclude Include="Config.h" />
+        <ClInclude Include="Controller.h" />
+        <ClInclude Include="DefDI.h" />
+        <ClInclude Include="DI.h" />
         <ClInclude Include="helpers\io_helpers.h" />
         <ClInclude Include="helpers\math_helpers.h" />
         <ClInclude Include="helpers\string_helpers.h" />
         <ClInclude Include="helpers\win_helpers.h" />
         <ClInclude Include="NewConfig.h" />
-        <ClInclude Include="resource.h"/>
+        <ClInclude Include="resource.h" />
     </ItemGroup>
     <ItemGroup>
-        <ResourceCompile Include="config.rc"/>
+        <ResourceCompile Include="config.rc" />
     </ItemGroup>
-    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
     <ImportGroup Label="ExtensionTargets">
     </ImportGroup>
 </Project>
