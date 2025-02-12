@@ -872,7 +872,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
     ADD_ITEM(async_visual_updates, "Async Visual Updates");
 
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
-
+    
     if (offset != 0)
     {
         // offset is the offset into menu config struct of the field which was selected by user, we need to convert it from byte offset to int-width offset
@@ -885,6 +885,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
         if (status_dlg.ready && status_dlg.statusDlg)
         {
             status_dlg.on_config_changed();
+            status_dlg.activate_emulator_window();
         }
     }
 
