@@ -290,8 +290,9 @@ struct Status {
     /**
      * \brief Updates the UI
      * \param input The values to be shown in the UI
+     * \param needs_processing Whether the UI values need per-frame processing.
      */
-    void set_visuals(BUTTONS input);
+    void set_visuals(BUTTONS input, bool needs_processing = true);
 
     /**
      * \brief Processes the input with steps such as autofire or combo overrides
@@ -550,9 +551,12 @@ void Status::activate_emulator_window()
     SetForegroundWindow(emulator_hwnd);
 }
 
-void Status::set_visuals(BUTTONS input)
+void Status::set_visuals(BUTTONS input, bool needs_processing)
 {
-    input = get_processed_input(input);
+    if (needs_processing)
+    {
+        input = get_processed_input(input);
+    }
 
     // We don't want to mess with the user's selection
     if (GetFocus() != GetDlgItem(statusDlg, IDC_EDITX))
@@ -588,7 +592,6 @@ void Status::SetKeys(BUTTONS ControllerInput)
 {
     set_visuals(ControllerInput);
 }
-
 
 EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
 {
@@ -1293,7 +1296,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         combo_edit_box = nullptr;
         break;
     case WM_UPDATE_VISUALS:
-        set_visuals(static_cast<BUTTONS>(lParam));
+        set_visuals(static_cast<BUTTONS>(lParam), false);
         break;
     case WM_SIZE:
     case WM_MOVE:
