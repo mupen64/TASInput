@@ -7,8 +7,6 @@
 #ifndef _CONFIG_H_INCLUDED__
 #define _CONFIG_H_INCLUDED__
 
-#define SUBKEY "Software\\N64 Emulation\\DLL\\TASDI"
-
 void cfgdiag_show(HWND parent);
 
 #endif

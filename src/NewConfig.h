@@ -6,6 +6,8 @@
 
 #pragma once
 
+#define SUBKEY "Software\\N64 Emulation\\DLL\\TASDI"
+
 typedef struct s_config {
     int32_t version = 5;
     int32_t always_on_top = false;

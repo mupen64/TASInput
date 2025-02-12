@@ -6,8 +6,7 @@
 
 #include "stdafx.h"
 #include "DirectInputHelper.h"
-
-#include "Config.h"
+#include "NewConfig.h"
 
 GUID g_guids[MAX_DEVICES];
 DEFCONTROLLER g_controllers[NUMBER_OF_CONTROLS];
