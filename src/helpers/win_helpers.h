@@ -89,3 +89,18 @@ static void set_style(HWND hwnd, int domain, int style, bool value)
         SetWindowLongA(hwnd, domain, base & ~style);
     }
 }
+
+static RECT get_window_rect_client_space(HWND parent, HWND child)
+{
+    RECT offset_client = {0};
+    MapWindowRect(child, parent, &offset_client);
+
+    RECT client = {0};
+    GetWindowRect(child, &client);
+
+    return {
+        offset_client.left,
+        offset_client.top,
+        offset_client.left + (client.right - client.left),
+        offset_client.top + (client.bottom - client.top)};
+}

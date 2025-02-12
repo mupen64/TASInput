@@ -85,38 +85,6 @@ UINT systemDPI;
 std::vector<Combos::Combo*> combos;
 #define ACTIVE_COMBO combos[activeCombo]
 
-int get_joystick_increment(bool is_up)
-{
-    int increment = is_up ? -1 : 1;
-
-    if (GetKeyState(VK_CONTROL) & 0x8000)
-    {
-        increment *= 2;
-    }
-
-    if (GetKeyState(VK_MENU) & 0x8000)
-    {
-        increment *= 4;
-    }
-
-    return increment;
-}
-
-RECT get_window_rect_client_space(HWND parent, HWND child)
-{
-    RECT offset_client = {0};
-    MapWindowRect(child, parent, &offset_client);
-
-    RECT client = {0};
-    GetWindowRect(child, &client);
-
-    return {
-    offset_client.left,
-    offset_client.top,
-    offset_client.left + (client.right - client.left),
-    offset_client.top + (client.bottom - client.top)};
-}
-
 struct Status {
     enum class JoystickMode {
         none,
@@ -420,7 +388,7 @@ EXPORT void CALL DllConfig(HWND hParent)
 {
     dih_initialize_and_check_devices(hParent);
     DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_CONFIGDLG), hParent, (DLGPROC)ConfigDlgProc);
-    
+
     // TODO: Do we have to restart the dialogs here like in old version?
 }
 
@@ -935,6 +903,22 @@ MAKE_DLG_PROC(1)
 MAKE_DLG_PROC(2)
 MAKE_DLG_PROC(3)
 
+int get_joystick_increment(bool is_up)
+{
+    int increment = is_up ? -1 : 1;
+
+    if (GetKeyState(VK_CONTROL) & 0x8000)
+    {
+        increment *= 2;
+    }
+
+    if (GetKeyState(VK_MENU) & 0x8000)
+    {
+        increment *= 4;
+    }
+
+    return increment;
+}
 
 LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 {
