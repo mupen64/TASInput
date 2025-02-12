@@ -32,7 +32,29 @@
 int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
 int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
 
-#undef List // look at line 32 for cause
+#define AUTOFIRE(id, field)                                          \
+    {                                                                \
+        if (IsMouseOverControl(statusDlg, id))                       \
+        {                                                            \
+            if (autofire_input_a.field || autofire_input_b.field)    \
+            {                                                        \
+                autofire_input_a.field = autofire_input_b.field = 0; \
+            }                                                        \
+            else                                                     \
+            {                                                        \
+                if (frame_counter % 2 == 0)                          \
+                    autofire_input_a.field ^= 1;                     \
+                else                                                 \
+                    autofire_input_b.field ^= 1;                     \
+            }                                                        \
+        }                                                            \
+    }
+#define TOGGLE(field)                                                                \
+    {                                                                                \
+        current_input.field = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0; \
+        autofire_input_a.field = autofire_input_b.field = 0;                         \
+    }
+
 
 volatile int64_t frame_counter = 0;
 
