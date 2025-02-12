@@ -13,11 +13,21 @@
 #include "helpers/math_helpers.h"
 #include "helpers/win_helpers.h"
 
-#ifdef DEBUG
-#define PLUGIN_NAME "TASInput 1.1.2 Debug"
+#define PLUGIN_VERSION "1.1.2"
+
+#ifdef _M_X64
+#define PLUGIN_ARCH "-x64"
 #else
-#define PLUGIN_NAME "TASInput 1.1.2"
+#define PLUGIN_ARCH "-x86"
 #endif
+
+#ifdef _DEBUG
+#define PLUGIN_TARGET "-debug"
+#else
+#define PLUGIN_TARGET "-release"
+#endif
+
+#define PLUGIN_NAME "TASInput " PLUGIN_VERSION PLUGIN_ARCH PLUGIN_TARGET
 
 int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
 int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
