@@ -53,22 +53,6 @@
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
     <ImportGroup Label="ExtensionSettings">
     </ImportGroup>
-    <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
-                Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
-                Label="LocalAppDataPlatform"/>
-    </ImportGroup>
-    <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
-                Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
-                Label="LocalAppDataPlatform"/>
-    </ImportGroup>
-
-    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
-    <ImportGroup Label="ExtensionSettings">
-    </ImportGroup>
-    <ImportGroup Label="Shared">
-    </ImportGroup>
     <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
         <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
                 Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
@@ -89,6 +73,7 @@
                 Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
                 Label="LocalAppDataPlatform"/>
     </ImportGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
     <PropertyGroup Label="UserMacros"/>
     <PropertyGroup>
         <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
@@ -105,8 +90,11 @@
     </PropertyGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
         <ClCompile>
+            <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>Disabled</Optimization>
-            <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>
+                WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)
+            </PreprocessorDefinitions>
             <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
             <BrowseInformation>true</BrowseInformation>
             <WarningLevel>Level3</WarningLevel>
@@ -116,16 +104,21 @@
             <PrecompiledHeader>Use</PrecompiledHeader>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>
+                dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)
+            </AdditionalDependencies>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
         <ClCompile>
+            <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>MaxSpeed</Optimization>
             <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-            <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>
+                WIN32;NDEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)
+            </PreprocessorDefinitions>
             <StringPooling>true</StringPooling>
             <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
             <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -137,7 +130,9 @@
             <PrecompiledHeader>Use</PrecompiledHeader>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>
+                dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)
+            </AdditionalDependencies>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -145,8 +140,11 @@
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <ClCompile>
+            <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>Disabled</Optimization>
-            <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>
+                WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)
+            </PreprocessorDefinitions>
             <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
             <BrowseInformation>true</BrowseInformation>
             <WarningLevel>Level3</WarningLevel>
@@ -156,16 +154,21 @@
             <PrecompiledHeader>Use</PrecompiledHeader>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>
+                dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)
+            </AdditionalDependencies>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <ClCompile>
+            <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>MaxSpeed</Optimization>
             <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-            <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>
+                WIN32;NDEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)
+            </PreprocessorDefinitions>
             <StringPooling>true</StringPooling>
             <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
             <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -177,7 +180,9 @@
             <PrecompiledHeader>Use</PrecompiledHeader>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>
+                dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)
+            </AdditionalDependencies>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -198,10 +203,10 @@
         <ClCompile Include="src\NewConfig.cpp"/>
     </ItemGroup>
     <ItemGroup>
+        <ClInclude Include="lib\ZilmarInput.h"/>
         <ClInclude Include="src\stdafx.h"/>
         <ClInclude Include="src\Combo.h"/>
         <ClInclude Include="src\Config.h"/>
-        <ClInclude Include="src\Controller.h"/>
         <ClInclude Include="src\DefDI.h"/>
         <ClInclude Include="src\DI.h"/>
         <ClInclude Include="src\helpers\io_helpers.h"/>

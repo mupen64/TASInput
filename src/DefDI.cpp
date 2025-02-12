@@ -8,11 +8,9 @@
 
 #define DIRECTINPUT_VERSION 0x0800
 
-#include "Controller.h"
 #include "DI.h"
 #include "DefDI.h"
 #include "Config.h"
-#include "resource.h"
 #include "Combo.h"
 #include "NewConfig.h"
 #include "helpers/math_helpers.h"

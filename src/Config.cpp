@@ -9,12 +9,10 @@
 
 #define DIRECTINPUT_VERSION 0x0800
 
-#include "Controller.h"
 #include "DI.h"
 #include "DefDI.h"
 #include "Config.h"
 #include "NewConfig.h"
-#include "resource.h"
 
 #define RESET_SELECTION                                                 \
     Controller[NController].Input[NControl].Device = 0;                 \

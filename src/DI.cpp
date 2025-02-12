@@ -6,10 +6,8 @@
 
 #include "stdafx.h"
 #define DIRECTINPUT_VERSION 0x0800
-#include "controller.h"
 #include "DI.h"
 #include "DefDI.h"
-#include "resource.h"
 
 LPDIRECTINPUT8 g_lpDI = NULL;
 DIINPUTDEVICE DInputDev[MAX_DEVICES];
