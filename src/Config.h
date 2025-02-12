@@ -7,6 +7,8 @@
 #ifndef _CONFIG_H_INCLUDED__
 #define _CONFIG_H_INCLUDED__
 
+#define SUBKEY "Software\\N64 Emulation\\DLL\\TASDI"
+
 #define IDT_TIMER1 1
 #define IDT_TIMER2 2
 

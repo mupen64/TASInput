@@ -362,7 +362,7 @@ void start_dialogs()
 
     for (int i = 0; i < NUMBER_OF_CONTROLS; i++)
     {
-        if (Controller[i].bActive)
+        if (g_controllers[i].bActive)
         {
             std::thread([i] {
                 status[i].start(i);
@@ -381,7 +381,7 @@ int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
         break;
 
     case DLL_PROCESS_DETACH:
-        FreeDirectInput();
+        dih_free();
         break;
     }
 
@@ -399,7 +399,7 @@ int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
 EXPORT void CALL CloseDLL(void)
 {
     // Stop and Close Direct Input
-    FreeDirectInput();
+    dih_free();
 }
 
 EXPORT void CALL ControllerCommand(int Control, BYTE* Command)
@@ -418,11 +418,9 @@ EXPORT void CALL DllAbout(HWND hParent)
 
 EXPORT void CALL DllConfig(HWND hParent)
 {
-    if (g_lpDI == NULL)
-        InitializeAndCheckDevices(hParent);
-    else
-        DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_CONFIGDLG), hParent, (DLGPROC)ConfigDlgProc);
-
+    dih_initialize_and_check_devices(hParent);
+    DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_CONFIGDLG), hParent, (DLGPROC)ConfigDlgProc);
+    
     // TODO: Do we have to restart the dialogs here like in old version?
 }
 
@@ -435,7 +433,7 @@ EXPORT void CALL GetDllInfo(PLUGIN_INFO* PluginInfo)
 
 EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
 {
-    if (Control >= 0 && Control < NUMBER_OF_CONTROLS && Controller[Control].bActive)
+    if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
         status[Control].GetKeys(Keys);
     else
         Keys->Value = 0;
@@ -443,7 +441,7 @@ EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
 
 EXPORT void CALL SetKeys(int Control, BUTTONS ControllerInput)
 {
-    if (Control >= 0 && Control < NUMBER_OF_CONTROLS && Controller[Control].bActive)
+    if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
         status[Control].SetKeys(ControllerInput);
 }
 
@@ -523,7 +521,8 @@ end:
     if (new_config.async_visual_updates)
     {
         PostMessage(statusDlg, WM_UPDATE_VISUALS, 0, Keys->Value);
-    } else
+    }
+    else
     {
         SendMessage(statusDlg, WM_UPDATE_VISUALS, 0, Keys->Value);
     }
@@ -657,24 +656,21 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
     emulator_hwnd = hMainWindow;
     for (BYTE i = 0; i < NUMBER_OF_CONTROLS; i++)
     {
-        ControlDef[i] = &Controls[i];
-        ControlDef[i]->Present = FALSE;
-        ControlDef[i]->RawData = FALSE;
-        ControlDef[i]->Plugin = PLUGIN_NONE;
+        g_controllers_default[i] = &Controls[i];
+        g_controllers_default[i]->Present = FALSE;
+        g_controllers_default[i]->RawData = FALSE;
+        g_controllers_default[i]->Plugin = PLUGIN_NONE;
 
-        Controller[i].NDevices = 0;
-        Controller[i].bActive = i == 0 ? TRUE : FALSE;
-        Controller[i].SensMax = 128;
-        Controller[i].SensMin = 32;
-        Controller[i].Input[18].button = 42;
-        Controller[i].Input[19].button = 20;
-        wsprintf(Controller[i].szName, "Controller %d", i + 1);
+        g_controllers[i].NDevices = 0;
+        g_controllers[i].bActive = i == 0 ? TRUE : FALSE;
+        g_controllers[i].SensMax = 128;
+        g_controllers[i].SensMin = 32;
+        g_controllers[i].Input[18].button = 42;
+        g_controllers[i].Input[19].button = 20;
+        wsprintf(g_controllers[i].szName, "Controller %d", i + 1);
     }
 
-    if (g_lpDI == NULL)
-    {
-        InitializeAndCheckDevices(hMainWindow);
-    }
+    dih_initialize_and_check_devices(hMainWindow);
 
     dwType = REG_BINARY;
     dwSize = sizeof(DEFCONTROLLER);
@@ -687,33 +683,33 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
     {
         for (size_t i = 0; i < NUMBER_OF_CONTROLS; i++)
         {
-            ControlDef[i]->Present = new_config.controller_active[i];
+            g_controllers_default[i]->Present = new_config.controller_active[i];
 
-            if (RegQueryValueEx(hKey, Controller[i].szName, 0, &dwType, (LPBYTE)&Controller[i],
+            if (RegQueryValueEx(hKey, g_controllers[i].szName, 0, &dwType, (LPBYTE)&g_controllers[i],
                                 &dwSize) == ERROR_SUCCESS)
             {
-                if (Controller[i].bMemPak)
-                    ControlDef[i]->Plugin = PLUGIN_MEMPAK;
+                if (g_controllers[i].bMemPak)
+                    g_controllers_default[i]->Plugin = PLUGIN_MEMPAK;
                 else
-                    ControlDef[i]->Plugin = PLUGIN_NONE;
+                    g_controllers_default[i]->Plugin = PLUGIN_NONE;
 
                 if (dwSize != sizeof(DEFCONTROLLER))
                 {
                     dwType = REG_BINARY;
                     dwSize = sizeof(DEFCONTROLLER);
-                    ZeroMemory(&Controller[i], sizeof(DEFCONTROLLER));
+                    ZeroMemory(&g_controllers[i], sizeof(DEFCONTROLLER));
 
-                    Controller[i].NDevices = 0;
-                    Controller[i].bActive = i == 0 ? TRUE : FALSE;
-                    ControlDef[i]->Plugin = PLUGIN_NONE;
-                    Controller[i].SensMax = 128;
-                    Controller[i].SensMin = 32;
-                    Controller[i].Input[18].button = 42;
-                    Controller[i].Input[19].button = 20;
-                    wsprintf(Controller[i].szName, "Controller %d", i + 1);
+                    g_controllers[i].NDevices = 0;
+                    g_controllers[i].bActive = i == 0 ? TRUE : FALSE;
+                    g_controllers_default[i]->Plugin = PLUGIN_NONE;
+                    g_controllers[i].SensMax = 128;
+                    g_controllers[i].SensMin = 32;
+                    g_controllers[i].Input[18].button = 42;
+                    g_controllers[i].Input[19].button = 20;
+                    wsprintf(g_controllers[i].szName, "Controller %d", i + 1);
 
-                    RegDeleteValue(hKey, Controller[i].szName);
-                    RegSetValueEx(hKey, Controller[i].szName, 0, dwType, (LPBYTE)&Controller[i],
+                    RegDeleteValue(hKey, g_controllers[i].szName);
+                    RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i],
                                   dwSize);
                 }
             }
@@ -721,62 +717,13 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
             {
                 dwType = REG_BINARY;
                 dwSize = sizeof(DEFCONTROLLER);
-                RegDeleteValue(hKey, Controller[i].szName);
-                RegSetValueEx(hKey, Controller[i].szName, 0, dwType, (LPBYTE)&Controller[i],
+                RegDeleteValue(hKey, g_controllers[i].szName);
+                RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i],
                               dwSize);
             }
         }
     }
     RegCloseKey(hKey);
-}
-
-void WINAPI InitializeAndCheckDevices(HWND hMainWindow)
-{
-    HKEY hKey;
-    BYTE i;
-    DWORD dwSize, dwType;
-
-    // Initialize Direct Input function
-    if (FAILED(InitDirectInput(hMainWindow)))
-    {
-        MessageBox(NULL, "DirectInput Initialization Failed!", "Error", MB_ICONERROR | MB_OK);
-        FreeDirectInput();
-    }
-    else
-    {
-        dwType = REG_BINARY;
-        dwSize = sizeof(Guids);
-        // Check Guids for Device Changes
-        RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, 0);
-        if (RegQueryValueEx(hKey, TEXT("Guids"), 0, &dwType, (LPBYTE)Guids, &dwSize) != ERROR_SUCCESS)
-        {
-            for (i = 0; i < MAX_DEVICES; i++)
-            {
-                if (DInputDev[i].lpDIDevice == NULL)
-                    ZeroMemory(&Guids[i], sizeof(GUID));
-                else
-                    memcpy(&Guids[i], &DInputDev[i].DIDevInst.guidInstance, sizeof(GUID));
-            }
-            dwType = REG_BINARY;
-            RegSetValueEx(hKey, TEXT("Guids"), 0, dwType, (LPBYTE)Guids, dwSize);
-        }
-        else
-        {
-            if (CheckForDeviceChange(hKey))
-            {
-                for (i = 0; i < MAX_DEVICES; i++)
-                {
-                    if (DInputDev[i].lpDIDevice == NULL)
-                        ZeroMemory(&Guids[i], sizeof(GUID));
-                    else
-                        memcpy(&Guids[i], &DInputDev[i].DIDevInst.guidInstance, sizeof(GUID));
-                }
-                dwType = REG_BINARY;
-                RegSetValueEx(hKey, TEXT("Guids"), 0, dwType, (LPBYTE)Guids, dwSize);
-            }
-        }
-        RegCloseKey(hKey);
-    }
 }
 
 EXPORT void CALL ReadController(int Control, BYTE* Command)
@@ -833,8 +780,8 @@ EXPORT void CALL RomOpen(void)
     {
         for (size_t i = 0; i < NUMBER_OF_CONTROLS; i++)
         {
-            ControlDef[i]->Present = new_config.controller_active[i];
-            RegQueryValueEx(hKey, Controller[i].szName, 0, &dwType, (LPBYTE)&Controller[i], &dwSize);
+            g_controllers_default[i]->Present = new_config.controller_active[i];
+            RegQueryValueEx(hKey, g_controllers[i].szName, 0, &dwType, (LPBYTE)&g_controllers[i], &dwSize);
         }
     }
     RegCloseKey(hKey);
@@ -955,7 +902,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
     ADD_ITEM(client_drag, "Client drag");
     ADD_ITEM(hifi_joystick, "High-quality joystick");
     ADD_ITEM(async_visual_updates, "Async Visual Updates");
-    
+
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
 
     if (offset != 0)
@@ -978,7 +925,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 }
 
 #define MAKE_DLG_PROC(i)                                                                 \
-    LRESULT CALLBACK StatusDlgProc## i(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
+    LRESULT CALLBACK StatusDlgProc##i(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
     {                                                                                    \
         status[i].statusDlg = hDlg;                                                      \
         return status[i].StatusDlgMethod(msg, wParam, lParam);                           \
@@ -1120,7 +1067,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         update_joystick_position();
 
         // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
-        BUTTONS controller_input = get_controller_input(Controller, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
+        BUTTONS controller_input = dih_get_input(g_controllers, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
 
         if (controller_input.Value != last_controller_input.Value)
         {

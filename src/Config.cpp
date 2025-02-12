@@ -11,14 +11,14 @@
 #include "Config.h"
 #include "NewConfig.h"
 
-#define RESET_SELECTION                                                 \
-    Controller[NController].Input[NControl].Device = 0;                 \
-    Controller[NController].Input[NControl].type = INPUT_TYPE_NOT_USED; \
-    Controller[NController].Input[NControl].vkey = 0;                   \
-    SetDlgItemText(hDlg, ControlValue, " ");                            \
-    KillTimer(hDlg, IDT_TIMER1);                                        \
-    KillTimer(hDlg, IDT_TIMER2);                                        \
-    SetWindowText(hDlg, Controller[NController].szName);                \
+#define RESET_SELECTION                                                    \
+    g_controllers[NController].Input[NControl].Device = 0;                 \
+    g_controllers[NController].Input[NControl].type = INPUT_TYPE_NOT_USED; \
+    g_controllers[NController].Input[NControl].vkey = 0;                   \
+    SetDlgItemText(hDlg, ControlValue, " ");                               \
+    KillTimer(hDlg, IDT_TIMER1);                                           \
+    KillTimer(hDlg, IDT_TIMER2);                                           \
+    SetWindowText(hDlg, g_controllers[NController].szName);                \
     Dis_En_AbleApply(hDlg, bApply[NController] = TRUE)
 
 static BYTE NController, NControl, NDeviceCount;
@@ -36,14 +36,14 @@ void apply_settings()
 {
     for (int i = 0; i < NUMBER_OF_CONTROLS; ++i)
     {
-        new_config.controller_active[i] = Controller[i].bActive;
+        new_config.controller_active[i] = g_controllers[i].bActive;
     }
 
     RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_WRITE, NULL, &hKey, 0);
-    if (RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
+    if (RegSetValueEx(hKey, g_controllers[NController].szName, 0, dwType, (LPBYTE)&g_controllers[NController],
                       dwSize) != ERROR_SUCCESS)
     {
-        MessageBox(nullptr, "Error: Could not save current Contoller Config!", Controller[NController].szName, MB_ICONERROR | MB_OK);
+        MessageBox(nullptr, "Error: Could not save current Contoller Config!", g_controllers[NController].szName, MB_ICONERROR | MB_OK);
     }
 
     RegCloseKey(hKey);
@@ -63,7 +63,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
         {
             for (NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
             {
-                RegQueryValueEx(hKey, Controller[NController].szName, 0, &dwType, (LPBYTE)&Controller[NController],
+                RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController],
                                 &dwSize);
             }
         }
@@ -71,24 +71,24 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         for (NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
         {
-            SendDlgItemMessage(hDlg, IDC_COMBOCONT, CB_ADDSTRING, 0, (LPARAM)Controller[NController].szName);
+            SendDlgItemMessage(hDlg, IDC_COMBOCONT, CB_ADDSTRING, 0, (LPARAM)g_controllers[NController].szName);
         }
         NController = (BYTE)SendDlgItemMessage(hDlg, IDC_COMBOCONT, CB_SETCURSEL, 0, 0);
 
-        SetWindowText(hDlg, Controller[NController].szName);
-        wsprintf(CSWindowText, "%s:  Choose a button (Esc to Disable)", Controller[NController].szName);
+        SetWindowText(hDlg, g_controllers[NController].szName);
+        wsprintf(CSWindowText, "%s:  Choose a button (Esc to Disable)", g_controllers[NController].szName);
 
-        for (NDeviceCount = 0; NDeviceCount < nCurrentDevices; NDeviceCount++)
+        for (NDeviceCount = 0; NDeviceCount < g_device_count; NDeviceCount++)
         {
-            if (DInputDev[NDeviceCount].lpDIDevice != NULL)
+            if (g_di_devices[NDeviceCount].lpDIDevice != NULL)
             {
-                wsprintf(szDeviceNum, "%d:  %s", NDeviceCount, DInputDev[NDeviceCount].DIDevInst.tszInstanceName);
+                wsprintf(szDeviceNum, "%d:  %s", NDeviceCount, g_di_devices[NDeviceCount].DIDevInst.tszInstanceName);
                 SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_ADDSTRING, 0, (LPARAM)szDeviceNum);
             }
         }
 
-        if (Controller[NController].NDevices == 0 && nCurrentDevices > 0)
-            Controller[NController].NDevices = 1;
+        if (g_controllers[NController].NDevices == 0 && g_device_count > 0)
+            g_controllers[NController].NDevices = 1;
 
         Initialize_Controller_Display(hDlg, NController);
         Dis_En_AbleApply(hDlg, bApply[NController] = FALSE);
@@ -109,7 +109,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
                 {
                     KillTimer(hDlg, IDT_TIMER1);
                     KillTimer(hDlg, IDT_TIMER2);
-                    SetWindowText(hDlg, Controller[NController].szName);
+                    SetWindowText(hDlg, g_controllers[NController].szName);
                     Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
                 }
                 break;
@@ -117,7 +117,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             case IDT_TIMER2: // time over; cancel
                 KillTimer(hDlg, IDT_TIMER1);
                 KillTimer(hDlg, IDT_TIMER2);
-                SetWindowText(hDlg, Controller[NController].szName);
+                SetWindowText(hDlg, g_controllers[NController].szName);
                 break;
             }
         }
@@ -131,8 +131,8 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             {
                 NController = (BYTE)SendDlgItemMessage(hDlg, IDC_COMBOCONT, CB_GETCURSEL, 0, 0);
 
-                SetWindowText(hDlg, Controller[NController].szName);
-                wsprintf(CSWindowText, "%s:  Choose a button (Esc to Disable)", Controller[NController].szName);
+                SetWindowText(hDlg, g_controllers[NController].szName);
+                wsprintf(CSWindowText, "%s:  Choose a button (Esc to Disable)", g_controllers[NController].szName);
 
                 // if (RegOpenKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, KEY_READ, &hKey) == ERROR_SUCCESS )
                 //	RegQueryValueEx(hKey, Controller[NController].szName, 0, &dwType, (LPBYTE)&Controller[NController], &dwSize);
@@ -149,14 +149,14 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
                 LRESULT lActive = SendDlgItemMessage(hDlg, IDC_CHECKACTIVE, BM_GETCHECK, 0, 0);
                 if (lActive == BST_CHECKED)
                 {
-                    Controller[NController].bActive = TRUE;
-                    Dis_En_AbleControls(hDlg, Controller[NController].bActive);
+                    g_controllers[NController].bActive = TRUE;
+                    Dis_En_AbleControls(hDlg, g_controllers[NController].bActive);
                     Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
                 }
                 else if (lActive == BST_UNCHECKED)
                 {
-                    Controller[NController].bActive = FALSE;
-                    Dis_En_AbleControls(hDlg, Controller[NController].bActive);
+                    g_controllers[NController].bActive = FALSE;
+                    Dis_En_AbleControls(hDlg, g_controllers[NController].bActive);
                     Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
                 }
             }
@@ -167,20 +167,20 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
                 LRESULT lMemPak = SendDlgItemMessage(hDlg, IDC_CHECKMEMPAK, BM_GETCHECK, 0, 0);
                 if (lMemPak == BST_CHECKED)
                 {
-                    Controller[NController].bMemPak = TRUE;
+                    g_controllers[NController].bMemPak = TRUE;
                 }
                 else if (lMemPak == BST_UNCHECKED)
                 {
-                    Controller[NController].bMemPak = FALSE;
+                    g_controllers[NController].bMemPak = FALSE;
                 }
             }
             break;
 
         case IDC_LDEVICES:
-            ZeroMemory(&Controller[NController].Devices, sizeof(Controller[NController].Devices));
-            Controller[NController].NDevices = (BYTE)SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_GETSELCOUNT, 0, 0);
+            ZeroMemory(&g_controllers[NController].Devices, sizeof(g_controllers[NController].Devices));
+            g_controllers[NController].NDevices = (BYTE)SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_GETSELCOUNT, 0, 0);
             SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_GETSELITEMS, MAX_DEVICES,
-                               (LPARAM)Controller[NController].Devices);
+                               (LPARAM)g_controllers[NController].Devices);
             Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
             break;
 
@@ -209,7 +209,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
                 CloseHandle(hFile);
                 break;
             }
-            memcpy(&tempController, &Controller[NController], sizeof(DEFCONTROLLER));
+            memcpy(&tempController, &g_controllers[NController], sizeof(DEFCONTROLLER));
             lstrcpy(tempController.szName, TEXT("cdf Save File"));
             if (!WriteFile(hFile, &tempController, sizeof(DEFCONTROLLER), &lNumBytes, NULL))
             {
@@ -251,8 +251,8 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             {
                 if (lNumBytes == sizeof(DEFCONTROLLER))
                 {
-                    lstrcpy(tempController.szName, Controller[NController].szName);
-                    memcpy(&Controller[NController], &tempController, sizeof(DEFCONTROLLER));
+                    lstrcpy(tempController.szName, g_controllers[NController].szName);
+                    memcpy(&g_controllers[NController], &tempController, sizeof(DEFCONTROLLER));
                     Initialize_Controller_Display(hDlg, NController);
                     Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
                 }
@@ -264,7 +264,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_E_MAX:
             SetFocus(hDlg);
-            Controller[NController].SensMax =
+            g_controllers[NController].SensMax =
             (BYTE)SendDlgItemMessage(hDlg, IDC_SPINMAX, UDM_GETPOS, 0, 0);
             GetAControlValue(hDlg, IDC_EAS_UP, NController, 0);
             GetAControlValue(hDlg, IDC_EAS_DOWN, NController, 1);
@@ -275,7 +275,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_E_MIN:
             SetFocus(hDlg);
-            Controller[NController].SensMin =
+            g_controllers[NController].SensMin =
             (BYTE)SendDlgItemMessage(hDlg, IDC_SPINMIN, UDM_GETPOS, 0, 0);
             Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
             break;
@@ -283,12 +283,12 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
         case IDC_B_CLEAR:
             for (NControl = 0; NControl < NUMBER_OF_BUTTONS; NControl++)
             {
-                Controller[NController].Input[NControl].Device = 0;
-                Controller[NController].Input[NControl].type = INPUT_TYPE_NOT_USED;
-                Controller[NController].Input[NControl].vkey = 0;
-                Controller[NController].Input[NControl].button = 0;
+                g_controllers[NController].Input[NControl].Device = 0;
+                g_controllers[NController].Input[NControl].type = INPUT_TYPE_NOT_USED;
+                g_controllers[NController].Input[NControl].vkey = 0;
+                g_controllers[NController].Input[NControl].button = 0;
             }
-            Controller[NController].NDevices = 0;
+            g_controllers[NController].NDevices = 0;
             Initialize_Controller_Display(hDlg, NController);
 
             SendDlgItemMessage(hDlg, IDC_SPINMAX, UDM_SETPOS, 0, (LPARAM)MAKELONG(80, 0));
@@ -433,7 +433,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_E_M1VAL:
             SetFocus(hDlg);
-            Controller[NController].Input[18].button =
+            g_controllers[NController].Input[18].button =
             (DWORD)SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_GETPOS, 0, 0);
             Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
             break;
@@ -447,7 +447,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
         case IDC_E_M2VAL:
             SetFocus(hDlg);
-            Controller[NController].Input[19].button =
+            g_controllers[NController].Input[19].button =
             (DWORD)SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_GETPOS, 0, 0);
             Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
             break;
@@ -529,7 +529,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             {
                 for (NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
                 {
-                    RegQueryValueEx(hKey, Controller[NController].szName, 0, &dwType, (LPBYTE)&Controller[NController],
+                    RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController],
                                     &dwSize);
                 }
             }
@@ -559,18 +559,18 @@ void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)
 
     // IDC_CHECKACTIVE
     SendDlgItemMessage(hDlg, IDC_CHECKACTIVE, BM_SETCHECK,
-                       Controller[NController].bActive ? BST_CHECKED : BST_UNCHECKED, 0);
-    Dis_En_AbleControls(hDlg, Controller[NController].bActive);
+                       g_controllers[NController].bActive ? BST_CHECKED : BST_UNCHECKED, 0);
+    Dis_En_AbleControls(hDlg, g_controllers[NController].bActive);
 
     // IDC_CHECKMEMPAK
     SendDlgItemMessage(hDlg, IDC_CHECKMEMPAK, BM_SETCHECK,
-                       Controller[NController].bMemPak ? BST_CHECKED : BST_UNCHECKED, 0);
+                       g_controllers[NController].bMemPak ? BST_CHECKED : BST_UNCHECKED, 0);
 
     // IDC_LDEVICES
     for (BYTE count = 0; count < MAX_DEVICES; count++)
         SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_SETSEL, BST_UNCHECKED, count);
-    for (BYTE count = 0; count < Controller[NController].NDevices; count++)
-        SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_SETSEL, BST_CHECKED, Controller[NController].Devices[count]);
+    for (BYTE count = 0; count < g_controllers[NController].NDevices; count++)
+        SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_SETSEL, BST_CHECKED, g_controllers[NController].Devices[count]);
 
     // IDC_E_MAX
     hChild = GetDlgItem(hDlg, IDC_E_MAX);
@@ -578,7 +578,7 @@ void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)
     // IDC_SPINMAX
     SendDlgItemMessage(hDlg, IDC_SPINMAX, UDM_SETBUDDY, (WPARAM)hChild, 0);
     SendDlgItemMessage(hDlg, IDC_SPINMAX, UDM_SETRANGE, 0, (LPARAM)MAKELONG((short)181, (short)50));
-    SendDlgItemMessage(hDlg, IDC_SPINMAX, UDM_SETPOS, 0, (LPARAM)MAKELONG(Controller[NController].SensMax, 0));
+    SendDlgItemMessage(hDlg, IDC_SPINMAX, UDM_SETPOS, 0, (LPARAM)MAKELONG(g_controllers[NController].SensMax, 0));
 
     // IDC_E_MIN
     hChild = GetDlgItem(hDlg, IDC_E_MIN);
@@ -586,7 +586,7 @@ void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)
     // IDC_SPINMIN
     SendDlgItemMessage(hDlg, IDC_SPINMIN, UDM_SETBUDDY, (WPARAM)hChild, 0);
     SendDlgItemMessage(hDlg, IDC_SPINMIN, UDM_SETRANGE, 0, (LPARAM)MAKELONG((short)50, (short)0));
-    SendDlgItemMessage(hDlg, IDC_SPINMIN, UDM_SETPOS, 0, (LPARAM)MAKELONG(Controller[NController].SensMin, 0));
+    SendDlgItemMessage(hDlg, IDC_SPINMIN, UDM_SETPOS, 0, (LPARAM)MAKELONG(g_controllers[NController].SensMin, 0));
 
     // IDC_BAS_UP
     GetAControlName(NController, 0, ControlName);
@@ -671,7 +671,7 @@ void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)
     SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_SETBUDDY, (WPARAM)hChild, 0);
     SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_SETRANGE, 0, (LPARAM)MAKELONG((short)127, (short)1));
     SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_SETPOS, 0,
-                       (LPARAM)MAKELONG((short)Controller[NController].Input[18].button, (short)0));
+                       (LPARAM)MAKELONG((short)g_controllers[NController].Input[18].button, (short)0));
 
     // IDC_B_M2
     GetAControlName(NController, 19, ControlName);
@@ -684,7 +684,7 @@ void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)
     SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_SETBUDDY, (WPARAM)hChild, 0);
     SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_SETRANGE, 0, (LPARAM)MAKELONG((short)127, (short)1));
     SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_SETPOS, 0,
-                       (LPARAM)MAKELONG((short)Controller[NController].Input[19].button, (short)0));
+                       (LPARAM)MAKELONG((short)g_controllers[NController].Input[19].button, (short)0));
 
     // IDC_B_MAC1
     GetAControlName(NController, 20, ControlName);
@@ -885,19 +885,19 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
     BYTE buffer[256]; // Keyboard Info
     DIJOYSTATE js; // Joystick Info
 
-    for (devicecount = 0; devicecount < Controller[NController].NDevices; devicecount++)
+    for (devicecount = 0; devicecount < g_controllers[NController].NDevices; devicecount++)
     {
-        DeviceNum = (BYTE)Controller[NController].Devices[devicecount];
-        if (DInputDev[DeviceNum].lpDIDevice != NULL)
+        DeviceNum = (BYTE)g_controllers[NController].Devices[devicecount];
+        if (g_di_devices[DeviceNum].lpDIDevice != NULL)
         {
-            if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
+            if ((g_di_devices[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
             {
                 ZeroMemory(&buffer, sizeof(buffer));
-                if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(buffer), &buffer))
+                if FAILED (hr = g_di_devices[DeviceNum].lpDIDevice->GetDeviceState(sizeof(buffer), &buffer))
                 {
-                    hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                    hr = g_di_devices[DeviceNum].lpDIDevice->Acquire();
                     while (hr == DIERR_INPUTLOST)
-                        hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                        hr = g_di_devices[DeviceNum].lpDIDevice->Acquire();
                     return FALSE;
                 }
 
@@ -905,9 +905,9 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                 {
                     if (BUTTONDOWN(buffer, count))
                     {
-                        Controller[NController].Input[NControl].Device = DeviceNum;
-                        Controller[NController].Input[NControl].type = INPUT_TYPE_KEY_BUT;
-                        Controller[NController].Input[NControl].vkey = (BYTE)count;
+                        g_controllers[NController].Input[NControl].Device = DeviceNum;
+                        g_controllers[NController].Input[NControl].type = INPUT_TYPE_KEY_BUT;
+                        g_controllers[NController].Input[NControl].vkey = (BYTE)count;
                         GetAControlValue(hDlg, ControlValue, NController, NControl);
                         GetAControlName(NController, NControl, ControlName);
                         SetDlgItemText(hDlg, ControlValue, ControlName);
@@ -916,25 +916,25 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                 }
             }
 
-            if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
+            if ((g_di_devices[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
             {
-                if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->Poll())
+                if FAILED (hr = g_di_devices[DeviceNum].lpDIDevice->Poll())
                 {
-                    hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                    hr = g_di_devices[DeviceNum].lpDIDevice->Acquire();
                     while (hr == DIERR_INPUTLOST)
-                        hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                        hr = g_di_devices[DeviceNum].lpDIDevice->Acquire();
                     return FALSE;
                 }
-                if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(DIJOYSTATE), &js))
+                if FAILED (hr = g_di_devices[DeviceNum].lpDIDevice->GetDeviceState(sizeof(DIJOYSTATE), &js))
                     return FALSE;
 
                 for (count = 0; count < 32; count++)
                 {
                     if (BUTTONDOWN(js.rgbButtons, count))
                     {
-                        Controller[NController].Input[NControl].Device = DeviceNum;
-                        Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_BUT;
-                        Controller[NController].Input[NControl].vkey = (BYTE)count;
+                        g_controllers[NController].Input[NControl].Device = DeviceNum;
+                        g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_BUT;
+                        g_controllers[NController].Input[NControl].vkey = (BYTE)count;
                         GetAControlValue(hDlg, ControlValue, NController, NControl);
                         GetAControlName(NController, NControl, ControlName);
                         SetDlgItemText(hDlg, ControlValue, ControlName);
@@ -942,176 +942,176 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                     }
                 }
 
-                if (js.lY < (LONG)-Controller[NController].SensMin)
+                if (js.lY < (LONG)-g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_YN;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_YN;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lY > (LONG)Controller[NController].SensMin)
+                if (js.lY > (LONG)g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_YP;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_YP;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lX < (LONG)-Controller[NController].SensMin)
+                if (js.lX < (LONG)-g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_XN;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_XN;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lX > (LONG)Controller[NController].SensMin)
+                if (js.lX > (LONG)g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_XP;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_XP;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lZ < (LONG)-Controller[NController].SensMin)
+                if (js.lZ < (LONG)-g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_ZN;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_ZN;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lZ > (LONG)Controller[NController].SensMin)
+                if (js.lZ > (LONG)g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_ZP;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_ZP;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lRy < (LONG)-Controller[NController].SensMin)
+                if (js.lRy < (LONG)-g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_RYN;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_RYN;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lRy > (LONG)Controller[NController].SensMin)
+                if (js.lRy > (LONG)g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_RYP;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_RYP;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lRx < (LONG)-Controller[NController].SensMin)
+                if (js.lRx < (LONG)-g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_RXN;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_RXN;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lRx > (LONG)Controller[NController].SensMin)
+                if (js.lRx > (LONG)g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_RXP;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_RXP;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lRz < (LONG)-Controller[NController].SensMin)
+                if (js.lRz < (LONG)-g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_RZN;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_RZN;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.lRz > (LONG)Controller[NController].SensMin)
+                if (js.lRz > (LONG)g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_RZP;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_RZP;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.rglSlider[0] < (LONG)-Controller[NController].SensMin)
+                if (js.rglSlider[0] < (LONG)-g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_SLIDER0N;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_SLIDER0N;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.rglSlider[0] > (LONG)Controller[NController].SensMin)
+                if (js.rglSlider[0] > (LONG)g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_SLIDER0P;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_SLIDER0P;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.rglSlider[1] < (LONG)-Controller[NController].SensMin)
+                if (js.rglSlider[1] < (LONG)-g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_SLIDER1N;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_SLIDER1N;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
                     return TRUE;
                 }
 
-                if (js.rglSlider[1] > (LONG)Controller[NController].SensMin)
+                if (js.rglSlider[1] > (LONG)g_controllers[NController].SensMin)
                 {
-                    Controller[NController].Input[NControl].Device = DeviceNum;
-                    Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
-                    Controller[NController].Input[NControl].vkey = DIJOFS_SLIDER1P;
+                    g_controllers[NController].Input[NControl].Device = DeviceNum;
+                    g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_AXIS;
+                    g_controllers[NController].Input[NControl].vkey = DIJOFS_SLIDER1P;
                     GetAControlValue(hDlg, ControlValue, NController, NControl);
                     GetAControlName(NController, NControl, ControlName);
                     SetDlgItemText(hDlg, ControlValue, ControlName);
@@ -1122,24 +1122,24 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                 {
                     if ((js.rgdwPOV[count] != -1) && (LOWORD(js.rgdwPOV[count]) != 0xFFFF))
                     {
-                        Controller[NController].Input[NControl].Device = DeviceNum;
-                        Controller[NController].Input[NControl].type = INPUT_TYPE_JOY_POV;
+                        g_controllers[NController].Input[NControl].Device = DeviceNum;
+                        g_controllers[NController].Input[NControl].type = INPUT_TYPE_JOY_POV;
 
                         if (js.rgdwPOV[count] == 0)
                         {
                             switch (count)
                             {
                             case 0:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV0N;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV0N;
                                 break;
                             case 1:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV1N;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV1N;
                                 break;
                             case 2:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV2N;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV2N;
                                 break;
                             case 3:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV3N;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV3N;
                                 break;
                             }
                             GetAControlValue(hDlg, ControlValue, NController, NControl);
@@ -1152,16 +1152,16 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                             switch (count)
                             {
                             case 0:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV0E;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV0E;
                                 break;
                             case 1:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV1E;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV1E;
                                 break;
                             case 2:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV2E;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV2E;
                                 break;
                             case 3:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV3E;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV3E;
                                 break;
                             }
                             GetAControlValue(hDlg, ControlValue, NController, NControl);
@@ -1174,16 +1174,16 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                             switch (count)
                             {
                             case 0:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV0S;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV0S;
                                 break;
                             case 1:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV1S;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV1S;
                                 break;
                             case 2:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV2S;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV2S;
                                 break;
                             case 3:
-                                Controller[NController].Input[NControl].vkey = DIJOFS_POV3S;
+                                g_controllers[NController].Input[NControl].vkey = DIJOFS_POV3S;
                                 break;
                             }
                             GetAControlValue(hDlg, ControlValue, NController, NControl);
@@ -1210,9 +1210,9 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                                 break;
                             }
 
-                            if (NController < sizeof(Controller) / sizeof(Controller[0]) && NControl < sizeof(Controller[NController].Input) / sizeof(Controller[NController].Input[0]))
+                            if (NController < sizeof(g_controllers) / sizeof(g_controllers[0]) && NControl < sizeof(g_controllers[NController].Input) / sizeof(g_controllers[NController].Input[0]))
                             {
-                                Controller[NController].Input[NControl].vkey = id;
+                                g_controllers[NController].Input[NControl].vkey = id;
                             }
                             else
                             {
@@ -1298,34 +1298,34 @@ BOOL WINAPI GetAControlValue(HWND hDlg, DWORD ControlValue, BYTE NController, BY
         break;
 
     case IDC_EAS_LEFT:
-        Buttons.X_AXIS = -min(128, Controller[NController].SensMax);
+        Buttons.X_AXIS = -min(128, g_controllers[NController].SensMax);
         break;
 
     case IDC_EAS_RIGHT:
-        Buttons.X_AXIS = min(127, Controller[NController].SensMax);
+        Buttons.X_AXIS = min(127, g_controllers[NController].SensMax);
         break;
 
     case IDC_EAS_DOWN:
-        Buttons.Y_AXIS = -min(128, Controller[NController].SensMax);
+        Buttons.Y_AXIS = -min(128, g_controllers[NController].SensMax);
         break;
 
     case IDC_EAS_UP:
-        Buttons.Y_AXIS = min(127, Controller[NController].SensMax);
+        Buttons.Y_AXIS = min(127, g_controllers[NController].SensMax);
         break;
 
     case IDC_E_M1:
-        Controller[NController].Input[NControl].button = (DWORD)SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_GETPOS, 0, 0);
+        g_controllers[NController].Input[NControl].button = (DWORD)SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_GETPOS, 0, 0);
         return TRUE;
 
     case IDC_E_M2:
-        Controller[NController].Input[NControl].button = (DWORD)SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_GETPOS, 0, 0);
+        g_controllers[NController].Input[NControl].button = (DWORD)SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_GETPOS, 0, 0);
         return TRUE;
 
     default:
         return FALSE;
         break;
     }
-    Controller[NController].Input[NControl].button = Buttons.Value;
+    g_controllers[NController].Input[NControl].button = Buttons.Value;
 
     return TRUE;
 }
@@ -1334,152 +1334,152 @@ void WINAPI GetAControlName(BYTE NController, BYTE NControl, TCHAR ControlName[3
 {
     TCHAR KeyControlName[16];
 
-    switch (Controller[NController].Input[NControl].type)
+    switch (g_controllers[NController].Input[NControl].type)
     {
     case INPUT_TYPE_KEY_BUT:
-        GetKeyName(Controller[NController].Input[NControl].vkey, KeyControlName);
+        GetKeyName(g_controllers[NController].Input[NControl].vkey, KeyControlName);
         wsprintf(ControlName, "%s", KeyControlName);
         break;
 
     case INPUT_TYPE_JOY_BUT:
-        wsprintf(ControlName, "Joy%d %d", Controller[NController].Input[NControl].Device,
-                 Controller[NController].Input[NControl].vkey);
+        wsprintf(ControlName, "Joy%d %d", g_controllers[NController].Input[NControl].Device,
+                 g_controllers[NController].Input[NControl].vkey);
         break;
 
     case INPUT_TYPE_JOY_AXIS:
-        switch (Controller[NController].Input[NControl].vkey)
+        switch (g_controllers[NController].Input[NControl].vkey)
         {
         case DIJOFS_YN:
-            wsprintf(ControlName, "Joy%d -Y", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d -Y", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_YP:
-            wsprintf(ControlName, "Joy%d +Y", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d +Y", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_XN:
-            wsprintf(ControlName, "Joy%d -X", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d -X", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_XP:
-            wsprintf(ControlName, "Joy%d +X", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d +X", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_ZN:
-            wsprintf(ControlName, "Joy%d -Z", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d -Z", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_ZP:
-            wsprintf(ControlName, "Joy%d +Z", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d +Z", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RYN:
-            wsprintf(ControlName, "Joy%d -Ry", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d -Ry", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RYP:
-            wsprintf(ControlName, "Joy%d +Ry", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d +Ry", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RXN:
-            wsprintf(ControlName, "Joy%d -Rx", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d -Rx", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RXP:
-            wsprintf(ControlName, "Joy%d +Rx", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d +Rx", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RZN:
-            wsprintf(ControlName, "Joy%d -Rz", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d -Rz", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RZP:
-            wsprintf(ControlName, "Joy%d +Rz", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d +Rz", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_SLIDER0N:
-            wsprintf(ControlName, "Joy%d -Sl0", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d -Sl0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_SLIDER0P:
-            wsprintf(ControlName, "Joy%d +Sl0", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d +Sl0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_SLIDER1N:
-            wsprintf(ControlName, "Joy%d -Sl1", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d -Sl1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_SLIDER1P:
-            wsprintf(ControlName, "Joy%d +Sl1", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d +Sl1", g_controllers[NController].Input[NControl].Device);
             break;
         }
         break;
 
     case INPUT_TYPE_JOY_POV:
-        switch (Controller[NController].Input[NControl].vkey)
+        switch (g_controllers[NController].Input[NControl].vkey)
         {
         case DIJOFS_POV0N:
-            wsprintf(ControlName, "Joy%d NPoV0", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d NPoV0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV0E:
-            wsprintf(ControlName, "Joy%d EPoV0", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d EPoV0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV0S:
-            wsprintf(ControlName, "Joy%d SPoV0", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d SPoV0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV0W:
-            wsprintf(ControlName, "Joy%d WPoV0", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d WPoV0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV1N:
-            wsprintf(ControlName, "Joy%d NPoV1", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d NPoV1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV1E:
-            wsprintf(ControlName, "Joy%d EPoV1", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d EPoV1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV1S:
-            wsprintf(ControlName, "Joy%d SPoV1", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d SPoV1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV1W:
-            wsprintf(ControlName, "Joy%d WPoV1", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d WPoV1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV2N:
-            wsprintf(ControlName, "Joy%d NPoV2", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d NPoV2", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV2E:
-            wsprintf(ControlName, "Joy%d EPoV2", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d EPoV2", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV2S:
-            wsprintf(ControlName, "Joy%d SPoV2", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d SPoV2", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV2W:
-            wsprintf(ControlName, "Joy%d WPoV2", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d WPoV2", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV3N:
-            wsprintf(ControlName, "Joy%d NPoV3", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d NPoV3", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV3E:
-            wsprintf(ControlName, "Joy%d EPoV3", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d EPoV3", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV3S:
-            wsprintf(ControlName, "Joy%d SPoV3", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d SPoV3", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV3W:
-            wsprintf(ControlName, "Joy%d WPoV3", Controller[NController].Input[NControl].Device);
+            wsprintf(ControlName, "Joy%d WPoV3", g_controllers[NController].Input[NControl].Device);
             break;
         }
         break;

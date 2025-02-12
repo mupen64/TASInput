@@ -78,17 +78,16 @@ using DIINPUTDEVICE = struct
 
 #define BUTTONDOWN(name, key) (name[key] & 0x80)
 
-extern BYTE nCurrentDevices;
-extern LPDIRECTINPUT8 g_lpDI;
-extern GUID Guids[MAX_DEVICES];
-extern DEFCONTROLLER Controller[NUMBER_OF_CONTROLS];
-extern CONTROL* ControlDef[NUMBER_OF_CONTROLS];
-extern DIINPUTDEVICE DInputDev[MAX_DEVICES];
+extern BYTE g_device_count;
+extern LPDIRECTINPUT8 g_di;
+extern GUID g_guids[MAX_DEVICES];
+extern DEFCONTROLLER g_controllers[NUMBER_OF_CONTROLS];
+extern CONTROL* g_controllers_default[NUMBER_OF_CONTROLS];
+extern DIINPUTDEVICE g_di_devices[MAX_DEVICES];
 
-void WINAPI FreeDirectInput();
-BOOL WINAPI InitDirectInput(HWND hMainWindow);
-BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
-BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi, LPVOID pContext);
+void dih_free();
+
+BOOL dih_init(HWND hMainWindow);
 
 /**
  * \brief Gets the current input for a specific controller index
@@ -98,6 +97,7 @@ BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi, LPVOID pCon
  * \param y_scale The multiplier for the Y joystick axis
  * \return The held controller input
  */
-BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale);
+BUTTONS dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale);
 
-BOOL WINAPI CheckForDeviceChange(HKEY hKey);
+BOOL dih_check_for_device_change(HKEY hKey);
+void dih_initialize_and_check_devices(HWND hMainWindow);

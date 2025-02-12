@@ -7,15 +7,17 @@
 #include "stdafx.h"
 #include "DirectInputHelper.h"
 
-GUID Guids[MAX_DEVICES];
-DEFCONTROLLER Controller[NUMBER_OF_CONTROLS];
-CONTROL* ControlDef[NUMBER_OF_CONTROLS];
+#include "Config.h"
 
-LPDIRECTINPUT8 g_lpDI = NULL;
-DIINPUTDEVICE DInputDev[MAX_DEVICES];
-BYTE nCurrentDevices;
+GUID g_guids[MAX_DEVICES];
+DEFCONTROLLER g_controllers[NUMBER_OF_CONTROLS];
+CONTROL* g_controllers_default[NUMBER_OF_CONTROLS];
 
-BOOL WINAPI CheckForDeviceChange(HKEY hKey)
+LPDIRECTINPUT8 g_di = NULL;
+DIINPUTDEVICE g_di_devices[MAX_DEVICES];
+BYTE g_device_count;
+
+BOOL dih_check_for_device_change(HKEY hKey)
 {
     BOOL DeviceChanged;
     DWORD dwSize, dwType;
@@ -27,20 +29,20 @@ BOOL WINAPI CheckForDeviceChange(HKEY hKey)
 
     for (BYTE DeviceNumCheck = 0; DeviceNumCheck < MAX_DEVICES; DeviceNumCheck++)
     {
-        if (memcmp(&Guids[DeviceNumCheck], &DInputDev[DeviceNumCheck].DIDevInst.guidInstance, sizeof(GUID)) != 0)
+        if (memcmp(&g_guids[DeviceNumCheck], &g_di_devices[DeviceNumCheck].DIDevInst.guidInstance, sizeof(GUID)) != 0)
         {
             DeviceChanged = TRUE;
             for (BYTE NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
             {
-                RegQueryValueEx(hKey, Controller[NController].szName, 0, &dwType, (LPBYTE)&Controller[NController],
+                RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController],
                                 &dwSize);
-                for (BYTE DeviceNum = 0; DeviceNum < Controller[NController].NDevices; DeviceNum++)
+                for (BYTE DeviceNum = 0; DeviceNum < g_controllers[NController].NDevices; DeviceNum++)
                 {
-                    if (Controller[NController].Devices[DeviceNum] == DeviceNumCheck)
+                    if (g_controllers[NController].Devices[DeviceNum] == DeviceNumCheck)
                     {
-                        Controller[NController].NDevices = 0;
-                        Controller[NController].bActive = FALSE;
-                        RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
+                        g_controllers[NController].NDevices = 0;
+                        g_controllers[NController].bActive = FALSE;
+                        RegSetValueEx(hKey, g_controllers[NController].szName, 0, dwType, (LPBYTE)&g_controllers[NController],
                                       dwSize);
                     }
                 }
@@ -57,39 +59,39 @@ void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* Cont
     switch (count)
     {
     case 0:
-        if (AxisValue < (LONG)-Controller[Control].SensMax)
-            ControllerInput->Y_AXIS = min(127, Controller[Control].SensMax);
+        if (AxisValue < (LONG)-g_controllers[Control].SensMax)
+            ControllerInput->Y_AXIS = min(127, g_controllers[Control].SensMax);
         else
             ControllerInput->Y_AXIS = -AxisValue;
         break;
     case 1:
-        if (AxisValue < (LONG)-Controller[Control].SensMax)
-            ControllerInput->Y_AXIS = -min(128, Controller[Control].SensMax);
+        if (AxisValue < (LONG)-g_controllers[Control].SensMax)
+            ControllerInput->Y_AXIS = -min(128, g_controllers[Control].SensMax);
         else
             ControllerInput->Y_AXIS = AxisValue;
         break;
     case 2:
-        if (AxisValue < (LONG)-Controller[Control].SensMax)
-            ControllerInput->X_AXIS = -min(128, Controller[Control].SensMax);
+        if (AxisValue < (LONG)-g_controllers[Control].SensMax)
+            ControllerInput->X_AXIS = -min(128, g_controllers[Control].SensMax);
         else
             ControllerInput->X_AXIS = AxisValue;
         break;
     case 3:
-        if (AxisValue < (LONG)-Controller[Control].SensMax)
-            ControllerInput->X_AXIS = min(127, Controller[Control].SensMax);
+        if (AxisValue < (LONG)-g_controllers[Control].SensMax)
+            ControllerInput->X_AXIS = min(127, g_controllers[Control].SensMax);
         else
             ControllerInput->X_AXIS = -AxisValue;
         break;
 
     case 18:
-        M1Speed = Controller[Control].Input[count].button;
+        M1Speed = g_controllers[Control].Input[count].button;
         break;
     case 19:
-        M2Speed = Controller[Control].Input[count].button;
+        M2Speed = g_controllers[Control].Input[count].button;
         break;
 
     default:
-        ControllerInput->Value |= Controller[Control].Input[count].button;
+        ControllerInput->Value |= g_controllers[Control].Input[count].button;
         break;
     }
 }
@@ -99,131 +101,41 @@ void WINAPI GetPosAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* Cont
     switch (count)
     {
     case 0:
-        if (AxisValue > (LONG)Controller[Control].SensMax)
-            ControllerInput->Y_AXIS = min(127, Controller[Control].SensMax);
+        if (AxisValue > (LONG)g_controllers[Control].SensMax)
+            ControllerInput->Y_AXIS = min(127, g_controllers[Control].SensMax);
         else
             ControllerInput->Y_AXIS = AxisValue;
         break;
     case 1:
-        if (AxisValue > (LONG)Controller[Control].SensMax)
-            ControllerInput->Y_AXIS = -min(128, Controller[Control].SensMax);
+        if (AxisValue > (LONG)g_controllers[Control].SensMax)
+            ControllerInput->Y_AXIS = -min(128, g_controllers[Control].SensMax);
         else
             ControllerInput->Y_AXIS = -AxisValue;
         break;
     case 2:
-        if (AxisValue > (LONG)Controller[Control].SensMax)
-            ControllerInput->X_AXIS = -min(128, Controller[Control].SensMax);
+        if (AxisValue > (LONG)g_controllers[Control].SensMax)
+            ControllerInput->X_AXIS = -min(128, g_controllers[Control].SensMax);
         else
             ControllerInput->X_AXIS = -AxisValue;
         break;
     case 3:
-        if (AxisValue > (LONG)Controller[Control].SensMax)
-            ControllerInput->X_AXIS = min(127, Controller[Control].SensMax);
+        if (AxisValue > (LONG)g_controllers[Control].SensMax)
+            ControllerInput->X_AXIS = min(127, g_controllers[Control].SensMax);
         else
             ControllerInput->X_AXIS = AxisValue;
         break;
 
     case 18:
-        M1Speed = Controller[Control].Input[count].button;
+        M1Speed = g_controllers[Control].Input[count].button;
         break;
     case 19:
-        M2Speed = Controller[Control].Input[count].button;
+        M2Speed = g_controllers[Control].Input[count].button;
         break;
 
     default:
-        ControllerInput->Value |= Controller[Control].Input[count].button;
+        ControllerInput->Value |= g_controllers[Control].Input[count].button;
         break;
     }
-}
-
-
-BOOL WINAPI InitDirectInput(HWND hMainWindow)
-{
-    HRESULT hr;
-
-    FreeDirectInput();
-
-    // Create the DirectInput object.
-    nCurrentDevices = 0;
-    if FAILED (hr = DirectInput8Create(GetModuleHandle(0), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&g_lpDI, NULL))
-    {
-        if (hr == DIERR_OLDDIRECTINPUTVERSION)
-            MessageBox(NULL, "Old version of DirectX detected. Use DirectX 7 or higher!", "Error", MB_ICONERROR | MB_OK);
-        return FALSE;
-    }
-    else
-    {
-        g_lpDI->EnumDevices(DI8DEVCLASS_KEYBOARD, DIEnumDevicesCallback,
-                            (LPVOID)hMainWindow, DIEDFL_ATTACHEDONLY);
-        g_lpDI->EnumDevices(DI8DEVCLASS_GAMECTRL, DIEnumDevicesCallback,
-                            (LPVOID)hMainWindow, DIEDFL_ATTACHEDONLY);
-        if (nCurrentDevices == 0)
-            return FALSE;
-    }
-    return TRUE;
-}
-
-BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
-{
-    HRESULT hr;
-    auto hMainWindow = (HWND)pvRef;
-    BOOL bOK = TRUE;
-
-    if (nCurrentDevices >= MAX_DEVICES)
-        return DIENUM_STOP;
-
-    if ((lpddi->dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
-    {
-        memcpy(&DInputDev[nCurrentDevices].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
-        if (!FAILED(hr = g_lpDI->CreateDevice(lpddi->guidInstance,
-                                              &DInputDev[nCurrentDevices].lpDIDevice, 0)))
-        {
-            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->SetDataFormat(&c_dfDIKeyboard))
-                bOK = FALSE;
-            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->SetCooperativeLevel(hMainWindow,
-                                                                                       DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
-                bOK = FALSE;
-        }
-    }
-    else if ((lpddi->dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
-    {
-        memcpy(&DInputDev[nCurrentDevices].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
-        if (!FAILED(hr = g_lpDI->CreateDevice(lpddi->guidInstance,
-                                              &DInputDev[nCurrentDevices].lpDIDevice, 0)))
-        {
-            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->SetDataFormat(&c_dfDIJoystick))
-                bOK = FALSE;
-            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->SetCooperativeLevel(hMainWindow,
-                                                                                       DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
-                bOK = FALSE;
-            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->EnumObjects(EnumAxesCallback,
-                                                                               (LPVOID)hMainWindow, DIDFT_AXIS))
-                bOK = FALSE;
-        }
-    }
-    else
-    {
-        return DIENUM_CONTINUE;
-    }
-
-    if (DInputDev[nCurrentDevices].lpDIDevice == NULL)
-    {
-        MessageBox(0, std::format("Fatal device error, please report issue on github. Type {}, name: {} / {}", lpddi->dwDevType, lpddi->tszInstanceName, lpddi->tszProductName).c_str(), "error", MB_ICONERROR);
-        return DIENUM_CONTINUE;
-    }
-
-    if (bOK == TRUE)
-    {
-        DInputDev[nCurrentDevices].lpDIDevice->Acquire();
-        nCurrentDevices++;
-    }
-    else
-    {
-        DInputDev[nCurrentDevices].lpDIDevice->Release();
-        DInputDev[nCurrentDevices].lpDIDevice = NULL;
-    }
-
-    return DIENUM_CONTINUE;
 }
 
 BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi,
@@ -240,32 +152,121 @@ BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi,
     diprg.lMax = +128;
 
     // Set the range for the axis
-    if FAILED (DInputDev[nCurrentDevices].lpDIDevice->SetProperty(DIPROP_RANGE, &diprg.diph))
+    if FAILED (g_di_devices[g_device_count].lpDIDevice->SetProperty(DIPROP_RANGE, &diprg.diph))
         return DIENUM_STOP;
 
     return TRUE;
 }
 
-void WINAPI FreeDirectInput()
+BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
 {
-    if (g_lpDI)
+    HRESULT hr;
+    auto hMainWindow = (HWND)pvRef;
+    BOOL bOK = TRUE;
+
+    if (g_device_count >= MAX_DEVICES)
+        return DIENUM_STOP;
+
+    if ((lpddi->dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
+    {
+        memcpy(&g_di_devices[g_device_count].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
+        if (!FAILED(hr = g_di->CreateDevice(lpddi->guidInstance,
+                                              &g_di_devices[g_device_count].lpDIDevice, 0)))
+        {
+            if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->SetDataFormat(&c_dfDIKeyboard))
+                bOK = FALSE;
+            if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->SetCooperativeLevel(hMainWindow,
+                                                                                       DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
+                bOK = FALSE;
+        }
+    }
+    else if ((lpddi->dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
+    {
+        memcpy(&g_di_devices[g_device_count].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
+        if (!FAILED(hr = g_di->CreateDevice(lpddi->guidInstance,
+                                              &g_di_devices[g_device_count].lpDIDevice, 0)))
+        {
+            if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->SetDataFormat(&c_dfDIJoystick))
+                bOK = FALSE;
+            if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->SetCooperativeLevel(hMainWindow,
+                                                                                       DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
+                bOK = FALSE;
+            if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->EnumObjects(EnumAxesCallback,
+                                                                               (LPVOID)hMainWindow, DIDFT_AXIS))
+                bOK = FALSE;
+        }
+    }
+    else
+    {
+        return DIENUM_CONTINUE;
+    }
+
+    if (g_di_devices[g_device_count].lpDIDevice == NULL)
+    {
+        MessageBox(0, std::format("Fatal device error, please report issue on github. Type {}, name: {} / {}", lpddi->dwDevType, lpddi->tszInstanceName, lpddi->tszProductName).c_str(), "error", MB_ICONERROR);
+        return DIENUM_CONTINUE;
+    }
+
+    if (bOK == TRUE)
+    {
+        g_di_devices[g_device_count].lpDIDevice->Acquire();
+        g_device_count++;
+    }
+    else
+    {
+        g_di_devices[g_device_count].lpDIDevice->Release();
+        g_di_devices[g_device_count].lpDIDevice = NULL;
+    }
+
+    return DIENUM_CONTINUE;
+}
+
+BOOL dih_init(HWND hMainWindow)
+{
+    HRESULT hr;
+
+    dih_free();
+
+    // Create the DirectInput object.
+    g_device_count = 0;
+    if FAILED (hr = DirectInput8Create(GetModuleHandle(0), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&g_di, NULL))
+    {
+        if (hr == DIERR_OLDDIRECTINPUTVERSION)
+            MessageBox(NULL, "Old version of DirectX detected. Use DirectX 7 or higher!", "Error", MB_ICONERROR | MB_OK);
+        return FALSE;
+    }
+    else
+    {
+        g_di->EnumDevices(DI8DEVCLASS_KEYBOARD, DIEnumDevicesCallback,
+                            (LPVOID)hMainWindow, DIEDFL_ATTACHEDONLY);
+        g_di->EnumDevices(DI8DEVCLASS_GAMECTRL, DIEnumDevicesCallback,
+                            (LPVOID)hMainWindow, DIEDFL_ATTACHEDONLY);
+        if (g_device_count == 0)
+            return FALSE;
+    }
+    return TRUE;
+}
+
+void dih_free()
+{
+    if (g_di)
     {
         for (int i = 0; i < MAX_DEVICES; i++)
         {
-            if (DInputDev[i].lpDIDevice != NULL)
+            if (g_di_devices[i].lpDIDevice != NULL)
             {
-                DInputDev[i].lpDIDevice->Unacquire();
-                DInputDev[i].lpDIDevice->Release();
-                DInputDev[i].lpDIDevice = NULL;
+                g_di_devices[i].lpDIDevice->Unacquire();
+                g_di_devices[i].lpDIDevice->Release();
+                g_di_devices[i].lpDIDevice = NULL;
             }
         }
-        g_lpDI->Release();
-        g_lpDI = NULL;
+        g_di->Release();
+        g_di = NULL;
     }
 }
 
 
-BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale)
+BUTTONS dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale)
 {
     auto controller = controllers[index];
 
@@ -283,26 +284,26 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
     {
         BYTE DeviceNum = (BYTE)controller.Devices[devicecount];
 
-        if (DeviceNum >= sizeof(DInputDev) / sizeof(DInputDev[0]))
+        if (DeviceNum >= sizeof(g_di_devices) / sizeof(g_di_devices[0]))
         {
             continue;
         }
 
-        if (DInputDev[DeviceNum].lpDIDevice == NULL)
+        if (g_di_devices[DeviceNum].lpDIDevice == NULL)
         {
             continue;
         }
 
         LONG count;
 
-        if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
+        if ((g_di_devices[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
         {
             ZeroMemory(&buffer, sizeof(buffer));
-            if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(buffer), &buffer))
+            if FAILED (hr = g_di_devices[DeviceNum].lpDIDevice->GetDeviceState(sizeof(buffer), &buffer))
             {
-                hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                hr = g_di_devices[DeviceNum].lpDIDevice->Acquire();
                 while (hr == DIERR_INPUTLOST)
-                    hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                    hr = g_di_devices[DeviceNum].lpDIDevice->Acquire();
                 return {0};
             }
 
@@ -346,16 +347,16 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
             }
         }
 
-        else if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
+        else if ((g_di_devices[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
         {
-            if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->Poll())
+            if FAILED (hr = g_di_devices[DeviceNum].lpDIDevice->Poll())
             {
-                hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                hr = g_di_devices[DeviceNum].lpDIDevice->Acquire();
                 while (hr == DIERR_INPUTLOST)
-                    hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
+                    hr = g_di_devices[DeviceNum].lpDIDevice->Acquire();
                 return {0};
             }
-            if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(DIJOYSTATE), &js))
+            if FAILED (hr = g_di_devices[DeviceNum].lpDIDevice->GetDeviceState(sizeof(DIJOYSTATE), &js))
             {
                 return {0};
             }
@@ -677,4 +678,59 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
     }
 
     return controller_input;
+}
+
+void dih_initialize_and_check_devices(HWND hMainWindow)
+{
+    if (g_di != NULL)
+    {
+        printf("InitializeAndCheckDevices early return because g_lpDI != NULL\n");
+        return;    
+    }
+    
+    HKEY hKey;
+    BYTE i;
+    DWORD dwSize, dwType;
+
+    // Initialize Direct Input function
+    if (FAILED(dih_init(hMainWindow)))
+    {
+        MessageBox(NULL, "DirectInput Initialization Failed!", "Error", MB_ICONERROR | MB_OK);
+        dih_free();
+    }
+    else
+    {
+        dwType = REG_BINARY;
+        dwSize = sizeof(g_guids);
+        // Check Guids for Device Changes
+        RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, 0);
+        if (RegQueryValueEx(hKey, TEXT("Guids"), 0, &dwType, (LPBYTE)g_guids, &dwSize) != ERROR_SUCCESS)
+        {
+            for (i = 0; i < MAX_DEVICES; i++)
+            {
+                if (g_di_devices[i].lpDIDevice == NULL)
+                    ZeroMemory(&g_guids[i], sizeof(GUID));
+                else
+                    memcpy(&g_guids[i], &g_di_devices[i].DIDevInst.guidInstance, sizeof(GUID));
+            }
+            dwType = REG_BINARY;
+            RegSetValueEx(hKey, TEXT("Guids"), 0, dwType, (LPBYTE)g_guids, dwSize);
+        }
+        else
+        {
+            if (dih_check_for_device_change(hKey))
+            {
+                for (i = 0; i < MAX_DEVICES; i++)
+                {
+                    if (g_di_devices[i].lpDIDevice == NULL)
+                        ZeroMemory(&g_guids[i], sizeof(GUID));
+                    else
+                        memcpy(&g_guids[i], &g_di_devices[i].DIDevInst.guidInstance, sizeof(GUID));
+                }
+                dwType = REG_BINARY;
+                RegSetValueEx(hKey, TEXT("Guids"), 0, dwType, (LPBYTE)g_guids, dwSize);
+            }
+        }
+        RegCloseKey(hKey);
+    }
 }
