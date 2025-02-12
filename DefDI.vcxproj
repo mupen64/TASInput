@@ -217,7 +217,7 @@
         <ClInclude Include="src\resource.h"/>
     </ItemGroup>
     <ItemGroup>
-        <ResourceCompile Include="src\config.rc"/>
+        <ResourceCompile Include="src\rsrc.rc" />
     </ItemGroup>
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
     <ImportGroup Label="ExtensionTargets">

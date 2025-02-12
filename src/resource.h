@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Von Microsoft Visual C++ generierte Includedatei.
-// Verwendet durch config.rc
+// Verwendet durch rsrc.rc
 //
 #include <Windows.h>
 #define IDC_COMBOCONT 1000
