@@ -196,7 +196,7 @@
             <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
         </ClCompile>
         <ClCompile Include="src\Combo.cpp"/>
-        <ClCompile Include="src\Config.cpp"/>
+        <ClCompile Include="src\ConfigDialog.cpp" />
         <ClCompile Include="src\TASInput.cpp" />
         <ClCompile Include="src\DirectInputHelper.cpp" />
         <ClCompile Include="src\helpers\io_helpers.cpp"/>
@@ -206,7 +206,7 @@
         <ClInclude Include="lib\ZilmarInput.h"/>
         <ClInclude Include="src\stdafx.h"/>
         <ClInclude Include="src\Combo.h"/>
-        <ClInclude Include="src\Config.h"/>
+        <ClInclude Include="src\ConfigDialog.h" />
         <ClInclude Include="src\TASInput.h" />
         <ClInclude Include="src\DirectInputHelper.h" />
         <ClInclude Include="src\helpers\io_helpers.h"/>

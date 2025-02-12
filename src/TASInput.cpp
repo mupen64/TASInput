@@ -7,7 +7,7 @@
 #include "stdafx.h"
 #include "DirectInputHelper.h"
 #include "TASInput.h"
-#include "Config.h"
+#include "ConfigDialog.h"
 #include "Combo.h"
 #include "NewConfig.h"
 #include "helpers/math_helpers.h"
@@ -387,8 +387,8 @@ EXPORT void CALL DllAbout(HWND hParent)
 EXPORT void CALL DllConfig(HWND hParent)
 {
     dih_initialize_and_check_devices(hParent);
-    DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_CONFIGDLG), hParent, (DLGPROC)ConfigDlgProc);
-
+    cfgdiag_show(hParent);
+    
     // TODO: Do we have to restart the dialogs here like in old version?
 }
 
