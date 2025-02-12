@@ -7,9 +7,135 @@
 #include "stdafx.h"
 #include "DirectInputHelper.h"
 
+GUID Guids[MAX_DEVICES];
+DEFCONTROLLER Controller[NUMBER_OF_CONTROLS];
+CONTROL* ControlDef[NUMBER_OF_CONTROLS];
+
 LPDIRECTINPUT8 g_lpDI = NULL;
 DIINPUTDEVICE DInputDev[MAX_DEVICES];
 BYTE nCurrentDevices;
+
+BOOL WINAPI CheckForDeviceChange(HKEY hKey)
+{
+    BOOL DeviceChanged;
+    DWORD dwSize, dwType;
+
+    dwType = REG_BINARY;
+    dwSize = sizeof(DEFCONTROLLER);
+
+    DeviceChanged = FALSE;
+
+    for (BYTE DeviceNumCheck = 0; DeviceNumCheck < MAX_DEVICES; DeviceNumCheck++)
+    {
+        if (memcmp(&Guids[DeviceNumCheck], &DInputDev[DeviceNumCheck].DIDevInst.guidInstance, sizeof(GUID)) != 0)
+        {
+            DeviceChanged = TRUE;
+            for (BYTE NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
+            {
+                RegQueryValueEx(hKey, Controller[NController].szName, 0, &dwType, (LPBYTE)&Controller[NController],
+                                &dwSize);
+                for (BYTE DeviceNum = 0; DeviceNum < Controller[NController].NDevices; DeviceNum++)
+                {
+                    if (Controller[NController].Devices[DeviceNum] == DeviceNumCheck)
+                    {
+                        Controller[NController].NDevices = 0;
+                        Controller[NController].bActive = FALSE;
+                        RegSetValueEx(hKey, Controller[NController].szName, 0, dwType, (LPBYTE)&Controller[NController],
+                                      dwSize);
+                    }
+                }
+            }
+        }
+    }
+
+    return DeviceChanged;
+}
+
+
+void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* ControllerInput, int& M1Speed, int& M2Speed)
+{
+    switch (count)
+    {
+    case 0:
+        if (AxisValue < (LONG)-Controller[Control].SensMax)
+            ControllerInput->Y_AXIS = min(127, Controller[Control].SensMax);
+        else
+            ControllerInput->Y_AXIS = -AxisValue;
+        break;
+    case 1:
+        if (AxisValue < (LONG)-Controller[Control].SensMax)
+            ControllerInput->Y_AXIS = -min(128, Controller[Control].SensMax);
+        else
+            ControllerInput->Y_AXIS = AxisValue;
+        break;
+    case 2:
+        if (AxisValue < (LONG)-Controller[Control].SensMax)
+            ControllerInput->X_AXIS = -min(128, Controller[Control].SensMax);
+        else
+            ControllerInput->X_AXIS = AxisValue;
+        break;
+    case 3:
+        if (AxisValue < (LONG)-Controller[Control].SensMax)
+            ControllerInput->X_AXIS = min(127, Controller[Control].SensMax);
+        else
+            ControllerInput->X_AXIS = -AxisValue;
+        break;
+
+    case 18:
+        M1Speed = Controller[Control].Input[count].button;
+        break;
+    case 19:
+        M2Speed = Controller[Control].Input[count].button;
+        break;
+
+    default:
+        ControllerInput->Value |= Controller[Control].Input[count].button;
+        break;
+    }
+}
+
+void WINAPI GetPosAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* ControllerInput, int& M1Speed, int& M2Speed)
+{
+    switch (count)
+    {
+    case 0:
+        if (AxisValue > (LONG)Controller[Control].SensMax)
+            ControllerInput->Y_AXIS = min(127, Controller[Control].SensMax);
+        else
+            ControllerInput->Y_AXIS = AxisValue;
+        break;
+    case 1:
+        if (AxisValue > (LONG)Controller[Control].SensMax)
+            ControllerInput->Y_AXIS = -min(128, Controller[Control].SensMax);
+        else
+            ControllerInput->Y_AXIS = -AxisValue;
+        break;
+    case 2:
+        if (AxisValue > (LONG)Controller[Control].SensMax)
+            ControllerInput->X_AXIS = -min(128, Controller[Control].SensMax);
+        else
+            ControllerInput->X_AXIS = -AxisValue;
+        break;
+    case 3:
+        if (AxisValue > (LONG)Controller[Control].SensMax)
+            ControllerInput->X_AXIS = min(127, Controller[Control].SensMax);
+        else
+            ControllerInput->X_AXIS = AxisValue;
+        break;
+
+    case 18:
+        M1Speed = Controller[Control].Input[count].button;
+        break;
+    case 19:
+        M2Speed = Controller[Control].Input[count].button;
+        break;
+
+    default:
+        ControllerInput->Value |= Controller[Control].Input[count].button;
+        break;
+    }
+}
+
 
 BOOL WINAPI InitDirectInput(HWND hMainWindow)
 {
@@ -19,7 +145,7 @@ BOOL WINAPI InitDirectInput(HWND hMainWindow)
 
     // Create the DirectInput object.
     nCurrentDevices = 0;
-    if FAILED (hr = DirectInput8Create(g_hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&g_lpDI, NULL))
+    if FAILED (hr = DirectInput8Create(GetModuleHandle(0), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&g_lpDI, NULL))
     {
         if (hr == DIERR_OLDDIRECTINPUTVERSION)
             MessageBox(NULL, "Old version of DirectX detected. Use DirectX 7 or higher!", "Error", MB_ICONERROR | MB_OK);
