@@ -19,9 +19,6 @@
 #define PLUGIN_NAME "TASInput 1.1.2"
 #endif
 
-#define PI 3.14159265358979f
-#define BUFFER_CHUNK 128
-
 int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
 int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
 
@@ -1389,7 +1386,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 // We change the angle, keeping magnitude
                 float angle = atan2f(current_input.Y_AXIS, current_input.X_AXIS);
                 float mag = ceilf(sqrtf(powf(current_input.X_AXIS, 2) + powf(current_input.Y_AXIS, 2)));
-                float new_ang = angle + (increment * (PI / 180.0f));
+                float new_ang = angle + (increment * (M_PI / 180.0f));
                 current_input.X_AXIS = mag * cosf(new_ang);
                 current_input.Y_AXIS = mag * sinf(new_ang);
             }

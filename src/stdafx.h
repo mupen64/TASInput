@@ -5,6 +5,7 @@
  */
 
 #define DIRECTINPUT_VERSION 0x0800
+#define _USE_MATH_DEFINES
 
 #include <filesystem>
 #include <string>
@@ -13,8 +14,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
-#include <malloc.h>
-#include <memory.h>
+#include <memory>
 #include <tchar.h>
 #include <span>
 #include <cstdint>
@@ -24,15 +24,10 @@
 #include <condition_variable>
 #include <atomic>
 #include <cstdio>
-#include <stdint.h>
 #include <map>
 #include <cassert>
-#include <math.h>
-#include <float.h>
-#include <stdarg.h>
-#include <optional>
-#include <string_view>
-#include <variant>
+#include <cmath>
+#include <cfloat>
 #include <stack>
 #include <numeric>
 #include <Windows.h>
