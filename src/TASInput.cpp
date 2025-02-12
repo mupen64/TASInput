@@ -13,7 +13,7 @@
 #include "helpers/math_helpers.h"
 #include "helpers/win_helpers.h"
 
-#define PLUGIN_VERSION "1.1.2"
+#define PLUGIN_VERSION "1.2.0"
 
 #ifdef _M_X64
 #define PLUGIN_ARCH "-x64"
