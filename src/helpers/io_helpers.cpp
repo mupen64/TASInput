@@ -4,12 +4,8 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#include "stdafx.h"
 #include "io_helpers.h"
-#include <cstdio>
-#include <Windows.h>
-#include <shlobj.h>
-#include <string>
-#include <vector>
 
 std::vector<std::string> get_files_with_extension_in_directory(
 	const std::string& directory, const std::string& extension)

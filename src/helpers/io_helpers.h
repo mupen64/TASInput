@@ -6,11 +6,6 @@
 
 #pragma once
 
-#include <filesystem>
-#include <Windows.h>
-#include <string>
-#include <vector>
-
 /**
  * \brief Gets all files with a specific file extension directly under a directory
  * \param directory The path joiner-terminated directory

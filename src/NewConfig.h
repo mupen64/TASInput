@@ -5,7 +5,6 @@
  */
 
 #pragma once
-#include <cstdint>
 
 typedef struct s_config
 {

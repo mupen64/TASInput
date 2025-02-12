@@ -4,17 +4,18 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include <windows.h>
-#include <commctrl.h>
+
+#include "stdafx.h"
+
 #define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
+
 #include "Controller.h"
 #include "DI.h"
 #include "DefDI.h"
 #include "Config.h"
-
 #include "NewConfig.h"
 #include "resource.h"
+
 #define RESET_SELECTION Controller[NController].Input[NControl].Device = 0;\
 Controller[NController].Input[NControl].type = INPUT_TYPE_NOT_USED;\
 Controller[NController].Input[NControl].vkey = 0;\

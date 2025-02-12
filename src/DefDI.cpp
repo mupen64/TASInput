@@ -4,26 +4,16 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include <windows.h>
-#include <commctrl.h>
-#include <windowsx.h>
-#include <shellscalingapi.h>
+#include "stdafx.h"
+
 #define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
-#include <stdio.h>
-#include <math.h>
-#include <vector>
+
 #include "Controller.h"
 #include "DI.h"
 #include "DefDI.h"
-
-#include <assert.h>
-
 #include "Config.h"
 #include "resource.h"
 #include "Combo.h"
-#include <format>
-
 #include "NewConfig.h"
 #include "helpers/math_helpers.h"
 #include "helpers/win_helpers.h"

@@ -113,6 +113,7 @@
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
             <LanguageStandard>stdcpplatest</LanguageStandard>
+            <PrecompiledHeader>Use</PrecompiledHeader>
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -128,12 +129,12 @@
             <StringPooling>true</StringPooling>
             <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
             <FunctionLevelLinking>true</FunctionLevelLinking>
-            <PrecompiledHeader>NotUsing</PrecompiledHeader>
             <WarningLevel>Level3</WarningLevel>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <DebugInformationFormat>None</DebugInformationFormat>
             <DiagnosticsFormat>Caret</DiagnosticsFormat>
             <LanguageStandard>stdcpplatest</LanguageStandard>
+            <PrecompiledHeader>Use</PrecompiledHeader>
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -152,6 +153,7 @@
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
             <LanguageStandard>stdcpplatest</LanguageStandard>
+            <PrecompiledHeader>Use</PrecompiledHeader>
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -167,12 +169,12 @@
             <StringPooling>true</StringPooling>
             <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
             <FunctionLevelLinking>true</FunctionLevelLinking>
-            <PrecompiledHeader>NotUsing</PrecompiledHeader>
             <WarningLevel>Level3</WarningLevel>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <DebugInformationFormat>None</DebugInformationFormat>
             <DiagnosticsFormat>Caret</DiagnosticsFormat>
             <LanguageStandard>stdcpplatest</LanguageStandard>
+            <PrecompiledHeader>Use</PrecompiledHeader>
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -182,6 +184,12 @@
         </Link>
     </ItemDefinitionGroup>
     <ItemGroup>
+        <ClCompile Include="src\stdafx.cpp">
+            <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+            <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+            <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+            <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+        </ClCompile>
         <ClCompile Include="src\Combo.cpp" />
         <ClCompile Include="src\Config.cpp"/>
         <ClCompile Include="src\DefDI.cpp"/>
@@ -190,6 +198,7 @@
         <ClCompile Include="src\NewConfig.cpp" />
     </ItemGroup>
     <ItemGroup>
+        <ClInclude Include="src\stdafx.h" />
         <ClInclude Include="src\Combo.h" />
         <ClInclude Include="src\Config.h" />
         <ClInclude Include="src\Controller.h" />

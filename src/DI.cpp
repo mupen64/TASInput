@@ -4,17 +4,12 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include <windows.h>
+#include "stdafx.h"
 #define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
 #include "controller.h"
 #include "DI.h"
-
-#include <format>
-
 #include "DefDI.h"
 #include "resource.h"
-#include <math.h>
 
 LPDIRECTINPUT8 g_lpDI = NULL;
 DIINPUTDEVICE DInputDev[MAX_DEVICES];

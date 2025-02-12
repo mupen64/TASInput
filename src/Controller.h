@@ -7,8 +7,6 @@
 #ifndef _CONTR_H_INCLUDED__
 #define _CONTR_H_INCLUDED__
 
-#include <Windows.h>
-
 #if defined(__cplusplus)
 extern "C" {
 #endif

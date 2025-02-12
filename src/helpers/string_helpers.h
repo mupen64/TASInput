@@ -5,9 +5,6 @@
  */
 
 #pragma once
-#include <algorithm>
-#include <locale>
-#include <vector>
 
 inline static char* stristr(const char* str1, const char* str2)
 {
