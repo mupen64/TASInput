@@ -6,9 +6,6 @@
 
 
 #include "stdafx.h"
-
-#define DIRECTINPUT_VERSION 0x0800
-
 #include "DI.h"
 #include "DefDI.h"
 #include "Config.h"

@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+#define DIRECTINPUT_VERSION 0x0800
+
 #include <filesystem>
 #include <string>
 #include <format>
