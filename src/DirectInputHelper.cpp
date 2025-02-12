@@ -5,8 +5,7 @@
  */
 
 #include "stdafx.h"
-#include "DI.h"
-#include "DefDI.h"
+#include "DirectInputHelper.h"
 
 LPDIRECTINPUT8 g_lpDI = NULL;
 DIINPUTDEVICE DInputDev[MAX_DEVICES];

@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef _DI_H_INCLUDED__
-#define _DI_H_INCLUDED__
+#pragma once
 
 #define MAX_DEVICES 5
-#include "DefDI.h"
+
+#include "TASInput.h"
 
 extern BYTE nCurrentDevices;
 
@@ -29,7 +29,6 @@ BOOL WINAPI InitDirectInput(HWND hMainWindow);
 BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
 BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi, LPVOID pContext);
 
-
 /**
  * \brief Gets the current input for a specific controller index
  * \param controllers An array of controllers
@@ -39,5 +38,3 @@ BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi, LPVOID pCon
  * \return The held controller input
  */
 BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale);
-
-#endif

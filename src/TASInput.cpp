@@ -5,8 +5,8 @@
  */
 
 #include "stdafx.h"
-#include "DI.h"
-#include "DefDI.h"
+#include "DirectInputHelper.h"
+#include "TASInput.h"
 #include "Config.h"
 #include "Combo.h"
 #include "NewConfig.h"
