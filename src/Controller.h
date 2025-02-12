@@ -1,10 +1,9 @@
-/**********************************************************************************
-Common Controller plugin spec, version #1.0 maintained by 
-zilmar (zilmar@emulation64.com)
+/*
+ * Copyright (c) 2025, TASInput maintainers, contributors, and original authors (nitsuja, Deflection).
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
-All questions or suggestions should go through the mailing list.
-http://www.egroups.com/group/Plugin64-Dev
-**********************************************************************************/
 #ifndef _CONTR_H_INCLUDED__
 #define _CONTR_H_INCLUDED__
 

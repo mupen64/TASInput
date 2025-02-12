@@ -90,12 +90,23 @@
             Label="LocalAppDataPlatform" />
     </ImportGroup>
     <PropertyGroup Label="UserMacros" />
-
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir>build\</OutDir>
+    <LocalDebuggerWorkingDirectory>build\</LocalDebuggerWorkingDirectory>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">build\obj-x86-debug\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">build\obj-x86\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">build\obj-x64-debug\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">build\obj-x64\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">TASInput-x86-debug</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">TASInput-x86</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TASInput-x64-debug</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TASInput-x64</TargetName>
+  </PropertyGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
         <ClCompile>
             <Optimization>Disabled</Optimization>
             <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-            <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
             <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
             <BrowseInformation>true</BrowseInformation>
             <WarningLevel>Level3</WarningLevel>
@@ -105,15 +116,9 @@
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
-            <OutputFile>TASInput_x32_debug.dll</OutputFile>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
-        <Midl>
-            <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-            <MkTypLibCompatible>true</MkTypLibCompatible>
-            <SuppressStartupBanner>true</SuppressStartupBanner>
-        </Midl>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
         <ClCompile>
@@ -132,22 +137,15 @@
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
-            <OutputFile>TASInput_x32.dll</OutputFile>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <GenerateDebugInformation>false</GenerateDebugInformation>
         </Link>
-        <Midl>
-            <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-            <MkTypLibCompatible>true</MkTypLibCompatible>
-            <SuppressStartupBanner>true</SuppressStartupBanner>
-        </Midl>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <ClCompile>
             <Optimization>Disabled</Optimization>
             <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-            <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
             <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
             <BrowseInformation>true</BrowseInformation>
             <WarningLevel>Level3</WarningLevel>
@@ -157,15 +155,9 @@
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;odbc32.lib;odbccp32.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
-            <OutputFile>TASInput_x64_debug.dll</OutputFile>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
-        <Midl>
-            <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-            <MkTypLibCompatible>true</MkTypLibCompatible>
-            <SuppressStartupBanner>true</SuppressStartupBanner>
-        </Midl>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <ClCompile>
@@ -184,72 +176,34 @@
         </ClCompile>
         <Link>
             <AdditionalDependencies>dxguid.lib;dinput8.lib;winmm.lib;comctl32.lib;shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
-            <OutputFile>TASInput_x64.dll</OutputFile>
             <SuppressStartupBanner>true</SuppressStartupBanner>
             <EnableCOMDATFolding>true</EnableCOMDATFolding>
             <GenerateDebugInformation>false</GenerateDebugInformation>
         </Link>
-        <Midl>
-            <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-            <MkTypLibCompatible>true</MkTypLibCompatible>
-            <SuppressStartupBanner>true</SuppressStartupBanner>
-        </Midl>
     </ItemDefinitionGroup>
     <ItemGroup>
-        <ClCompile Include="Combo.cpp" />
-
-        <ClCompile Include="Config.cpp">
-            <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                EnableFastChecks</BasicRuntimeChecks>
-            <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BrowseInformation>
-            <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-        </ClCompile>
-        <ClCompile Include="DefDI.cpp">
-            <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                EnableFastChecks</BasicRuntimeChecks>
-            <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BrowseInformation>
-            <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-        </ClCompile>
-        <ClCompile Include="DI.cpp">
-            <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                WIN32;_DEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-            <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                EnableFastChecks</BasicRuntimeChecks>
-            <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BrowseInformation>
-            <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
-            <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                WIN32;NDEBUG;_WINDOWS;_MBCS;_USRDLL;DEFDI_EXPORTS</PreprocessorDefinitions>
-        </ClCompile>
-        <ClCompile Include="helpers\io_helpers.cpp" />
-        <ClCompile Include="NewConfig.cpp" />
-
+        <ClCompile Include="src\Combo.cpp" />
+        <ClCompile Include="src\Config.cpp"/>
+        <ClCompile Include="src\DefDI.cpp"/>
+        <ClCompile Include="src\DI.cpp"/>
+        <ClCompile Include="src\helpers\io_helpers.cpp" />
+        <ClCompile Include="src\NewConfig.cpp" />
     </ItemGroup>
     <ItemGroup>
-        <ClInclude Include="Combo.h" />
-        <ClInclude Include="Config.h" />
-        <ClInclude Include="Controller.h" />
-        <ClInclude Include="DefDI.h" />
-        <ClInclude Include="DI.h" />
-        <ClInclude Include="helpers\io_helpers.h" />
-        <ClInclude Include="helpers\math_helpers.h" />
-        <ClInclude Include="helpers\string_helpers.h" />
-        <ClInclude Include="helpers\win_helpers.h" />
-        <ClInclude Include="NewConfig.h" />
-        <ClInclude Include="resource.h" />
+        <ClInclude Include="src\Combo.h" />
+        <ClInclude Include="src\Config.h" />
+        <ClInclude Include="src\Controller.h" />
+        <ClInclude Include="src\DefDI.h" />
+        <ClInclude Include="src\DI.h" />
+        <ClInclude Include="src\helpers\io_helpers.h" />
+        <ClInclude Include="src\helpers\math_helpers.h" />
+        <ClInclude Include="src\helpers\string_helpers.h" />
+        <ClInclude Include="src\helpers\win_helpers.h" />
+        <ClInclude Include="src\NewConfig.h" />
+        <ClInclude Include="src\resource.h" />
     </ItemGroup>
     <ItemGroup>
-        <ResourceCompile Include="config.rc" />
+        <ResourceCompile Include="src\config.rc" />
     </ItemGroup>
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
     <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,10 @@
-﻿#include "NewConfig.h"
+﻿/*
+ * Copyright (c) 2025, TASInput maintainers, contributors, and original authors (nitsuja, Deflection).
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+#include "NewConfig.h"
 #include "helpers/io_helpers.h"
 
 #define CONFIG_PATH "tasinput.cfg"

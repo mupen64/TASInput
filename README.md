@@ -1,9 +1,6 @@
 # TASInput
 The Mupen64 TAS Input Plugin
 
-# Contributing
-
-This project is part of the Mupen64 project family and adheres to the [Mupen64 contribution guidelines](https://github.com/mkdasher/mupen64-rr-lua-/wiki/Contributing).
 
 # Productivity
 
