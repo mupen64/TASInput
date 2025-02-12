@@ -78,23 +78,20 @@ RECT get_window_rect_client_space(HWND parent, HWND child)
     GetWindowRect(child, &client);
 
     return {
-        offset_client.left,
-        offset_client.top,
-        offset_client.left + (client.right - client.left),
-        offset_client.top + (client.bottom - client.top)
-    };
+    offset_client.left,
+    offset_client.top,
+    offset_client.left + (client.right - client.left),
+    offset_client.top + (client.bottom - client.top)};
 }
 
-struct Status
-{
-    enum class JoystickMode
-    {
+struct Status {
+    enum class JoystickMode {
         none,
         abs,
         sticky,
         rel
     };
-    
+
     Status()
     {
         show_m64_inputs = false;
@@ -114,15 +111,20 @@ struct Status
 
         switch (controller_index)
         {
-        case 0: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
+        case 0:
+            DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
             break;
-        case 1: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
+        case 1:
+            DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
             break;
-        case 2: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
+        case 2:
+            DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
             break;
-        case 3: DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
+        case 3:
+            DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
             break;
-        default: assert(false);
+        default:
+            assert(false);
         }
     }
 
@@ -148,14 +150,14 @@ struct Status
         set_style(statusDlg, GWL_STYLE, DS_SYSMODAL, !new_config.float_from_parent);
         set_style(statusDlg, GWL_STYLE, WS_CAPTION, new_config.titlebar);
 
-        // If we remove the titlebar, window contents will get clipped due to the window size not expanding, so we need to account for that 
+        // If we remove the titlebar, window contents will get clipped due to the window size not expanding, so we need to account for that
         RECT rect = new_config.titlebar ? initial_window_rect : initial_client_rect;
         SetWindowPos(statusDlg, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
         save_config();
 
         CheckDlgButton(statusDlg, IDC_LOOP, new_config.loop_combo);
     }
-    
+
     /**
      * \brief The instance's UI thread
      */
@@ -167,8 +169,8 @@ struct Status
     RECT initial_client_rect;
 
     /**
-    * \brief The initial window rectangle before any style changes are applied
-    */
+     * \brief The initial window rectangle before any style changes are applied
+     */
     RECT initial_window_rect;
 
     /**
@@ -182,7 +184,7 @@ struct Status
     POINT dragging_window_cursor_diff;
 
     /**
-     * \brief The window's position. Used for restoring the position after dialog changes and its position is reset by window manager 
+     * \brief The window's position. Used for restoring the position after dialog changes and its position is reset by window manager
      */
     POINT window_position = {0};
 
@@ -192,20 +194,20 @@ struct Status
     BUTTONS current_input = {0};
 
     /**
-    * \brief The internal input state at the previous GetKeys call before any processing
-    */
+     * \brief The internal input state at the previous GetKeys call before any processing
+     */
     BUTTONS last_controller_input = {0};
 
     /**
-    * \brief Ignores the next joystick increment, used for relative mode tracking
-    */
+     * \brief Ignores the next joystick increment, used for relative mode tracking
+     */
     bool ignore_next_down[2] = {0};
 
     /**
-    * \brief Ignores the next joystick decrement, used for relative mode tracking
-    */
+     * \brief Ignores the next joystick decrement, used for relative mode tracking
+     */
     bool ignore_next_up[2] = {0};
-    
+
     /**
      * \brief The index of the currently active combo into the combos array, or -1 if none is active
      */
@@ -215,7 +217,7 @@ struct Status
      * \brief The index of the currently renamed combo into the combos array, or -1 if none is being renamed
      */
     int32_t renaming_combo_index = -1;
-    
+
     /**
      * \brief The frame count relative to the current combo's start
      */
@@ -230,17 +232,17 @@ struct Status
      * \brief The current joystick move mode
      */
     JoystickMode joystick_mode = JoystickMode::none;
-    
+
     /**
      * \brief The difference between the mouse and joystick's mapped position at the last middle mouse button down interaction
      */
     POINT joystick_mouse_diff = {0};
-    
+
     /**
      * \brief Handle of the edit box used for renaming combos
      */
     HWND combo_edit_box = nullptr;
-    
+
     bool combo_active()
     {
         return active_combo_index != -1;
@@ -329,10 +331,10 @@ void start_dialogs()
     {
         if (Controller[i].bActive)
         {
-            std::thread([i]
-            {
+            std::thread([i] {
                 status[i].start(i);
-            }).detach();
+            })
+            .detach();
         }
     }
 }
@@ -350,7 +352,7 @@ int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
         break;
     }
 
-    // HACK: perform windows left handed mode check 
+    // HACK: perform windows left handed mode check
     // and adjust accordingly
     if (GetSystemMetrics(SM_SWAPBUTTON))
     {
@@ -363,7 +365,7 @@ int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
 
 EXPORT void CALL CloseDLL(void)
 {
-    //Stop and Close Direct Input
+    // Stop and Close Direct Input
     FreeDirectInput();
 }
 
@@ -395,7 +397,7 @@ EXPORT void CALL GetDllInfo(PLUGIN_INFO* PluginInfo)
 {
     PluginInfo->Version = 0x0100;
     PluginInfo->Type = PLUGIN_TYPE_CONTROLLER;
-    wsprintf(PluginInfo->Name,PLUGIN_NAME);
+    wsprintf(PluginInfo->Name, PLUGIN_NAME);
 }
 
 EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
@@ -437,15 +439,14 @@ LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
     }
     return DefSubclassProc(hwnd, msg, wParam, lParam);
 
-    apply:
-    
+apply:
+
     char txt[MAX_PATH] = "\0";
     SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
     SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
     DestroyWindow(hwnd);
 
     return DefSubclassProc(hwnd, msg, wParam, lParam);
-
 }
 
 
@@ -466,7 +467,7 @@ void Status::GetKeys(BUTTONS* Keys)
                 set_status("Finished combo");
                 comboTask = C_IDLE;
                 // Reset input on last frame, or it sticks which feels weird
-                // We also need to reprocess the inputs since source data change 
+                // We also need to reprocess the inputs since source data change
                 current_input = {0};
                 Keys->Value = get_processed_input(current_input).Value;
                 goto end;
@@ -495,7 +496,7 @@ void Status::update_joystick_position()
     {
         joystick_mode = JoystickMode::none;
     }
-    
+
     if (joystick_mode == JoystickMode::rel && !(GetAsyncKeyState(VK_MBUTTON) & 0x8000))
     {
         joystick_mode = JoystickMode::none;
@@ -509,7 +510,7 @@ void Status::update_joystick_position()
     POINT pt;
     GetCursorPos(&pt);
     ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
-    
+
     RECT pic_rect;
     GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
     int x = (pt.x * UINT8_MAX / (signed)(pic_rect.right - pic_rect.left) - INT8_MAX + 1);
@@ -520,7 +521,7 @@ void Status::update_joystick_position()
         x -= joystick_mouse_diff.x;
         y -= joystick_mouse_diff.y;
     }
-    
+
     // Clamp the value to legal bounds
     if (x > INT8_MAX || y > INT8_MAX || x < INT8_MIN || y < INT8_MIN)
     {
@@ -528,13 +529,13 @@ void Status::update_joystick_position()
         x = x * INT8_MAX / div;
         y = y * INT8_MAX / div;
     }
-    
+
     // snap clicks to zero
     if (abs(x) <= 8)
         x = 0;
     if (abs(y) <= 8)
         y = 0;
-    
+
     current_input.X_AXIS = x;
     current_input.Y_AXIS = y;
     set_visuals(current_input);
@@ -780,17 +781,17 @@ void WINAPI InitializeAndCheckDevices(HWND hMainWindow)
     BYTE i;
     DWORD dwSize, dwType;
 
-    //Initialize Direct Input function
+    // Initialize Direct Input function
     if (FAILED(InitDirectInput(hMainWindow)))
     {
-        MessageBox(NULL, "DirectInput Initialization Failed!", "Error",MB_ICONERROR | MB_OK);
+        MessageBox(NULL, "DirectInput Initialization Failed!", "Error", MB_ICONERROR | MB_OK);
         FreeDirectInput();
     }
     else
     {
         dwType = REG_BINARY;
         dwSize = sizeof(Guids);
-        //Check Guids for Device Changes
+        // Check Guids for Device Changes
         RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, 0);
         if (RegQueryValueEx(hKey, TEXT("Guids"), 0, &dwType, (LPBYTE)Guids, &dwSize) != ERROR_SUCCESS)
         {
@@ -897,7 +898,7 @@ EXPORT void CALL RomOpen(void)
     {
         MessageBox(emulator_hwnd, "No controllers are active. Please enable at least one controller in the plugin settings, or emulation will not work correctly.", "Warning", MB_ICONWARNING | MB_OK);
     }
-    
+
     RomClosed();
     romIsOpen = true;
 
@@ -952,18 +953,18 @@ void Status::set_status(std::string str)
     SendMessage(hTask, WM_SETTEXT, 0, (LPARAM)str.c_str());
 }
 
-//shows edit box
+// shows edit box
 void Status::StartEdit(int id)
 {
     RECT item_rect;
     ListBox_GetItemRect(combo_listbox, id, &item_rect);
     combo_edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left,
-                                   item_rect.top,
-                                   item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4,
-                                   combo_listbox, 0, g_hInstance, 0);
+                                    item_rect.top,
+                                    item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4,
+                                    combo_listbox, 0, g_hInstance, 0);
     // Clear selection to prevent it from repainting randomly and fighting with our textbox
     ListBox_SetCurSel(combo_listbox, -1);
-    SendMessage(combo_edit_box,WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
+    SendMessage(combo_edit_box, WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
     SetWindowSubclass(combo_edit_box, EditBoxProc, 0, 0);
     char txt[MAX_PATH];
     ListBox_GetText(combo_listbox, id, txt);
@@ -995,7 +996,7 @@ void Status::save_combos()
     Combos::save("combos.cmb", combos);
 }
 
-//load combos to listBox
+// load combos to listBox
 void Status::load_combos(const char* path)
 {
     combos = Combos::find(path);
@@ -1014,7 +1015,7 @@ static bool IsMouseOverControl(HWND hDlg, int dialogItemID)
     RECT rect;
 
     GetCursorPos(&pt);
-    if (GetWindowRect(GetDlgItem(hDlg, dialogItemID), &rect)) //failed to get the dimensions
+    if (GetWindowRect(GetDlgItem(hDlg, dialogItemID), &rect)) // failed to get the dimensions
         return (pt.x <= rect.right && pt.x >= rect.left && pt.y <= rect.bottom && pt.y >= rect.top);
     return FALSE;
 }
@@ -1028,7 +1029,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
     // HACK: disable topmost so menu doesnt appear under tasinput
     hMenu = CreatePopupMenu();
     AppendMenu(hMenu, new_config.relative_mode ? MF_CHECKED : 0, offsetof(t_config, relative_mode),
-           "Relative");
+               "Relative");
     AppendMenu(hMenu, new_config.always_on_top ? MF_CHECKED : 0, offsetof(t_config, always_on_top),
                "Always on top");
     AppendMenu(hMenu, new_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_config, float_from_parent),
@@ -1044,7 +1045,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 
     if (offset != 0)
     {
-        // offset is the offset into menu config struct of the field which was selected by user, we need to convert it from byte offset to int-width offset 
+        // offset is the offset into menu config struct of the field which was selected by user, we need to convert it from byte offset to int-width offset
         auto arr = reinterpret_cast<int32_t*>(&new_config);
         arr[offset / sizeof(int32_t)] ^= true;
     }
@@ -1061,12 +1062,12 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
     return TRUE;
 }
 
-#define MAKE_DLG_PROC(i) \
-LRESULT CALLBACK StatusDlgProc##i (HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
-{ \
-	status[i].statusDlg = hDlg; \
-	return status[i].StatusDlgMethod(msg, wParam, lParam); \
-}
+#define MAKE_DLG_PROC(i)                                                                 \
+    LRESULT CALLBACK StatusDlgProc##i(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
+    {                                                                                    \
+        status[i].statusDlg = hDlg;                                                      \
+        return status[i].StatusDlgMethod(msg, wParam, lParam);                           \
+    }
 MAKE_DLG_PROC(0)
 MAKE_DLG_PROC(1)
 MAKE_DLG_PROC(2)
@@ -1123,7 +1124,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             // windows likes to scale stick control in particular, so we force it to a specific size
             SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
 
-            // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile 
+            // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile
             set_visuals(current_input);
 
             SetTimer(statusDlg, IDT_TIMER_STATUS_0 + controller_index, 1, nullptr);
@@ -1153,7 +1154,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 SetWindowPos(statusDlg, nullptr, cursor_position.x - dragging_window_cursor_diff.x,
                              cursor_position.y - dragging_window_cursor_diff.y, 0, 0, SWP_NOSIZE | SWP_NOREDRAW);
             }
-            
+
             if (lmb_just_up || rmb_just_up)
             {
                 // activate mupen window to allow it to get key inputs
@@ -1203,57 +1204,57 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         // so we have to rely on WM_TIMER for updating the joystick position when the cursor is outside of client bounds
         update_joystick_position();
 
-        // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events 
+        // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
         BUTTONS controller_input = get_controller_input(Controller, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
 
         if (controller_input.Value != last_controller_input.Value)
         {
             // Input changed, override everything with current
 
-#define BTN(field)\
-                if (controller_input.field && !last_controller_input.field)\
-                {\
-                    current_input.field = 1;\
-                }\
-                if (!controller_input.field && last_controller_input.field)\
-                {\
-                    current_input.field = 0;\
-                }
-#define JOY(field, i)\
-                if (controller_input.field != last_controller_input.field)\
-                {\
-                    if(new_config.relative_mode)\
-                    {\
-                        if(controller_input.field > last_controller_input.field)\
-                        {\
-                            if(ignore_next_down[i])\
-                            {\
-                                ignore_next_down[i] = false;\
-                            }\
-                            else\
-                            {\
-                                current_input.field = current_input.field + 5;\
-                                ignore_next_up[i] = true;\
-                            }\
-                        }\
-                        else if(controller_input.field < last_controller_input.field)\
-                        {\
-                            if(ignore_next_up[i])\
-                            {\
-                                ignore_next_up[i] = false;\
-                            }\
-                            else\
-                            {\
-                                current_input.field = current_input.field - 5;\
-                                ignore_next_down[i] = true;\
-                            }\
-                        }\
-                    }\
-                    else\
-                    {\
-                        current_input.field = controller_input.field;\
-                    }\
-                }
+#define BTN(field)                                              \
+    if (controller_input.field && !last_controller_input.field) \
+    {                                                           \
+        current_input.field = 1;                                \
+    }                                                           \
+    if (!controller_input.field && last_controller_input.field) \
+    {                                                           \
+        current_input.field = 0;                                \
+    }
+#define JOY(field, i)                                                      \
+    if (controller_input.field != last_controller_input.field)             \
+    {                                                                      \
+        if (new_config.relative_mode)                                      \
+        {                                                                  \
+            if (controller_input.field > last_controller_input.field)      \
+            {                                                              \
+                if (ignore_next_down[i])                                   \
+                {                                                          \
+                    ignore_next_down[i] = false;                           \
+                }                                                          \
+                else                                                       \
+                {                                                          \
+                    current_input.field = current_input.field + 5;         \
+                    ignore_next_up[i] = true;                              \
+                }                                                          \
+            }                                                              \
+            else if (controller_input.field < last_controller_input.field) \
+            {                                                              \
+                if (ignore_next_up[i])                                     \
+                {                                                          \
+                    ignore_next_up[i] = false;                             \
+                }                                                          \
+                else                                                       \
+                {                                                          \
+                    current_input.field = current_input.field - 5;         \
+                    ignore_next_down[i] = true;                            \
+                }                                                          \
+            }                                                              \
+        }                                                                  \
+        else                                                               \
+        {                                                                  \
+            current_input.field = controller_input.field;                  \
+        }                                                                  \
+    }
             BTN(R_DPAD)
             BTN(L_DPAD)
             BTN(D_DPAD)
@@ -1290,8 +1291,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             GetClientRect(statusDlg, &window_rect);
             POINT joystick_rect_size = {
-                joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top
-            };
+            joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top};
 
 
             // set up double buffering
@@ -1378,7 +1378,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_MOUSEWHEEL:
         {
-            if (!IsMouseOverControl(statusDlg,IDC_STICKPIC))
+            if (!IsMouseOverControl(statusDlg, IDC_STICKPIC))
             {
                 break;
             }
@@ -1407,7 +1407,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_MBUTTONDOWN:
-        if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
+        if (IsMouseOverControl(statusDlg, IDC_STICKPIC))
         {
             POINT cursor;
             GetCursorPos(&cursor);
@@ -1417,18 +1417,18 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
             int x = (cursor.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
             int y = -(cursor.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
-            
-            joystick_mouse_diff = POINT {
-                x - current_input.X_AXIS,
-                y - current_input.Y_AXIS,
+
+            joystick_mouse_diff = POINT{
+            x - current_input.X_AXIS,
+            y - current_input.Y_AXIS,
             };
-            
+
             joystick_mode = JoystickMode::rel;
             activate_emulator_window();
         }
         break;
     case WM_RBUTTONDOWN:
-        if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
+        if (IsMouseOverControl(statusDlg, IDC_STICKPIC))
         {
             joystick_mode = joystick_mode == JoystickMode::none ? JoystickMode::sticky : JoystickMode::none;
             activate_emulator_window();
@@ -1436,7 +1436,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_LBUTTONDOWN:
         {
-            if (IsMouseOverControl(statusDlg,IDC_STICKPIC))
+            if (IsMouseOverControl(statusDlg, IDC_STICKPIC))
             {
                 joystick_mode = JoystickMode::abs;
                 activate_emulator_window();
@@ -1460,8 +1460,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             is_dragging_window = true;
             dragging_window_cursor_diff = {
-                cursor_position.x - window_rect.left,
-                cursor_position.y - window_rect.top,
+            cursor_position.x - window_rect.left,
+            cursor_position.y - window_rect.top,
             };
         }
         break;
@@ -1478,8 +1478,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             RECT window_rect = {0};
             GetWindowRect(statusDlg, &window_rect);
             window_position = {
-                window_rect.left,
-                window_rect.top,
+            window_rect.left,
+            window_rect.top,
             };
         }
         break;
@@ -1515,7 +1515,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
-        //on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
+        // on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
         case IDC_CHECK_A:
             TOGGLE(A_BUTTON);
             break;
@@ -1667,5 +1667,5 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     default:
         break;
     }
-    return FALSE; //Using DefWindowProc is prohibited but worked anyway
+    return FALSE; // Using DefWindowProc is prohibited but worked anyway
 }

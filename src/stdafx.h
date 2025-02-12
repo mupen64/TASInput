@@ -46,4 +46,3 @@
 #include <commctrl.h>
 #include <windowsx.h>
 #include <shellscalingapi.h>
-

@@ -13,8 +13,7 @@ namespace Combos
     /**
      * \brief Represents an individual combo
      */
-    class Combo
-    {
+    class Combo {
     public:
         /**
          * \brief The combo's name
@@ -31,8 +30,7 @@ namespace Combos
          */
         bool uses_joystick() const
         {
-            return std::any_of(samples.begin(), samples.end(), [](const BUTTONS sample)
-            {
+            return std::any_of(samples.begin(), samples.end(), [](const BUTTONS sample) {
                 return sample.X_AXIS != 0 || sample.Y_AXIS != 0;
             });
         }
@@ -51,4 +49,4 @@ namespace Combos
      * \return Whether the operation succeeded
      */
     bool save(const char* path, std::vector<Combo*> combos);
-};
+}; // namespace Combos

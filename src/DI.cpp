@@ -23,10 +23,10 @@ BOOL WINAPI InitDirectInput(HWND hMainWindow)
 
     // Create the DirectInput object.
     nCurrentDevices = 0;
-    if FAILED(hr = DirectInput8Create(g_hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8 ,(LPVOID*) &g_lpDI, NULL))
+    if FAILED (hr = DirectInput8Create(g_hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&g_lpDI, NULL))
     {
         if (hr == DIERR_OLDDIRECTINPUTVERSION)
-            MessageBox(NULL, "Old version of DirectX detected. Use DirectX 7 or higher!", "Error",MB_ICONERROR | MB_OK);
+            MessageBox(NULL, "Old version of DirectX detected. Use DirectX 7 or higher!", "Error", MB_ICONERROR | MB_OK);
         return FALSE;
     }
     else
@@ -54,28 +54,28 @@ BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
     {
         memcpy(&DInputDev[nCurrentDevices].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
         if (!FAILED(hr = g_lpDI->CreateDevice(lpddi->guidInstance,
-            &DInputDev[nCurrentDevices].lpDIDevice,0)))
+                                              &DInputDev[nCurrentDevices].lpDIDevice, 0)))
         {
-            if FAILED(hr = DInputDev[nCurrentDevices].lpDIDevice->SetDataFormat(&c_dfDIKeyboard))
+            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->SetDataFormat(&c_dfDIKeyboard))
                 bOK = FALSE;
-            if FAILED(hr = DInputDev[nCurrentDevices].lpDIDevice->SetCooperativeLevel(hMainWindow,
-                DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
+            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->SetCooperativeLevel(hMainWindow,
+                                                                                       DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
                 bOK = FALSE;
         }
     }
     else if ((lpddi->dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
     {
         memcpy(&DInputDev[nCurrentDevices].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
-        if (!FAILED(hr = g_lpDI->CreateDevice( lpddi->guidInstance,
-            &DInputDev[nCurrentDevices].lpDIDevice,0)))
+        if (!FAILED(hr = g_lpDI->CreateDevice(lpddi->guidInstance,
+                                              &DInputDev[nCurrentDevices].lpDIDevice, 0)))
         {
-            if FAILED(hr = DInputDev[nCurrentDevices].lpDIDevice->SetDataFormat(&c_dfDIJoystick))
+            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->SetDataFormat(&c_dfDIJoystick))
                 bOK = FALSE;
-            if FAILED(hr = DInputDev[nCurrentDevices].lpDIDevice->SetCooperativeLevel(hMainWindow,
-                DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
+            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->SetCooperativeLevel(hMainWindow,
+                                                                                       DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
                 bOK = FALSE;
-            if FAILED(hr = DInputDev[nCurrentDevices].lpDIDevice->EnumObjects( EnumAxesCallback,
-                (LPVOID)hMainWindow, DIDFT_AXIS ))
+            if FAILED (hr = DInputDev[nCurrentDevices].lpDIDevice->EnumObjects(EnumAxesCallback,
+                                                                               (LPVOID)hMainWindow, DIDFT_AXIS))
                 bOK = FALSE;
         }
     }
@@ -118,7 +118,7 @@ BOOL CALLBACK EnumAxesCallback(const DIDEVICEOBJECTINSTANCE* pdidoi,
     diprg.lMax = +128;
 
     // Set the range for the axis
-    if FAILED(DInputDev[nCurrentDevices].lpDIDevice->SetProperty( DIPROP_RANGE, &diprg.diph ))
+    if FAILED (DInputDev[nCurrentDevices].lpDIDevice->SetProperty(DIPROP_RANGE, &diprg.diph))
         return DIENUM_STOP;
 
     return TRUE;
@@ -151,8 +151,8 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
         return {0};
 
     BUTTONS controller_input = {0};
-    BYTE buffer[256]; //Keyboard Info 
-    DIJOYSTATE js; //Joystick Info
+    BYTE buffer[256]; // Keyboard Info
+    DIJOYSTATE js; // Joystick Info
     HRESULT hr;
     int M1Speed = 0, M2Speed = 0;
     bool analogKey = false;
@@ -176,7 +176,7 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
         if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_KEYBOARD) == DI8DEVTYPE_KEYBOARD)
         {
             ZeroMemory(&buffer, sizeof(buffer));
-            if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(buffer),&buffer))
+            if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(buffer), &buffer))
             {
                 hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
                 while (hr == DIERR_INPUTLOST)
@@ -190,7 +190,7 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
                 {
                     switch (controller.Input[count].type)
                     {
-                    //Record Keyboard Button Info from Device State Buffer
+                    // Record Keyboard Button Info from Device State Buffer
                     case INPUT_TYPE_KEY_BUT:
                         if (BUTTONDOWN(buffer, controller.Input[count].vkey))
                         {
@@ -226,14 +226,14 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
 
         else if ((DInputDev[DeviceNum].DIDevInst.dwDevType & DI8DEVTYPE_JOYSTICK) == DI8DEVTYPE_JOYSTICK)
         {
-            if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->Poll())
+            if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->Poll())
             {
                 hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
                 while (hr == DIERR_INPUTLOST)
                     hr = DInputDev[DeviceNum].lpDIDevice->Acquire();
                 return {0};
             }
-            if FAILED(hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState( sizeof(DIJOYSTATE), &js ))
+            if FAILED (hr = DInputDev[DeviceNum].lpDIDevice->GetDeviceState(sizeof(DIJOYSTATE), &js))
             {
                 return {0};
             }
@@ -245,7 +245,7 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
                     BYTE count2;
                     switch (controller.Input[count].type)
                     {
-                    //Get Joystick button Info from Device State js stucture
+                    // Get Joystick button Info from Device State js stucture
                     case INPUT_TYPE_JOY_BUT:
                         if (BUTTONDOWN(js.rgbButtons, controller.Input[count].vkey))
                         {
@@ -376,8 +376,7 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
                                             analogKey = true;
                                         /* fall through */
                                         default:
-                                            controller_input.Value |= controller.Input[count].
-                                                button;
+                                            controller_input.Value |= controller.Input[count].button;
                                             break;
                                         }
                                     }
@@ -405,8 +404,7 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
                                             analogKey = true;
                                         /* fall through */
                                         default:
-                                            controller_input.Value |= controller.Input[count].
-                                                button;
+                                            controller_input.Value |= controller.Input[count].button;
                                             break;
                                         }
                                     }
@@ -434,8 +432,7 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
                                             analogKey = true;
                                         /* fall through */
                                         default:
-                                            controller_input.Value |= controller.Input[count].
-                                                button;
+                                            controller_input.Value |= controller.Input[count].button;
                                             break;
                                         }
                                     }
@@ -463,8 +460,7 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
                                             analogKey = true;
                                         /* fall through */
                                         default:
-                                            controller_input.Value |= controller.Input[count].
-                                                button;
+                                            controller_input.Value |= controller.Input[count].button;
                                             break;
                                         }
                                     }
@@ -516,20 +512,12 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
             else
                 mult2 = 1.0f;
 
-            controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS >
-                                                                                      0
-                                                                                          ? 0.5f
-                                                                                          : -0.5f));
+            controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
 
-            controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS >
-                                                                                      0
-                                                                                          ? 0.5f
-                                                                                          : -0.5f));
+            controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
 
-            int newX = (int)((float)controller_input.X_AXIS * x_scale + (
-                controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
-            int newY = (int)((float)controller_input.Y_AXIS * y_scale + (
-                controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
+            int newX = (int)((float)controller_input.X_AXIS * x_scale + (controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
+            int newY = (int)((float)controller_input.Y_AXIS * y_scale + (controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
             if (abs(newX) >= abs(newY) && (newX > 127 || newX < -128))
             {
                 newY = newY * (newY > 0 ? 127 : 128) / abs(newX);
@@ -540,8 +528,10 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
                 newX = newX * (newX > 0 ? 127 : 128) / abs(newY);
                 newY = (newY > 0) ? 127 : -128;
             }
-            if (!newX && controller_input.X_AXIS) newX = (controller_input.X_AXIS > 0) ? 1 : -1;
-            if (!newY && controller_input.Y_AXIS) newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
+            if (!newX && controller_input.X_AXIS)
+                newX = (controller_input.X_AXIS > 0) ? 1 : -1;
+            if (!newY && controller_input.Y_AXIS)
+                newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
             controller_input.X_AXIS = newX;
             controller_input.Y_AXIS = newY;
         }
@@ -549,17 +539,17 @@ BUTTONS get_controller_input(DEFCONTROLLER* controllers, size_t index, float x_s
         {
             if (controller_input.X_AXIS)
             {
-                int newX = (int)((float)controller_input.X_AXIS * x_scale + (
-                    controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
-                if (!newX && controller_input.X_AXIS) newX = (controller_input.X_AXIS > 0) ? 1 : -1;
-                controller_input.X_AXIS = min(127, max(-128,newX));
+                int newX = (int)((float)controller_input.X_AXIS * x_scale + (controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
+                if (!newX && controller_input.X_AXIS)
+                    newX = (controller_input.X_AXIS > 0) ? 1 : -1;
+                controller_input.X_AXIS = min(127, max(-128, newX));
             }
             if (controller_input.Y_AXIS)
             {
-                int newY = (int)((float)controller_input.Y_AXIS * y_scale + (
-                    controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
-                if (!newY && controller_input.Y_AXIS) newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
-                controller_input.Y_AXIS = min(127, max(-128,newY));
+                int newY = (int)((float)controller_input.Y_AXIS * y_scale + (controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
+                if (!newY && controller_input.Y_AXIS)
+                    newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
+                controller_input.Y_AXIS = min(127, max(-128, newY));
             }
         }
     }

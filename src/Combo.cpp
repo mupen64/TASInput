@@ -9,7 +9,6 @@
 
 namespace Combos
 {
-
     std::vector<Combo*> find(const char* path)
     {
         FILE* f = fopen(path, "rb");
@@ -43,7 +42,7 @@ namespace Combos
             combo->samples.resize(sample_count);
 
             fread(combo->samples.data(), sizeof(uint32_t), sample_count, f);
-            
+
             current = fgetc(f);
             combos.push_back(combo);
         }
@@ -74,4 +73,4 @@ namespace Combos
         fclose(f);
         return true;
     }
-};
+}; // namespace Combos

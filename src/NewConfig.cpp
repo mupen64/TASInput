@@ -39,12 +39,13 @@ void load_config()
         // Failed, reset to default
         printf("No config found, using default\n");
         loaded_config = default_config;
-    } else
+    }
+    else
     {
         uint8_t* ptr = buffer.data();
         memread(&ptr, &loaded_config, sizeof(t_config));
     }
-    
+
     if (loaded_config.version < default_config.version)
     {
         // Outdated version, reset to default
