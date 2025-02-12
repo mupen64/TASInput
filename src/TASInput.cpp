@@ -38,7 +38,8 @@
 #define C_PLAY 1
 #define C_RECORD 4
 
-#define EDIT_END 10001
+#define WM_EDIT_END 10001
+#define WM_UPDATE_VISUALS 10002
 
 int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
 int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
@@ -475,7 +476,7 @@ apply:
 
     char txt[MAX_PATH] = "\0";
     SendMessage(hwnd, WM_GETTEXT, sizeof(txt), (LPARAM)txt);
-    SendMessage(GetParent(GetParent(hwnd)), EDIT_END, 0, (LPARAM)txt);
+    SendMessage(GetParent(GetParent(hwnd)), WM_EDIT_END, 0, (LPARAM)txt);
     DestroyWindow(hwnd);
 
     return DefSubclassProc(hwnd, msg, wParam, lParam);
@@ -518,7 +519,14 @@ end:
         combos[active_combo_index]->samples.push_back(*Keys);
         set_status(std::format("Recording... ({})", combos[active_combo_index]->samples.size()));
     }
-    set_visuals(*Keys);
+
+    if (new_config.async_visual_updates)
+    {
+        PostMessage(statusDlg, WM_UPDATE_VISUALS, 0, Keys->Value);
+    } else
+    {
+        SendMessage(statusDlg, WM_UPDATE_VISUALS, 0, Keys->Value);
+    }
 }
 
 void Status::update_joystick_position()
@@ -939,19 +947,15 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 
     // HACK: disable topmost so menu doesnt appear under tasinput
     hMenu = CreatePopupMenu();
-    AppendMenu(hMenu, new_config.relative_mode ? MF_CHECKED : 0, offsetof(t_config, relative_mode),
-               "Relative");
-    AppendMenu(hMenu, new_config.always_on_top ? MF_CHECKED : 0, offsetof(t_config, always_on_top),
-               "Always on top");
-    AppendMenu(hMenu, new_config.float_from_parent ? MF_CHECKED : 0, offsetof(t_config, float_from_parent),
-               "Float from parent");
-    AppendMenu(hMenu, new_config.titlebar ? MF_CHECKED : 0, offsetof(t_config, titlebar),
-               "Titlebar");
-    AppendMenu(hMenu, new_config.client_drag ? MF_CHECKED : 0, offsetof(t_config, client_drag),
-               "Client drag");
-    AppendMenu(hMenu, new_config.hifi_joystick ? MF_CHECKED : 0, offsetof(t_config, hifi_joystick),
-               "High-quality joystick");
-
+#define ADD_ITEM(x, y) AppendMenu(hMenu, new_config.x ? MF_CHECKED : 0, offsetof(t_config, x), y)
+    ADD_ITEM(relative_mode, "Relative");
+    ADD_ITEM(always_on_top, "Always on top");
+    ADD_ITEM(float_from_parent, "Float from parent");
+    ADD_ITEM(titlebar, "Titlebar");
+    ADD_ITEM(client_drag, "Client drag");
+    ADD_ITEM(hifi_joystick, "High-quality joystick");
+    ADD_ITEM(async_visual_updates, "Async Visual Updates");
+    
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
 
     if (offset != 0)
@@ -974,7 +978,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
 }
 
 #define MAKE_DLG_PROC(i)                                                                 \
-    LRESULT CALLBACK StatusDlgProc##i(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
+    LRESULT CALLBACK StatusDlgProc## i(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
     {                                                                                    \
         status[i].statusDlg = hDlg;                                                      \
         return status[i].StatusDlgMethod(msg, wParam, lParam);                           \
@@ -1379,9 +1383,12 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_MOUSEMOVE:
         update_joystick_position();
         break;
-    case EDIT_END:
+    case WM_EDIT_END:
         EndEdit(renaming_combo_index, (char*)lParam);
         combo_edit_box = nullptr;
+        break;
+    case WM_UPDATE_VISUALS:
+        set_visuals(static_cast<BUTTONS>(lParam));
         break;
     case WM_SIZE:
     case WM_MOVE:
