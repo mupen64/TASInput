@@ -9,6 +9,8 @@
 #include "DirectInputHelper.h"
 #include "TASInput.h"
 #include "ConfigDialog.h"
+
+#include "Main.h"
 #include "NewConfig.h"
 
 #define IDT_TIMER1 1
@@ -1822,5 +1824,5 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
 
 void cfgdiag_show(HWND parent)
 {
-    DialogBox(GetModuleHandle(0), MAKEINTRESOURCE(IDD_CONFIGDLG), parent, (DLGPROC)ConfigDlgProc);
+    DialogBox(g_inst, MAKEINTRESOURCE(IDD_CONFIGDLG), parent, (DLGPROC)ConfigDlgProc);
 }

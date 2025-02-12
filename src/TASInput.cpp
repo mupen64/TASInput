@@ -5,10 +5,11 @@
  */
 
 #include "stdafx.h"
-#include "DirectInputHelper.h"
 #include "TASInput.h"
-#include "ConfigDialog.h"
 #include "Combo.h"
+#include "ConfigDialog.h"
+#include "DirectInputHelper.h"
+#include "Main.h"
 #include "NewConfig.h"
 #include "helpers/math_helpers.h"
 #include "helpers/win_helpers.h"
@@ -41,8 +42,6 @@
 #define WM_EDIT_END 10001
 #define WM_UPDATE_VISUALS 10002
 
-int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
-int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
 
 #define AUTOFIRE(id, field)                                          \
     {                                                                \
@@ -69,8 +68,6 @@ int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
 
 
 volatile int64_t frame_counter = 0;
-
-HINSTANCE g_hInstance;
 
 HWND emulator_hwnd;
 LRESULT CALLBACK StatusDlgProc0(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -113,16 +110,16 @@ struct Status {
         switch (controller_index)
         {
         case 0:
-            DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
+            DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
             break;
         case 1:
-            DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
+            DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
             break;
         case 2:
-            DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
+            DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
             break;
         case 3:
-            DialogBox(g_hInstance, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
+            DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
             break;
         default:
             assert(false);
@@ -338,30 +335,6 @@ void start_dialogs()
             .detach();
         }
     }
-}
-
-int WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, PVOID pvReserved)
-{
-    switch (fdwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-        g_hInstance = hInstance;
-        break;
-
-    case DLL_PROCESS_DETACH:
-        dih_free();
-        break;
-    }
-
-    // HACK: perform windows left handed mode check
-    // and adjust accordingly
-    if (GetSystemMetrics(SM_SWAPBUTTON))
-    {
-        MOUSE_LBUTTONREDEFINITION = VK_RBUTTON;
-        MOUSE_RBUTTONREDEFINITION = VK_LBUTTON;
-    }
-
-    return TRUE;
 }
 
 EXPORT void CALL CloseDLL(void)
@@ -795,7 +768,7 @@ void Status::StartEdit(int id)
     combo_edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left,
                                     item_rect.top,
                                     item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4,
-                                    combo_listbox, 0, g_hInstance, 0);
+                                    combo_listbox, 0, g_inst, 0);
     // Clear selection to prevent it from repainting randomly and fighting with our textbox
     ListBox_SetCurSel(combo_listbox, -1);
     SendMessage(combo_edit_box, WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
