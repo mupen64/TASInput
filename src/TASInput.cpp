@@ -381,8 +381,6 @@ EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
         ++frame_counter;
         new_frame = false;
     }
-
-    printf("GetKeys frame %d\n", frame_counter);
     
     if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
         status[Control].GetKeys(Keys);
