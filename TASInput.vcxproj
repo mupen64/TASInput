@@ -93,7 +93,7 @@
             <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>Disabled</Optimization>
             <PreprocessorDefinitions>
-                WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)
+                WIN32;_DEBUG;_WINDOWS;_USRDLL;TASINPUT_EXPORTS;%(PreprocessorDefinitions)
             </PreprocessorDefinitions>
             <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
             <BrowseInformation>true</BrowseInformation>
@@ -117,7 +117,7 @@
             <Optimization>MaxSpeed</Optimization>
             <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
             <PreprocessorDefinitions>
-                WIN32;NDEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)
+                WIN32;NDEBUG;_WINDOWS;_USRDLL;TASINPUT_EXPORTS;%(PreprocessorDefinitions)
             </PreprocessorDefinitions>
             <StringPooling>true</StringPooling>
             <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -143,7 +143,7 @@
             <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>Disabled</Optimization>
             <PreprocessorDefinitions>
-                WIN32;_DEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)
+                WIN32;_DEBUG;_WINDOWS;_USRDLL;TASINPUT_EXPORTS;%(PreprocessorDefinitions)
             </PreprocessorDefinitions>
             <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
             <BrowseInformation>true</BrowseInformation>
@@ -167,7 +167,7 @@
             <Optimization>MaxSpeed</Optimization>
             <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
             <PreprocessorDefinitions>
-                WIN32;NDEBUG;_WINDOWS;_USRDLL;DEFDI_EXPORTS;%(PreprocessorDefinitions)
+                WIN32;NDEBUG;_WINDOWS;_USRDLL;TASINPUT_EXPORTS;%(PreprocessorDefinitions)
             </PreprocessorDefinitions>
             <StringPooling>true</StringPooling>
             <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
