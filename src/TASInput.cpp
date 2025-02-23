@@ -68,6 +68,7 @@
 
 
 volatile int64_t frame_counter = 0;
+volatile bool new_frame = false;
 
 HWND emulator_hwnd;
 LRESULT CALLBACK StatusDlgProc0(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -375,6 +376,14 @@ EXPORT void CALL GetDllInfo(PLUGIN_INFO* PluginInfo)
 
 EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
 {
+    if (new_frame)
+    {
+        ++frame_counter;
+        new_frame = false;
+    }
+
+    printf("GetKeys frame %d\n", frame_counter);
+    
     if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
         status[Control].GetKeys(Keys);
     else
@@ -521,7 +530,6 @@ void Status::update_joystick_position()
     current_input.Y_AXIS = y;
     set_visuals(current_input);
 }
-
 
 BUTTONS Status::get_processed_input(BUTTONS input)
 {
@@ -672,11 +680,10 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
 
 EXPORT void CALL ReadController(int Control, BYTE* Command)
 {
-    // XXX: Increment frame counter here because the plugin specification provides no means of finding out when a frame goes by.
-    //      Mupen64 calls ReadController(-1) every input frame, but other emulators might not do that.
-    //      (The frame counter is used only for autofire and combo progression.)
     if (Control == -1)
-        frame_counter++;
+    {
+        new_frame = true;
+    }
 }
 
 EXPORT void CALL RomClosed(void)
