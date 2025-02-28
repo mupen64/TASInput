@@ -29,7 +29,7 @@ namespace Combos
         bool uses_joystick() const
         {
             return std::any_of(samples.begin(), samples.end(), [](const core_buttons sample) {
-                return sample.X_AXIS != 0 || sample.Y_AXIS != 0;
+                return sample.x != 0 || sample.y != 0;
             });
         }
     };

@@ -6,6 +6,9 @@
 
 /*
  * Describes the Mupen64 Plugin API.
+ *
+ * This header can be used standalone by Mupen64 plugins, just make sure to define CORE_PLUGIN_WITH_CALLBACKS first.
+ * 
  */
 
 #pragma once
@@ -32,16 +35,39 @@ typedef enum {
 } core_controller_extension;
 
 /**
+ * \brief Represents a plugin type.
+ */
+typedef enum {
+    plugin_video = 2,
+    plugin_audio = 3,
+    plugin_input = 4,
+    plugin_rsp = 1,
+} core_plugin_type;
+
+/**
  * \brief Describes generic information about a plugin.
  */
 typedef struct
 {
-    uint16_t Version;
-    uint16_t Type;
-    char Name[100];
+    /**
+     * \brief <c>0x0100</c> (old)
+     * <c>0x0101</c> (new).
+     * If <c>0x0101</c> is specified and the plugin is an input plugin, <c>InitiateControllers</c> will be called with the <c>INITIATECONTROLLERS</c> signature instead of <c>OLD_INITIATECONTROLLERS</c>.
+     */
+    uint16_t ver;
 
-    int32_t NormalMemory;
-    int32_t MemoryBswaped;
+    /**
+     * \brief The plugin type, see <c>core_plugin_type</c>.
+     */
+    uint16_t type;
+
+    /**
+     * \brief The plugin name.
+     */
+    char name[100];
+
+    int32_t unused_normal_memory;
+    int32_t unused_byteswapped;
 } core_plugin_info;
 
 /**
@@ -56,57 +82,41 @@ typedef struct
 } core_fb_info;
 
 /**
- * \brief Represents a plugin type.
- */
-typedef enum {
-    plugin_video = 2,
-    plugin_audio = 3,
-    plugin_input = 4,
-    plugin_rsp = 1,
-} core_plugin_type;
-
-
-/**
  * \brief Describes information about a video plugin.
  */
 typedef struct
 {
-    void* hWnd;
-    void* hStatusBar;
-
-    int32_t MemoryBswaped;
-    uint8_t* HEADER;
-    uint8_t* RDRAM;
-    uint8_t* DMEM;
-    uint8_t* IMEM;
-
-    uint32_t* MI_INTR_REG;
-
-    uint32_t* DPC_START_REG;
-    uint32_t* DPC_END_REG;
-    uint32_t* DPC_CURRENT_REG;
-    uint32_t* DPC_STATUS_REG;
-    uint32_t* DPC_CLOCK_REG;
-    uint32_t* DPC_BUFBUSY_REG;
-    uint32_t* DPC_PIPEBUSY_REG;
-    uint32_t* DPC_TMEM_REG;
-
-    uint32_t* VI_STATUS_REG;
-    uint32_t* VI_ORIGIN_REG;
-    uint32_t* VI_WIDTH_REG;
-    uint32_t* VI_INTR_REG;
-    uint32_t* VI_V_CURRENT_LINE_REG;
-    uint32_t* VI_TIMING_REG;
-    uint32_t* VI_V_SYNC_REG;
-    uint32_t* VI_H_SYNC_REG;
-    uint32_t* VI_LEAP_REG;
-    uint32_t* VI_H_START_REG;
-    uint32_t* VI_V_START_REG;
-    uint32_t* VI_V_BURST_REG;
-    uint32_t* VI_X_SCALE_REG;
-    uint32_t* VI_Y_SCALE_REG;
-
-    void(__cdecl* CheckInterrupts)(void);
+    void* main_hwnd;
+    void* statusbar_hwnd;
+    int32_t byteswapped;
+    uint8_t* rom;
+    uint8_t* rdram;
+    uint8_t* dmem;
+    uint8_t* imem;
+    uint32_t* mi_intr_reg;
+    uint32_t* dpc_start_reg;
+    uint32_t* dpc_end_reg;
+    uint32_t* dpc_current_reg;
+    uint32_t* dpc_status_reg;
+    uint32_t* dpc_clock_reg;
+    uint32_t* dpc_bufbusy_reg;
+    uint32_t* dpc_pipebusy_reg;
+    uint32_t* dpc_tmem_reg;
+    uint32_t* vi_status_reg;
+    uint32_t* vi_origin_reg;
+    uint32_t* vi_width_reg;
+    uint32_t* vi_intr_reg;
+    uint32_t* vi_v_current_line_reg;
+    uint32_t* vi_timing_reg;
+    uint32_t* vi_v_sync_reg;
+    uint32_t* vi_h_sync_reg;
+    uint32_t* vi_leap_reg;
+    uint32_t* vi_h_start_reg;
+    uint32_t* vi_v_start_reg;
+    uint32_t* vi_v_burst_reg;
+    uint32_t* vi_x_scale_reg;
+    uint32_t* vi_y_scale_reg;
+    void(__cdecl* check_interrupts)(void);
 } core_gfx_info;
 
 /**
@@ -114,25 +124,21 @@ typedef struct
  */
 typedef struct
 {
-    void* hwnd;
+    void* main_hwnd;
     void* hinst;
-
-    int32_t MemoryBswaped;
-    uint8_t* HEADER;
-    uint8_t* RDRAM;
-    uint8_t* DMEM;
-    uint8_t* IMEM;
-
-    uint32_t* MI_INTR_REG;
-
-    uint32_t* AI_DRAM_ADDR_REG;
-    uint32_t* AI_LEN_REG;
-    uint32_t* AI_CONTROL_REG;
-    uint32_t* AI_STATUS_REG;
-    uint32_t* AI_DACRATE_REG;
-    uint32_t* AI_BITRATE_REG;
-
-    void(__cdecl* CheckInterrupts)(void);
+    int32_t byteswapped;
+    uint8_t* rom;
+    uint8_t* rdram;
+    uint8_t* dmem;
+    uint8_t* imem;
+    uint32_t* mi_intr_reg;
+    uint32_t* ai_dram_addr_reg;
+    uint32_t* ai_len_reg;
+    uint32_t* ai_control_reg;
+    uint32_t* ai_status_reg;
+    uint32_t* ai_dacrate_reg;
+    uint32_t* ai_bitrate_reg;
+    void(__cdecl* check_interrupts)(void);
 } core_audio_info;
 
 /**
@@ -140,12 +146,11 @@ typedef struct
  */
 typedef struct
 {
-    void* hMainWindow;
+    void* main_hwnd;
     void* hinst;
-
-    int32_t MemoryBswaped;
-    uint8_t* HEADER;
-    core_controller* Controls;
+    int32_t byteswapped;
+    uint8_t* header;
+    core_controller* controllers;
 } core_input_info;
 
 /**
@@ -153,84 +158,77 @@ typedef struct
  */
 typedef struct
 {
-    void* hInst;
-    int32_t MemoryBswaped;
-    uint8_t* RDRAM;
-    uint8_t* DMEM;
-    uint8_t* IMEM;
-
-    uint32_t* MI_INTR_REG;
-
-    uint32_t* SP_MEM_ADDR_REG;
-    uint32_t* SP_DRAM_ADDR_REG;
-    uint32_t* SP_RD_LEN_REG;
-    uint32_t* SP_WR_LEN_REG;
-    uint32_t* SP_STATUS_REG;
-    uint32_t* SP_DMA_FULL_REG;
-    uint32_t* SP_DMA_BUSY_REG;
-    uint32_t* SP_PC_REG;
-    uint32_t* SP_SEMAPHORE_REG;
-
-    uint32_t* DPC_START_REG;
-    uint32_t* DPC_END_REG;
-    uint32_t* DPC_CURRENT_REG;
-    uint32_t* DPC_STATUS_REG;
-    uint32_t* DPC_CLOCK_REG;
-    uint32_t* DPC_BUFBUSY_REG;
-    uint32_t* DPC_PIPEBUSY_REG;
-    uint32_t* DPC_TMEM_REG;
-
-    void(__cdecl* CheckInterrupts)(void);
-    void(__cdecl* ProcessDlistList)(void);
-    void(__cdecl* ProcessAlistList)(void);
-    void(__cdecl* ProcessRdpList)(void);
-    void(__cdecl* ShowCFB)(void);
+    void* hinst;
+    int32_t byteswapped;
+    uint8_t* rdram;
+    uint8_t* dmem;
+    uint8_t* imem;
+    uint32_t* mi_intr_reg;
+    uint32_t* sp_mem_addr_reg;
+    uint32_t* sp_dram_addr_reg;
+    uint32_t* sp_rd_len_reg;
+    uint32_t* sp_wr_len_reg;
+    uint32_t* sp_status_reg;
+    uint32_t* sp_dma_full_reg;
+    uint32_t* sp_dma_busy_reg;
+    uint32_t* sp_pc_reg;
+    uint32_t* sp_semaphore_reg;
+    uint32_t* dpc_start_reg;
+    uint32_t* dpc_end_reg;
+    uint32_t* dpc_current_reg;
+    uint32_t* dpc_status_reg;
+    uint32_t* dpc_clock_reg;
+    uint32_t* dpc_bufbusy_reg;
+    uint32_t* dpc_pipebusy_reg;
+    uint32_t* dpc_tmem_reg;
+    void(__cdecl* check_interrupts)(void);
+    void(__cdecl* process_dlist_list)(void);
+    void(__cdecl* process_alist_list)(void);
+    void(__cdecl* process_rdp_list)(void);
+    void(__cdecl* show_cfb)(void);
 } core_rsp_info;
 
 /**
  * \brief Represents a controller state.
  */
 typedef union {
-    uint32_t Value;
+    uint32_t value;
 
     struct
     {
-        unsigned R_DPAD : 1;
-        unsigned L_DPAD : 1;
-        unsigned D_DPAD : 1;
-        unsigned U_DPAD : 1;
-        unsigned START_BUTTON : 1;
-        unsigned Z_TRIG : 1;
-        unsigned B_BUTTON : 1;
-        unsigned A_BUTTON : 1;
-
-        unsigned R_CBUTTON : 1;
-        unsigned L_CBUTTON : 1;
-        unsigned D_CBUTTON : 1;
-        unsigned U_CBUTTON : 1;
-        unsigned R_TRIG : 1;
-        unsigned L_TRIG : 1;
-        unsigned Reserved1 : 1;
-        unsigned Reserved2 : 1;
-
-        signed Y_AXIS : 8;
-
-        signed X_AXIS : 8;
+        unsigned dr : 1;
+        unsigned dl : 1;
+        unsigned dd : 1;
+        unsigned du : 1;
+        unsigned start : 1;
+        unsigned z : 1;
+        unsigned b : 1;
+        unsigned a : 1;
+        unsigned cr : 1;
+        unsigned cl : 1;
+        unsigned cd : 1;
+        unsigned cu : 1;
+        unsigned r : 1;
+        unsigned l : 1;
+        unsigned reserved_1 : 1;
+        unsigned reserved_2 : 1;
+        signed y : 8;
+        signed x : 8;
     };
 } core_buttons;
 
-typedef void(__cdecl* GETDLLINFO)(core_plugin_info*);
+typedef void(__cdecl* CLOSEDLL)();
+typedef void(__cdecl* DLLABOUT)(void*);
 typedef void(__cdecl* DLLCONFIG)(void*);
 typedef void(__cdecl* DLLTEST)(void*);
-typedef void(__cdecl* DLLABOUT)(void*);
+typedef void(__cdecl* GETDLLINFO)(core_plugin_info*);
+typedef void(__cdecl* ROMCLOSED)();
+typedef void(__cdecl* ROMOPEN)();
 
 typedef void(__cdecl* CHANGEWINDOW)();
-typedef void(__cdecl* CLOSEDLL_GFX)();
 typedef int32_t(__cdecl* INITIATEGFX)(core_gfx_info);
 typedef void(__cdecl* PROCESSDLIST)();
 typedef void(__cdecl* PROCESSRDPLIST)();
-typedef void(__cdecl* ROMCLOSED_GFX)();
-typedef void(__cdecl* ROMOPEN_GFX)();
 typedef void(__cdecl* SHOWCFB)();
 typedef void(__cdecl* UPDATESCREEN)();
 typedef void(__cdecl* VISTATUSCHANGED)();
@@ -248,29 +246,21 @@ typedef void(__cdecl* FBGETFRAMEBUFFERINFO)(void*);
 typedef void(__cdecl* AIDACRATECHANGED)(int32_t system_type);
 typedef void(__cdecl* AILENCHANGED)();
 typedef uint32_t(__cdecl* AIREADLENGTH)();
-typedef void(__cdecl* CLOSEDLL_AUDIO)();
 typedef int32_t(__cdecl* INITIATEAUDIO)(core_audio_info);
 typedef void(__cdecl* PROCESSALIST)();
-typedef void(__cdecl* ROMCLOSED_AUDIO)();
-typedef void(__cdecl* ROMOPEN_AUDIO)();
 typedef void(__cdecl* AIUPDATE)(int32_t wait);
 
-typedef void(__cdecl* CLOSEDLL_INPUT)();
 typedef void(__cdecl* CONTROLLERCOMMAND)(int32_t controller, unsigned char* command);
 typedef void(__cdecl* GETKEYS)(int32_t controller, core_buttons* keys);
 typedef void(__cdecl* SETKEYS)(int32_t controller, core_buttons keys);
 typedef void(__cdecl* OLD_INITIATECONTROLLERS)(void* hwnd, core_controller controls[4]);
 typedef void(__cdecl* INITIATECONTROLLERS)(core_input_info control_info);
 typedef void(__cdecl* READCONTROLLER)(int32_t controller, unsigned char* command);
-typedef void(__cdecl* ROMCLOSED_INPUT)();
-typedef void(__cdecl* ROMOPEN_INPUT)();
 typedef void(__cdecl* KEYDOWN)(uint32_t wParam, int32_t lParam);
 typedef void(__cdecl* KEYUP)(uint32_t wParam, int32_t lParam);
 
-typedef void(__cdecl* CLOSEDLL_RSP)();
 typedef uint32_t(__cdecl* DORSPCYCLES)(uint32_t);
 typedef void(__cdecl* INITIATERSP)(core_rsp_info rsp_info, uint32_t* cycles);
-typedef void(__cdecl* ROMCLOSED_RSP)();
 
 #if defined(CORE_PLUGIN_WITH_CALLBACKS)
 
@@ -284,7 +274,7 @@ typedef void(__cdecl* ROMCLOSED_RSP)();
 EXPORT void CALL CloseDLL(void);
 EXPORT void CALL DllAbout(void* hParent);
 EXPORT void CALL DllConfig(void* hParent);
-EXPORT void CALL GetDllInfo(core_plugin_info* PluginInfo);
+EXPORT void CALL GetDllInfo(core_plugin_info* info);
 EXPORT void CALL RomClosed(void);
 EXPORT void CALL RomOpen(void);
 

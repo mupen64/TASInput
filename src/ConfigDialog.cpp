@@ -225,82 +225,80 @@ void WINAPI Dis_En_AbleControls(HWND hParent, BOOL bActive)
 
 BOOL WINAPI GetAControlValue(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NControl)
 {
-    core_buttons Buttons;
-
-    Buttons.Value = 0;
-
+    core_buttons Buttons = {};
+    
     switch (ControlValue)
     {
     case IDC_E_DPRIGHT:
-        Buttons.R_DPAD = 1;
+        Buttons.dr = 1;
         break;
 
     case IDC_E_DPLEFT:
-        Buttons.L_DPAD = 1;
+        Buttons.dl = 1;
         break;
 
     case IDC_E_DPDOWN:
-        Buttons.D_DPAD = 1;
+        Buttons.dd = 1;
         break;
 
     case IDC_E_DPUP:
-        Buttons.U_DPAD = 1;
+        Buttons.du = 1;
         break;
 
     case IDC_E_START:
-        Buttons.START_BUTTON = 1;
+        Buttons.start = 1;
         break;
 
     case IDC_E_ZTRIG:
-        Buttons.Z_TRIG = 1;
+        Buttons.z = 1;
         break;
 
     case IDC_E_B:
-        Buttons.B_BUTTON = 1;
+        Buttons.b = 1;
         break;
 
     case IDC_E_A:
-        Buttons.A_BUTTON = 1;
+        Buttons.a = 1;
         break;
 
     case IDC_E_CRIGHT:
-        Buttons.R_CBUTTON = 1;
+        Buttons.cr = 1;
         break;
 
     case IDC_E_CLEFT:
-        Buttons.L_CBUTTON = 1;
+        Buttons.cl = 1;
         break;
 
     case IDC_E_CDOWN:
-        Buttons.D_CBUTTON = 1;
+        Buttons.cd = 1;
         break;
 
     case IDC_E_CUP:
-        Buttons.U_CBUTTON = 1;
+        Buttons.cu = 1;
         break;
 
     case IDC_E_RTRIG:
-        Buttons.R_TRIG = 1;
+        Buttons.r = 1;
         break;
 
     case IDC_E_LTRIG:
-        Buttons.L_TRIG = 1;
+        Buttons.l = 1;
         break;
 
     case IDC_EAS_LEFT:
-        Buttons.X_AXIS = -min(128, g_controllers[NController].SensMax);
+        Buttons.x = -min(128, g_controllers[NController].SensMax);
         break;
 
     case IDC_EAS_RIGHT:
-        Buttons.X_AXIS = min(127, g_controllers[NController].SensMax);
+        Buttons.x = min(127, g_controllers[NController].SensMax);
         break;
 
     case IDC_EAS_DOWN:
-        Buttons.Y_AXIS = -min(128, g_controllers[NController].SensMax);
+        Buttons.y = -min(128, g_controllers[NController].SensMax);
         break;
 
     case IDC_EAS_UP:
-        Buttons.Y_AXIS = min(127, g_controllers[NController].SensMax);
+        Buttons.y = min(127, g_controllers[NController].SensMax);
         break;
 
     case IDC_E_M1:
@@ -315,7 +313,7 @@ BOOL WINAPI GetAControlValue(HWND hDlg, DWORD ControlValue, BYTE NController, BY
         return FALSE;
         break;
     }
-    g_controllers[NController].Input[NControl].button = Buttons.Value;
+    g_controllers[NController].Input[NControl].button = Buttons.value;
 
     return TRUE;
 }

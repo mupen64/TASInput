@@ -59,27 +59,27 @@ void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, core_buttons*
     {
     case 0:
         if (AxisValue < (LONG)-g_controllers[Control].SensMax)
-            ControllerInput->Y_AXIS = min(127, g_controllers[Control].SensMax);
+            ControllerInput->y = min(127, g_controllers[Control].SensMax);
         else
-            ControllerInput->Y_AXIS = -AxisValue;
+            ControllerInput->y = -AxisValue;
         break;
     case 1:
         if (AxisValue < (LONG)-g_controllers[Control].SensMax)
-            ControllerInput->Y_AXIS = -min(128, g_controllers[Control].SensMax);
+            ControllerInput->y = -min(128, g_controllers[Control].SensMax);
         else
-            ControllerInput->Y_AXIS = AxisValue;
+            ControllerInput->y = AxisValue;
         break;
     case 2:
         if (AxisValue < (LONG)-g_controllers[Control].SensMax)
-            ControllerInput->X_AXIS = -min(128, g_controllers[Control].SensMax);
+            ControllerInput->x = -min(128, g_controllers[Control].SensMax);
         else
-            ControllerInput->X_AXIS = AxisValue;
+            ControllerInput->x = AxisValue;
         break;
     case 3:
         if (AxisValue < (LONG)-g_controllers[Control].SensMax)
-            ControllerInput->X_AXIS = min(127, g_controllers[Control].SensMax);
+            ControllerInput->x = min(127, g_controllers[Control].SensMax);
         else
-            ControllerInput->X_AXIS = -AxisValue;
+            ControllerInput->x = -AxisValue;
         break;
 
     case 18:
@@ -90,7 +90,7 @@ void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, core_buttons*
         break;
 
     default:
-        ControllerInput->Value |= g_controllers[Control].Input[count].button;
+        ControllerInput->value |= g_controllers[Control].Input[count].button;
         break;
     }
 }
@@ -101,27 +101,27 @@ void WINAPI GetPosAxisVal(LONG AxisValue, int Control, LONG count, core_buttons*
     {
     case 0:
         if (AxisValue > (LONG)g_controllers[Control].SensMax)
-            ControllerInput->Y_AXIS = min(127, g_controllers[Control].SensMax);
+            ControllerInput->y = min(127, g_controllers[Control].SensMax);
         else
-            ControllerInput->Y_AXIS = AxisValue;
+            ControllerInput->y = AxisValue;
         break;
     case 1:
         if (AxisValue > (LONG)g_controllers[Control].SensMax)
-            ControllerInput->Y_AXIS = -min(128, g_controllers[Control].SensMax);
+            ControllerInput->y = -min(128, g_controllers[Control].SensMax);
         else
-            ControllerInput->Y_AXIS = -AxisValue;
+            ControllerInput->y = -AxisValue;
         break;
     case 2:
         if (AxisValue > (LONG)g_controllers[Control].SensMax)
-            ControllerInput->X_AXIS = -min(128, g_controllers[Control].SensMax);
+            ControllerInput->x = -min(128, g_controllers[Control].SensMax);
         else
-            ControllerInput->X_AXIS = -AxisValue;
+            ControllerInput->x = -AxisValue;
         break;
     case 3:
         if (AxisValue > (LONG)g_controllers[Control].SensMax)
-            ControllerInput->X_AXIS = min(127, g_controllers[Control].SensMax);
+            ControllerInput->x = min(127, g_controllers[Control].SensMax);
         else
-            ControllerInput->X_AXIS = AxisValue;
+            ControllerInput->x = AxisValue;
         break;
 
     case 18:
@@ -132,7 +132,7 @@ void WINAPI GetPosAxisVal(LONG AxisValue, int Control, LONG count, core_buttons*
         break;
 
     default:
-        ControllerInput->Value |= g_controllers[Control].Input[count].button;
+        ControllerInput->value |= g_controllers[Control].Input[count].button;
         break;
     }
 }
@@ -333,7 +333,7 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
                                 analogKey = true;
                             /* fall through */
                             default:
-                                controller_input.Value |= controller.Input[count].button;
+                                controller_input.value |= controller.Input[count].button;
                                 break;
                             }
                         }
@@ -388,7 +388,7 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
                                 analogKey = true;
                             /* fall through */
                             default:
-                                controller_input.Value |= controller.Input[count].button;
+                                controller_input.value |= controller.Input[count].button;
                                 break;
                             }
                         }
@@ -498,7 +498,7 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
                                             analogKey = true;
                                         /* fall through */
                                         default:
-                                            controller_input.Value |= controller.Input[count].button;
+                                            controller_input.value |= controller.Input[count].button;
                                             break;
                                         }
                                     }
@@ -526,7 +526,7 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
                                             analogKey = true;
                                         /* fall through */
                                         default:
-                                            controller_input.Value |= controller.Input[count].button;
+                                            controller_input.value |= controller.Input[count].button;
                                             break;
                                         }
                                     }
@@ -554,7 +554,7 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
                                             analogKey = true;
                                         /* fall through */
                                         default:
-                                            controller_input.Value |= controller.Input[count].button;
+                                            controller_input.value |= controller.Input[count].button;
                                             break;
                                         }
                                     }
@@ -582,7 +582,7 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
                                             analogKey = true;
                                         /* fall through */
                                         default:
-                                            controller_input.Value |= controller.Input[count].button;
+                                            controller_input.value |= controller.Input[count].button;
                                             break;
                                         }
                                     }
@@ -601,31 +601,31 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
 
     if (M2Speed)
     {
-        if (controller_input.Y_AXIS < 0)
-            controller_input.Y_AXIS = (char)-M2Speed;
-        else if (controller_input.Y_AXIS > 0)
-            controller_input.Y_AXIS = (char)M2Speed;
+        if (controller_input.y < 0)
+            controller_input.y = (char)-M2Speed;
+        else if (controller_input.y > 0)
+            controller_input.y = (char)M2Speed;
 
-        if (controller_input.X_AXIS < 0)
-            controller_input.X_AXIS = (char)-M2Speed;
-        else if (controller_input.X_AXIS > 0)
-            controller_input.X_AXIS = (char)M2Speed;
+        if (controller_input.x < 0)
+            controller_input.x = (char)-M2Speed;
+        else if (controller_input.x > 0)
+            controller_input.x = (char)M2Speed;
     }
     if (M1Speed)
     {
-        if (controller_input.Y_AXIS < 0)
-            controller_input.Y_AXIS = (char)-M1Speed;
-        else if (controller_input.Y_AXIS > 0)
-            controller_input.Y_AXIS = (char)M1Speed;
+        if (controller_input.y < 0)
+            controller_input.y = (char)-M1Speed;
+        else if (controller_input.y > 0)
+            controller_input.y = (char)M1Speed;
 
-        if (controller_input.X_AXIS < 0)
-            controller_input.X_AXIS = (char)-M1Speed;
-        else if (controller_input.X_AXIS > 0)
-            controller_input.X_AXIS = (char)M1Speed;
+        if (controller_input.x < 0)
+            controller_input.x = (char)-M1Speed;
+        else if (controller_input.x > 0)
+            controller_input.x = (char)M1Speed;
     }
     if (analogKey)
     {
-        if (controller_input.X_AXIS && controller_input.Y_AXIS)
+        if (controller_input.x && controller_input.y)
         {
             const static float mult = 1.0f / sqrtf(2.0f);
             float mult2;
@@ -634,12 +634,12 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
             else
                 mult2 = 1.0f;
 
-            controller_input.X_AXIS = (int)(controller_input.X_AXIS * mult * mult2 + (controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
+            controller_input.x = (int)(controller_input.x * mult * mult2 + (controller_input.x > 0 ? 0.5f : -0.5f));
 
-            controller_input.Y_AXIS = (int)(controller_input.Y_AXIS * mult * mult2 + (controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
+            controller_input.y = (int)(controller_input.y * mult * mult2 + (controller_input.y > 0 ? 0.5f : -0.5f));
 
-            int newX = (int)((float)controller_input.X_AXIS * x_scale + (controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
-            int newY = (int)((float)controller_input.Y_AXIS * y_scale + (controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
+            int newX = (int)((float)controller_input.x * x_scale + (controller_input.x > 0 ? 0.5f : -0.5f));
+            int newY = (int)((float)controller_input.y * y_scale + (controller_input.y > 0 ? 0.5f : -0.5f));
             if (abs(newX) >= abs(newY) && (newX > 127 || newX < -128))
             {
                 newY = newY * (newY > 0 ? 127 : 128) / abs(newX);
@@ -650,28 +650,28 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
                 newX = newX * (newX > 0 ? 127 : 128) / abs(newY);
                 newY = (newY > 0) ? 127 : -128;
             }
-            if (!newX && controller_input.X_AXIS)
-                newX = (controller_input.X_AXIS > 0) ? 1 : -1;
-            if (!newY && controller_input.Y_AXIS)
-                newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
-            controller_input.X_AXIS = newX;
-            controller_input.Y_AXIS = newY;
+            if (!newX && controller_input.x)
+                newX = (controller_input.x > 0) ? 1 : -1;
+            if (!newY && controller_input.y)
+                newY = (controller_input.y > 0) ? 1 : -1;
+            controller_input.x = newX;
+            controller_input.y = newY;
         }
         else
         {
-            if (controller_input.X_AXIS)
+            if (controller_input.x)
             {
-                int newX = (int)((float)controller_input.X_AXIS * x_scale + (controller_input.X_AXIS > 0 ? 0.5f : -0.5f));
-                if (!newX && controller_input.X_AXIS)
-                    newX = (controller_input.X_AXIS > 0) ? 1 : -1;
-                controller_input.X_AXIS = min(127, max(-128, newX));
+                int newX = (int)((float)controller_input.x * x_scale + (controller_input.x > 0 ? 0.5f : -0.5f));
+                if (!newX && controller_input.x)
+                    newX = (controller_input.x > 0) ? 1 : -1;
+                controller_input.x = min(127, max(-128, newX));
             }
-            if (controller_input.Y_AXIS)
+            if (controller_input.y)
             {
-                int newY = (int)((float)controller_input.Y_AXIS * y_scale + (controller_input.Y_AXIS > 0 ? 0.5f : -0.5f));
-                if (!newY && controller_input.Y_AXIS)
-                    newY = (controller_input.Y_AXIS > 0) ? 1 : -1;
-                controller_input.Y_AXIS = min(127, max(-128, newY));
+                int newY = (int)((float)controller_input.y * y_scale + (controller_input.y > 0 ? 0.5f : -0.5f));
+                if (!newY && controller_input.y)
+                    newY = (controller_input.y > 0) ? 1 : -1;
+                controller_input.y = min(127, max(-128, newY));
             }
         }
     }

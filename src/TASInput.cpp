@@ -370,11 +370,11 @@ EXPORT void CALL DllConfig(HWND hParent)
     // TODO: Do we have to restart the dialogs here like in old version?
 }
 
-EXPORT void CALL GetDllInfo(core_plugin_info* PluginInfo)
+EXPORT void CALL GetDllInfo(core_plugin_info* info)
 {
-    PluginInfo->Version = 0x0100;
-    PluginInfo->Type = plugin_input;
-    wsprintf(PluginInfo->Name, PLUGIN_NAME);
+    info->ver = 0x0100;
+    info->type = plugin_input;
+    wsprintf(info->name, PLUGIN_NAME);
 }
 
 EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
@@ -388,7 +388,7 @@ EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
     if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
         status[Control].GetKeys(Keys);
     else
-        Keys->Value = 0;
+        Keys->value = 0;
 }
 
 EXPORT void CALL SetKeys(int Control, core_buttons ControllerInput)
@@ -435,7 +435,7 @@ apply:
 
 void Status::GetKeys(core_buttons* Keys)
 {
-    Keys->Value = get_processed_input(current_input).Value;
+    Keys->value = get_processed_input(current_input).value;
 
     if (comboTask == C_PLAY && !combo_paused)
     {
@@ -452,7 +452,7 @@ void Status::GetKeys(core_buttons* Keys)
                 // Reset input on last frame, or it sticks which feels weird
                 // We also need to reprocess the inputs since source data change
                 current_input = {0};
-                Keys->Value = get_processed_input(current_input).Value;
+                Keys->value = get_processed_input(current_input).value;
                 goto end;
             }
         }
@@ -472,11 +472,11 @@ end:
 
     if (new_config.async_visual_updates)
     {
-        PostMessage(statusDlg, WM_UPDATE_VISUALS, 0, Keys->Value);
+        PostMessage(statusDlg, WM_UPDATE_VISUALS, 0, Keys->value);
     }
     else
     {
-        SendMessage(statusDlg, WM_UPDATE_VISUALS, 0, Keys->Value);
+        SendMessage(statusDlg, WM_UPDATE_VISUALS, 0, Keys->value);
     }
 }
 
@@ -527,14 +527,14 @@ void Status::update_joystick_position()
     if (abs(y) <= 8)
         y = 0;
 
-    current_input.X_AXIS = x;
-    current_input.Y_AXIS = y;
+    current_input.x = x;
+    current_input.y = y;
     set_visuals(current_input);
 }
 
 core_buttons Status::get_processed_input(core_buttons input)
 {
-    input.Value |= frame_counter % 2 == 0 ? autofire_input_a.Value : autofire_input_b.Value;
+    input.value |= frame_counter % 2 == 0 ? autofire_input_a.value : autofire_input_b.value;
 
     if (comboTask == C_PLAY && !combo_paused)
     {
@@ -542,8 +542,8 @@ core_buttons Status::get_processed_input(core_buttons input)
         if (!combos[active_combo_index]->uses_joystick())
         {
             // We want to use our joystick inputs
-            combo_input.X_AXIS = input.X_AXIS;
-            combo_input.Y_AXIS = input.Y_AXIS;
+            combo_input.x = input.x;
+            combo_input.y = input.y;
         }
         input = combo_input;
     }
@@ -570,28 +570,28 @@ void Status::set_visuals(core_buttons input, bool needs_processing)
     // We don't want to mess with the user's selection
     if (GetFocus() != GetDlgItem(statusDlg, IDC_EDITX))
     {
-        SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(input.X_AXIS).c_str());
+        SetDlgItemText(statusDlg, IDC_EDITX, std::to_string(input.x).c_str());
     }
 
     if (GetFocus() != GetDlgItem(statusDlg, IDC_EDITY))
     {
-        SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(input.Y_AXIS).c_str());
+        SetDlgItemText(statusDlg, IDC_EDITY, std::to_string(input.y).c_str());
     }
 
-    CheckDlgButton(statusDlg, IDC_CHECK_A, input.A_BUTTON);
-    CheckDlgButton(statusDlg, IDC_CHECK_B, input.B_BUTTON);
-    CheckDlgButton(statusDlg, IDC_CHECK_START, input.START_BUTTON);
-    CheckDlgButton(statusDlg, IDC_CHECK_L, input.L_TRIG);
-    CheckDlgButton(statusDlg, IDC_CHECK_R, input.R_TRIG);
-    CheckDlgButton(statusDlg, IDC_CHECK_Z, input.Z_TRIG);
-    CheckDlgButton(statusDlg, IDC_CHECK_CUP, input.U_CBUTTON);
-    CheckDlgButton(statusDlg, IDC_CHECK_CLEFT, input.L_CBUTTON);
-    CheckDlgButton(statusDlg, IDC_CHECK_CRIGHT, input.R_CBUTTON);
-    CheckDlgButton(statusDlg, IDC_CHECK_CDOWN, input.D_CBUTTON);
-    CheckDlgButton(statusDlg, IDC_CHECK_DUP, input.U_DPAD);
-    CheckDlgButton(statusDlg, IDC_CHECK_DLEFT, input.L_DPAD);
-    CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, input.R_DPAD);
-    CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, input.D_DPAD);
+    CheckDlgButton(statusDlg, IDC_CHECK_A, input.a);
+    CheckDlgButton(statusDlg, IDC_CHECK_B, input.b);
+    CheckDlgButton(statusDlg, IDC_CHECK_START, input.start);
+    CheckDlgButton(statusDlg, IDC_CHECK_L, input.l);
+    CheckDlgButton(statusDlg, IDC_CHECK_R, input.r);
+    CheckDlgButton(statusDlg, IDC_CHECK_Z, input.z);
+    CheckDlgButton(statusDlg, IDC_CHECK_CUP, input.cu);
+    CheckDlgButton(statusDlg, IDC_CHECK_CLEFT, input.cl);
+    CheckDlgButton(statusDlg, IDC_CHECK_CRIGHT, input.cr);
+    CheckDlgButton(statusDlg, IDC_CHECK_CDOWN, input.cd);
+    CheckDlgButton(statusDlg, IDC_CHECK_DUP, input.du);
+    CheckDlgButton(statusDlg, IDC_CHECK_DLEFT, input.dl);
+    CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, input.dr);
+    CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, input.dd);
 
     RECT rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
     InvalidateRect(statusDlg, &rect, FALSE);
@@ -1004,20 +1004,20 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             if (rmb_just_down)
             {
-                AUTOFIRE(IDC_CHECK_A, A_BUTTON);
-                AUTOFIRE(IDC_CHECK_B, B_BUTTON);
-                AUTOFIRE(IDC_CHECK_START, START_BUTTON);
-                AUTOFIRE(IDC_CHECK_L, L_TRIG);
-                AUTOFIRE(IDC_CHECK_R, R_TRIG);
-                AUTOFIRE(IDC_CHECK_Z, Z_TRIG);
-                AUTOFIRE(IDC_CHECK_CUP, U_CBUTTON);
-                AUTOFIRE(IDC_CHECK_CLEFT, L_CBUTTON);
-                AUTOFIRE(IDC_CHECK_CRIGHT, R_CBUTTON);
-                AUTOFIRE(IDC_CHECK_CDOWN, D_CBUTTON);
-                AUTOFIRE(IDC_CHECK_DUP, U_DPAD);
-                AUTOFIRE(IDC_CHECK_DLEFT, L_DPAD);
-                AUTOFIRE(IDC_CHECK_DRIGHT, R_DPAD);
-                AUTOFIRE(IDC_CHECK_DDOWN, D_DPAD);
+                AUTOFIRE(IDC_CHECK_A, a);
+                AUTOFIRE(IDC_CHECK_B, b);
+                AUTOFIRE(IDC_CHECK_START, start);
+                AUTOFIRE(IDC_CHECK_L, l);
+                AUTOFIRE(IDC_CHECK_R, r);
+                AUTOFIRE(IDC_CHECK_Z, z);
+                AUTOFIRE(IDC_CHECK_CUP, cu);
+                AUTOFIRE(IDC_CHECK_CLEFT, cl);
+                AUTOFIRE(IDC_CHECK_CRIGHT, cr);
+                AUTOFIRE(IDC_CHECK_CDOWN, cd);
+                AUTOFIRE(IDC_CHECK_DUP, du);
+                AUTOFIRE(IDC_CHECK_DLEFT, dl);
+                AUTOFIRE(IDC_CHECK_DRIGHT, dr);
+                AUTOFIRE(IDC_CHECK_DDOWN, dd);
                 set_visuals(current_input);
             }
 
@@ -1038,7 +1038,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
         core_buttons controller_input = dih_get_input(g_controllers, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
 
-        if (controller_input.Value != last_controller_input.Value)
+        if (controller_input.value != last_controller_input.value)
         {
             // Input changed, override everything with current
 
@@ -1086,22 +1086,22 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             current_input.field = controller_input.field;                  \
         }                                                                  \
     }
-            BTN(R_DPAD)
-            BTN(L_DPAD)
-            BTN(D_DPAD)
-            BTN(U_DPAD)
-            BTN(START_BUTTON)
-            BTN(Z_TRIG)
-            BTN(B_BUTTON)
-            BTN(A_BUTTON)
-            BTN(R_CBUTTON)
-            BTN(L_CBUTTON)
-            BTN(D_CBUTTON)
-            BTN(U_CBUTTON)
-            BTN(R_TRIG)
-            BTN(L_TRIG)
-            JOY(X_AXIS, 0)
-            JOY(Y_AXIS, 1)
+            BTN(dr)
+            BTN(dl)
+            BTN(dd)
+            BTN(du)
+            BTN(start)
+            BTN(z)
+            BTN(b)
+            BTN(a)
+            BTN(cr)
+            BTN(cl)
+            BTN(cd)
+            BTN(cu)
+            BTN(r)
+            BTN(l)
+            JOY(x, 0)
+            JOY(y, 1)
 
             set_visuals(current_input);
         }
@@ -1140,8 +1140,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             int mid_x = bmp_size.x / 2;
             int mid_y = bmp_size.y / 2;
-            int stick_x = (current_input.X_AXIS + 128) * bmp_size.x / 256;
-            int stick_y = (-current_input.Y_AXIS + 128) * bmp_size.y / 256;
+            int stick_x = (current_input.x + 128) * bmp_size.x / 256;
+            int stick_y = (-current_input.y + 128) * bmp_size.y / 256;
 
             // clear background with color which makes background (hopefully)
             // cool idea: maybe use user accent color for joystick tip?
@@ -1218,20 +1218,20 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             if (GetKeyState(VK_CONTROL) & 0x8000)
             {
-                current_input.Y_AXIS += increment;
+                current_input.y += increment;
             }
             else if (GetKeyState(VK_SHIFT) & 0x8000)
             {
                 // We change the angle, keeping magnitude
-                float angle = atan2f(current_input.Y_AXIS, current_input.X_AXIS);
-                float mag = ceilf(sqrtf(powf(current_input.X_AXIS, 2) + powf(current_input.Y_AXIS, 2)));
+                float angle = atan2f(current_input.y, current_input.x);
+                float mag = ceilf(sqrtf(powf(current_input.x, 2) + powf(current_input.y, 2)));
                 float new_ang = angle + (increment * (M_PI / 180.0f));
-                current_input.X_AXIS = mag * cosf(new_ang);
-                current_input.Y_AXIS = mag * sinf(new_ang);
+                current_input.x = mag * cosf(new_ang);
+                current_input.y = mag * sinf(new_ang);
             }
             else
             {
-                current_input.X_AXIS += increment;
+                current_input.x += increment;
             }
 
             set_visuals(current_input);
@@ -1250,8 +1250,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             int y = -(cursor.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
 
             joystick_mouse_diff = POINT{
-            x - current_input.X_AXIS,
-            y - current_input.Y_AXIS,
+            x - current_input.x,
+            y - current_input.y,
             };
 
             joystick_mode = JoystickMode::rel;
@@ -1325,10 +1325,10 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 core_buttons last_input = current_input;
                 char str[32] = {0};
                 GetDlgItemText(statusDlg, IDC_EDITX, str, std::size(str));
-                current_input.X_AXIS = std::atoi(str);
+                current_input.x = std::atoi(str);
 
                 // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
-                if (current_input.X_AXIS != last_input.X_AXIS)
+                if (current_input.x != last_input.x)
                 {
                     set_visuals(current_input);
                 }
@@ -1340,10 +1340,10 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 core_buttons last_input = current_input;
                 char str[32] = {0};
                 GetDlgItemText(statusDlg, IDC_EDITY, str, std::size(str));
-                current_input.Y_AXIS = std::atoi(str);
+                current_input.y = std::atoi(str);
 
                 // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
-                if (current_input.Y_AXIS != last_input.Y_AXIS)
+                if (current_input.y != last_input.y)
                 {
                     set_visuals(current_input);
                 }
@@ -1351,46 +1351,46 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         // on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
         case IDC_CHECK_A:
-            TOGGLE(A_BUTTON);
+            TOGGLE(a);
             break;
         case IDC_CHECK_B:
-            TOGGLE(B_BUTTON);
+            TOGGLE(b);
             break;
         case IDC_CHECK_START:
-            TOGGLE(START_BUTTON);
+            TOGGLE(start);
             break;
         case IDC_CHECK_Z:
-            TOGGLE(Z_TRIG);
+            TOGGLE(z);
             break;
         case IDC_CHECK_L:
-            TOGGLE(L_TRIG);
+            TOGGLE(l);
             break;
         case IDC_CHECK_R:
-            TOGGLE(R_TRIG);
+            TOGGLE(r);
             break;
         case IDC_CHECK_CLEFT:
-            TOGGLE(L_CBUTTON);
+            TOGGLE(cl);
             break;
         case IDC_CHECK_CUP:
-            TOGGLE(U_CBUTTON);
+            TOGGLE(cu);
             break;
         case IDC_CHECK_CRIGHT:
-            TOGGLE(R_CBUTTON);
+            TOGGLE(cr);
             break;
         case IDC_CHECK_CDOWN:
-            TOGGLE(D_CBUTTON);
+            TOGGLE(cd);
             break;
         case IDC_CHECK_DLEFT:
-            TOGGLE(L_DPAD);
+            TOGGLE(dl);
             break;
         case IDC_CHECK_DUP:
-            TOGGLE(U_DPAD);
+            TOGGLE(du);
             break;
         case IDC_CHECK_DRIGHT:
-            TOGGLE(R_DPAD);
+            TOGGLE(dr);
             break;
         case IDC_CHECK_DDOWN:
-            TOGGLE(D_DPAD);
+            TOGGLE(dd);
             break;
         case IDC_CLEARINPUT:
             current_input = {0};
@@ -1402,7 +1402,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case IDC_X_UP:
             {
                 int increment = get_joystick_increment(LOWORD(wParam) == IDC_X_UP);
-                current_input.X_AXIS += increment;
+                current_input.x += increment;
                 set_visuals(current_input);
             }
             break;
@@ -1410,7 +1410,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case IDC_Y_UP:
             {
                 int increment = get_joystick_increment(LOWORD(wParam) == IDC_Y_DOWN);
-                current_input.Y_AXIS += increment;
+                current_input.y += increment;
                 set_visuals(current_input);
             }
             break;
