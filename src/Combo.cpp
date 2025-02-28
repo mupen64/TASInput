@@ -65,7 +65,7 @@ bool Combos::save(const char* path, std::vector<Combo*> combos)
 
         uint32_t size = combo->samples.size();
         fwrite(&size, 4, 1, f);
-        fwrite(combo->samples.data(), sizeof(BUTTONS), combo->samples.size(), f);
+        fwrite(combo->samples.data(), sizeof(core_buttons), combo->samples.size(), f);
     }
 
     fclose(f);

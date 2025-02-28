@@ -225,7 +225,7 @@ void WINAPI Dis_En_AbleControls(HWND hParent, BOOL bActive)
 
 BOOL WINAPI GetAControlValue(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NControl)
 {
-    BUTTONS Buttons;
+    core_buttons Buttons;
 
     Buttons.Value = 0;
 

@@ -82,7 +82,7 @@ extern BYTE g_device_count;
 extern LPDIRECTINPUT8 g_di;
 extern GUID g_guids[MAX_DEVICES];
 extern DEFCONTROLLER g_controllers[NUMBER_OF_CONTROLS];
-extern CONTROL* g_controllers_default[NUMBER_OF_CONTROLS];
+extern core_controller* g_controllers_default[NUMBER_OF_CONTROLS];
 extern DIINPUTDEVICE g_di_devices[MAX_DEVICES];
 
 void dih_free();
@@ -97,7 +97,7 @@ BOOL dih_init(HWND hMainWindow);
  * \param y_scale The multiplier for the Y joystick axis
  * \return The held controller input
  */
-BUTTONS dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale);
+core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale);
 
 BOOL dih_check_for_device_change(HKEY hKey);
 void dih_initialize_and_check_devices(HWND hMainWindow);

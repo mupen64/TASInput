@@ -10,7 +10,7 @@
 
 GUID g_guids[MAX_DEVICES];
 DEFCONTROLLER g_controllers[NUMBER_OF_CONTROLS];
-CONTROL* g_controllers_default[NUMBER_OF_CONTROLS];
+core_controller* g_controllers_default[NUMBER_OF_CONTROLS];
 
 LPDIRECTINPUT8 g_di = NULL;
 DIINPUTDEVICE g_di_devices[MAX_DEVICES];
@@ -53,7 +53,7 @@ BOOL dih_check_for_device_change(HKEY hKey)
 }
 
 
-void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* ControllerInput, int& M1Speed, int& M2Speed)
+void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, core_buttons* ControllerInput, int& M1Speed, int& M2Speed)
 {
     switch (count)
     {
@@ -95,7 +95,7 @@ void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* Cont
     }
 }
 
-void WINAPI GetPosAxisVal(LONG AxisValue, int Control, LONG count, BUTTONS* ControllerInput, int& M1Speed, int& M2Speed)
+void WINAPI GetPosAxisVal(LONG AxisValue, int Control, LONG count, core_buttons* ControllerInput, int& M1Speed, int& M2Speed)
 {
     switch (count)
     {
@@ -265,14 +265,14 @@ void dih_free()
 }
 
 
-BUTTONS dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale)
+core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale)
 {
     auto controller = controllers[index];
 
     if (!controller.bActive)
         return {0};
 
-    BUTTONS controller_input = {0};
+    core_buttons controller_input = {0};
     BYTE buffer[256]; // Keyboard Info
     DIJOYSTATE js; // Joystick Info
     HRESULT hr;

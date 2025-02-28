@@ -36,5 +36,5 @@
 #include <commctrl.h>
 #include <windowsx.h>
 #include <shellscalingapi.h>
-#include "ZilmarInput.h"
+#include "core_plugin.h"
 #include "resource.h"

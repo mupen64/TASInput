@@ -14,6 +14,9 @@
 #include "helpers/math_helpers.h"
 #include "helpers/win_helpers.h"
 
+#define EXPORT __declspec(dllexport)
+#define CALL _cdecl
+
 #define PLUGIN_VERSION "1.2.0"
 
 #ifdef _M_X64
@@ -190,12 +193,12 @@ struct Status {
     /**
      * \brief The current internal input state before any processing
      */
-    BUTTONS current_input = {0};
+    core_buttons current_input = {0};
 
     /**
      * \brief The internal input state at the previous GetKeys call before any processing
      */
-    BUTTONS last_controller_input = {0};
+    core_buttons last_controller_input = {0};
 
     /**
      * \brief Ignores the next joystick increment, used for relative mode tracking
@@ -274,8 +277,8 @@ struct Status {
     bool is_getting_keys = false;
     int show_m64_inputs;
     // Bitflags for buttons with autofire enabled
-    BUTTONS autofire_input_a = {0};
-    BUTTONS autofire_input_b = {0};
+    core_buttons autofire_input_a = {0};
+    core_buttons autofire_input_b = {0};
     bool ready;
     HWND statusDlg;
     HWND combo_listbox;
@@ -293,14 +296,14 @@ struct Status {
      * \param input The values to be shown in the UI
      * \param needs_processing Whether the UI values need per-frame processing.
      */
-    void set_visuals(BUTTONS input, bool needs_processing = true);
+    void set_visuals(core_buttons input, bool needs_processing = true);
 
     /**
      * \brief Processes the input with steps such as autofire or combo overrides
      * \param input The input to process
      * \return The processed input
      */
-    BUTTONS get_processed_input(BUTTONS input);
+    core_buttons get_processed_input(core_buttons input);
 
     /**
      * \brief Activates the mupen window, releasing focus capture from the current window
@@ -308,8 +311,8 @@ struct Status {
     void activate_emulator_window();
 
     void update_joystick_position();
-    void GetKeys(BUTTONS* Keys);
-    void SetKeys(BUTTONS ControllerInput);
+    void GetKeys(core_buttons* Keys);
+    void SetKeys(core_buttons ControllerInput);
 };
 
 Status status[NUMBER_OF_CONTROLS];
@@ -367,14 +370,14 @@ EXPORT void CALL DllConfig(HWND hParent)
     // TODO: Do we have to restart the dialogs here like in old version?
 }
 
-EXPORT void CALL GetDllInfo(PLUGIN_INFO* PluginInfo)
+EXPORT void CALL GetDllInfo(core_plugin_info* PluginInfo)
 {
     PluginInfo->Version = 0x0100;
-    PluginInfo->Type = PLUGIN_TYPE_CONTROLLER;
+    PluginInfo->Type = plugin_input;
     wsprintf(PluginInfo->Name, PLUGIN_NAME);
 }
 
-EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
+EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
 {
     if (new_frame)
     {
@@ -388,7 +391,7 @@ EXPORT void CALL GetKeys(int Control, BUTTONS* Keys)
         Keys->Value = 0;
 }
 
-EXPORT void CALL SetKeys(int Control, BUTTONS ControllerInput)
+EXPORT void CALL SetKeys(int Control, core_buttons ControllerInput)
 {
     if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
         status[Control].SetKeys(ControllerInput);
@@ -430,7 +433,7 @@ apply:
 }
 
 
-void Status::GetKeys(BUTTONS* Keys)
+void Status::GetKeys(core_buttons* Keys)
 {
     Keys->Value = get_processed_input(current_input).Value;
 
@@ -529,7 +532,7 @@ void Status::update_joystick_position()
     set_visuals(current_input);
 }
 
-BUTTONS Status::get_processed_input(BUTTONS input)
+core_buttons Status::get_processed_input(core_buttons input)
 {
     input.Value |= frame_counter % 2 == 0 ? autofire_input_a.Value : autofire_input_b.Value;
 
@@ -557,7 +560,7 @@ void Status::activate_emulator_window()
     SetForegroundWindow(emulator_hwnd);
 }
 
-void Status::set_visuals(BUTTONS input, bool needs_processing)
+void Status::set_visuals(core_buttons input, bool needs_processing)
 {
     if (needs_processing)
     {
@@ -594,12 +597,12 @@ void Status::set_visuals(BUTTONS input, bool needs_processing)
     InvalidateRect(statusDlg, &rect, FALSE);
 }
 
-void Status::SetKeys(BUTTONS ControllerInput)
+void Status::SetKeys(core_buttons ControllerInput)
 {
     set_visuals(ControllerInput);
 }
 
-EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
+EXPORT void CALL InitiateControllers(HWND hMainWindow, core_controller Controls[4])
 {
     HKEY hKey;
     DWORD dwSize, dwType;
@@ -609,7 +612,7 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
         g_controllers_default[i] = &Controls[i];
         g_controllers_default[i]->Present = FALSE;
         g_controllers_default[i]->RawData = FALSE;
-        g_controllers_default[i]->Plugin = PLUGIN_NONE;
+        g_controllers_default[i]->Plugin = ce_none;
 
         g_controllers[i].NDevices = 0;
         g_controllers[i].bActive = i == 0 ? TRUE : FALSE;
@@ -639,9 +642,9 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
                                 &dwSize) == ERROR_SUCCESS)
             {
                 if (g_controllers[i].bMemPak)
-                    g_controllers_default[i]->Plugin = PLUGIN_MEMPAK;
+                    g_controllers_default[i]->Plugin = ce_mempak;
                 else
-                    g_controllers_default[i]->Plugin = PLUGIN_NONE;
+                    g_controllers_default[i]->Plugin = ce_none;
 
                 if (dwSize != sizeof(DEFCONTROLLER))
                 {
@@ -651,7 +654,7 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, CONTROL Controls[4])
 
                     g_controllers[i].NDevices = 0;
                     g_controllers[i].bActive = i == 0 ? TRUE : FALSE;
-                    g_controllers_default[i]->Plugin = PLUGIN_NONE;
+                    g_controllers_default[i]->Plugin = ce_none;
                     g_controllers[i].SensMax = 128;
                     g_controllers[i].SensMin = 32;
                     g_controllers[i].Input[18].button = 42;
@@ -1033,7 +1036,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         update_joystick_position();
 
         // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
-        BUTTONS controller_input = dih_get_input(g_controllers, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
+        core_buttons controller_input = dih_get_input(g_controllers, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
 
         if (controller_input.Value != last_controller_input.Value)
         {
@@ -1301,7 +1304,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         combo_edit_box = nullptr;
         break;
     case WM_UPDATE_VISUALS:
-        set_visuals(static_cast<BUTTONS>(lParam), false);
+        set_visuals(static_cast<core_buttons>(lParam), false);
         break;
     case WM_SIZE:
     case WM_MOVE:
@@ -1319,7 +1322,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         {
         case IDC_EDITX:
             {
-                BUTTONS last_input = current_input;
+                core_buttons last_input = current_input;
                 char str[32] = {0};
                 GetDlgItemText(statusDlg, IDC_EDITX, str, std::size(str));
                 current_input.X_AXIS = std::atoi(str);
@@ -1334,7 +1337,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
         case IDC_EDITY:
             {
-                BUTTONS last_input = current_input;
+                core_buttons last_input = current_input;
                 char str[32] = {0};
                 GetDlgItemText(statusDlg, IDC_EDITY, str, std::size(str));
                 current_input.Y_AXIS = std::atoi(str);

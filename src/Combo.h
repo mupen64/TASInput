@@ -21,14 +21,14 @@ namespace Combos
         /**
          * \brief The combo's samples
          */
-        std::vector<BUTTONS> samples;
+        std::vector<core_buttons> samples;
 
         /**
          * \return Whether any sample utilizes the joystick (magnitude > 0)
          */
         bool uses_joystick() const
         {
-            return std::any_of(samples.begin(), samples.end(), [](const BUTTONS sample) {
+            return std::any_of(samples.begin(), samples.end(), [](const core_buttons sample) {
                 return sample.X_AXIS != 0 || sample.Y_AXIS != 0;
             });
         }
