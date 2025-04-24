@@ -76,17 +76,17 @@
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
     <PropertyGroup Label="UserMacros"/>
     <PropertyGroup>
-        <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+        <_ProjectFileVersion>16.0.30804.86</_ProjectFileVersion>
         <OutDir>build\</OutDir>
         <LocalDebuggerWorkingDirectory>build\</LocalDebuggerWorkingDirectory>
         <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">build\obj-x86-debug\</IntDir>
-        <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">build\obj-x86\</IntDir>
+        <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">build\obj-x86-release\</IntDir>
         <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">build\obj-x64-debug\</IntDir>
-        <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">build\obj-x64\</IntDir>
-        <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">TASInput-x86-debug</TargetName>
-        <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">TASInput-x86</TargetName>
-        <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TASInput-x64-debug</TargetName>
-        <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TASInput-x64</TargetName>
+        <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">build\obj-x64-release\</IntDir>
+        <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)-x86-debug</TargetName>
+        <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)-x86-release</TargetName>
+        <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)-x64-debug</TargetName>
+        <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)-x64-release</TargetName>
     </PropertyGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
         <ClCompile>
