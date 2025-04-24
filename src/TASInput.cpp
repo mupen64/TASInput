@@ -602,11 +602,11 @@ void Status::SetKeys(core_buttons ControllerInput)
     set_visuals(ControllerInput);
 }
 
-EXPORT void CALL InitiateControllers(HWND hMainWindow, core_controller Controls[4])
+EXPORT void CALL InitiateControllers(void* hMainWindow, core_controller Controls[4])
 {
     HKEY hKey;
     DWORD dwSize, dwType;
-    emulator_hwnd = hMainWindow;
+    emulator_hwnd = (HWND)hMainWindow;
     for (BYTE i = 0; i < NUMBER_OF_CONTROLS; i++)
     {
         g_controllers_default[i] = &Controls[i];
@@ -623,7 +623,7 @@ EXPORT void CALL InitiateControllers(HWND hMainWindow, core_controller Controls[
         wsprintf(g_controllers[i].szName, "Controller %d", i + 1);
     }
 
-    dih_initialize_and_check_devices(hMainWindow);
+    dih_initialize_and_check_devices((HWND)hMainWindow);
 
     dwType = REG_BINARY;
     dwSize = sizeof(DEFCONTROLLER);
