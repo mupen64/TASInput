@@ -352,20 +352,20 @@ EXPORT void CALL ControllerCommand(int Control, BYTE* Command)
 {
 }
 
-EXPORT void CALL DllAbout(HWND hParent)
+EXPORT void CALL DllAbout(void* hParent)
 {
     if (MessageBox(
-        hParent,
+        (HWND)hParent,
         PLUGIN_NAME
         "\nFor DirectX 7 or higher\nBased on Def's Direct Input 0.54 by Deflection\nTAS Modifications by Nitsuja\nContinued development by the Mupen64-rr-lua contributors.\nDo you want to visit the repository?",
         "About", MB_ICONINFORMATION | MB_YESNO) == IDYES)
         ShellExecute(0, 0, "https://github.com/Mupen64-Rewrite/TASInput", 0, 0, SW_SHOW);
 }
 
-EXPORT void CALL DllConfig(HWND hParent)
+EXPORT void CALL DllConfig(void* hParent)
 {
-    dih_initialize_and_check_devices(hParent);
-    cfgdiag_show(hParent);
+    dih_initialize_and_check_devices((HWND)hParent);
+    cfgdiag_show((HWND)hParent);
     
     // TODO: Do we have to restart the dialogs here like in old version?
 }
