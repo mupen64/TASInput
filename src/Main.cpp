@@ -1,9 +1,12 @@
 ﻿#include "stdafx.h"
 #include "Main.h"
-
 #include "DirectInputHelper.h"
 
+#define EXPORT __declspec(dllexport)
+#define CALL _cdecl
+
 HINSTANCE g_inst;
+core_plugin_extended_funcs* g_ef{};
 int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
 int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
 
@@ -30,4 +33,9 @@ int WINAPI DllMain(const HINSTANCE h_instance, const DWORD fdw_reason, PVOID)
     }
 
     return TRUE;
+}
+
+EXPORT void CALL ReceiveExtendedFuncs(core_plugin_extended_funcs* funcs)
+{
+    g_ef = funcs;
 }
