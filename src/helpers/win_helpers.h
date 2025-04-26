@@ -8,8 +8,7 @@
 
 static void set_checkbox_state(const HWND hwnd, const int32_t id, int32_t is_checked)
 {
-    SendMessage(GetDlgItem(hwnd, id), BM_SETCHECK,
-                is_checked ? BST_CHECKED : BST_UNCHECKED, 0);
+    SendMessage(GetDlgItem(hwnd, id), BM_SETCHECK, is_checked ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
 static int32_t get_checkbox_state(const HWND hwnd, const int32_t id)
@@ -99,8 +98,8 @@ static RECT get_window_rect_client_space(HWND parent, HWND child)
     GetWindowRect(child, &client);
 
     return {
-        offset_client.left,
-        offset_client.top,
-        offset_client.left + (client.right - client.left),
-        offset_client.top + (client.bottom - client.top)};
+    offset_client.left,
+    offset_client.top,
+    offset_client.left + (client.right - client.left),
+    offset_client.top + (client.bottom - client.top)};
 }

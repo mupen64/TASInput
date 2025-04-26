@@ -33,16 +33,14 @@ BOOL dih_check_for_device_change(HKEY hKey)
             DeviceChanged = TRUE;
             for (BYTE NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
             {
-                RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController],
-                                &dwSize);
+                RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController], &dwSize);
                 for (BYTE DeviceNum = 0; DeviceNum < g_controllers[NController].NDevices; DeviceNum++)
                 {
                     if (g_controllers[NController].Devices[DeviceNum] == DeviceNumCheck)
                     {
                         g_controllers[NController].NDevices = 0;
                         g_controllers[NController].bActive = FALSE;
-                        RegSetValueEx(hKey, g_controllers[NController].szName, 0, dwType, (LPBYTE)&g_controllers[NController],
-                                      dwSize);
+                        RegSetValueEx(hKey, g_controllers[NController].szName, 0, dwType, (LPBYTE)&g_controllers[NController], dwSize);
                     }
                 }
             }
@@ -170,12 +168,13 @@ BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
     {
         memcpy(&g_di_devices[g_device_count].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
         if (!FAILED(hr = g_di->CreateDevice(lpddi->guidInstance,
-                                              &g_di_devices[g_device_count].lpDIDevice, 0)))
+                                            &g_di_devices[g_device_count].lpDIDevice,
+                                            0)))
         {
             if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->SetDataFormat(&c_dfDIKeyboard))
                 bOK = FALSE;
             if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->SetCooperativeLevel(hMainWindow,
-                                                                                       DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
+                                                                                         DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
                 bOK = FALSE;
         }
     }
@@ -183,15 +182,17 @@ BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
     {
         memcpy(&g_di_devices[g_device_count].DIDevInst, lpddi, sizeof(DIDEVICEINSTANCE));
         if (!FAILED(hr = g_di->CreateDevice(lpddi->guidInstance,
-                                              &g_di_devices[g_device_count].lpDIDevice, 0)))
+                                            &g_di_devices[g_device_count].lpDIDevice,
+                                            0)))
         {
             if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->SetDataFormat(&c_dfDIJoystick))
                 bOK = FALSE;
             if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->SetCooperativeLevel(hMainWindow,
-                                                                                       DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
+                                                                                         DISCL_BACKGROUND | DISCL_NONEXCLUSIVE))
                 bOK = FALSE;
             if FAILED (hr = g_di_devices[g_device_count].lpDIDevice->EnumObjects(EnumAxesCallback,
-                                                                               (LPVOID)hMainWindow, DIDFT_AXIS))
+                                                                                 (LPVOID)hMainWindow,
+                                                                                 DIDFT_AXIS))
                 bOK = FALSE;
         }
     }
@@ -236,10 +237,8 @@ BOOL dih_init(HWND hMainWindow)
     }
     else
     {
-        g_di->EnumDevices(DI8DEVCLASS_KEYBOARD, DIEnumDevicesCallback,
-                            (LPVOID)hMainWindow, DIEDFL_ATTACHEDONLY);
-        g_di->EnumDevices(DI8DEVCLASS_GAMECTRL, DIEnumDevicesCallback,
-                            (LPVOID)hMainWindow, DIEDFL_ATTACHEDONLY);
+        g_di->EnumDevices(DI8DEVCLASS_KEYBOARD, DIEnumDevicesCallback, (LPVOID)hMainWindow, DIEDFL_ATTACHEDONLY);
+        g_di->EnumDevices(DI8DEVCLASS_GAMECTRL, DIEnumDevicesCallback, (LPVOID)hMainWindow, DIEDFL_ATTACHEDONLY);
         if (g_device_count == 0)
             return FALSE;
     }
@@ -447,23 +446,19 @@ core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_sca
                             break;
                         case DIJOFS_SLIDER0N:
                             if (js.rglSlider[0] < (LONG)-controller.SensMin)
-                                GetNegAxisVal(js.rglSlider[0], index, count, &controller_input, M1Speed,
-                                              M2Speed);
+                                GetNegAxisVal(js.rglSlider[0], index, count, &controller_input, M1Speed, M2Speed);
                             break;
                         case DIJOFS_SLIDER0P:
                             if (js.rglSlider[0] > (LONG)controller.SensMin)
-                                GetPosAxisVal(js.rglSlider[0], index, count, &controller_input, M1Speed,
-                                              M2Speed);
+                                GetPosAxisVal(js.rglSlider[0], index, count, &controller_input, M1Speed, M2Speed);
                             break;
                         case DIJOFS_SLIDER1N:
                             if (js.rglSlider[1] < (LONG)-controller.SensMin)
-                                GetNegAxisVal(js.rglSlider[1], index, count, &controller_input, M1Speed,
-                                              M2Speed);
+                                GetNegAxisVal(js.rglSlider[1], index, count, &controller_input, M1Speed, M2Speed);
                             break;
                         case DIJOFS_SLIDER1P:
                             if (js.rglSlider[1] > (LONG)controller.SensMin)
-                                GetPosAxisVal(js.rglSlider[1], index, count, &controller_input, M1Speed,
-                                              M2Speed);
+                                GetPosAxisVal(js.rglSlider[1], index, count, &controller_input, M1Speed, M2Speed);
                             break;
                         }
                         break;
@@ -684,9 +679,9 @@ void dih_initialize_and_check_devices(HWND hMainWindow)
     if (g_di != NULL)
     {
         printf("InitializeAndCheckDevices early return because g_lpDI != NULL\n");
-        return;    
+        return;
     }
-    
+
     HKEY hKey;
     BYTE i;
     DWORD dwSize, dwType;

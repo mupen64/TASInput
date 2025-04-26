@@ -45,8 +45,7 @@ void apply_settings()
     }
 
     RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_WRITE, NULL, &hKey, 0);
-    if (RegSetValueEx(hKey, g_controllers[NController].szName, 0, dwType, (LPBYTE)&g_controllers[NController],
-                      dwSize) != ERROR_SUCCESS)
+    if (RegSetValueEx(hKey, g_controllers[NController].szName, 0, dwType, (LPBYTE)&g_controllers[NController], dwSize) != ERROR_SUCCESS)
     {
         MessageBox(nullptr, "Error: Could not save current Contoller Config!", g_controllers[NController].szName, MB_ICONERROR | MB_OK);
     }
@@ -226,7 +225,7 @@ void WINAPI Dis_En_AbleControls(HWND hParent, BOOL bActive)
 BOOL WINAPI GetAControlValue(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NControl)
 {
     core_buttons Buttons = {};
-    
+
     switch (ControlValue)
     {
     case IDC_E_DPRIGHT:
@@ -657,8 +656,7 @@ void WINAPI GetAControlName(BYTE NController, BYTE NControl, TCHAR ControlName[3
         break;
 
     case INPUT_TYPE_JOY_BUT:
-        wsprintf(ControlName, "Joy%d %d", g_controllers[NController].Input[NControl].Device,
-                 g_controllers[NController].Input[NControl].vkey);
+        wsprintf(ControlName, "Joy%d %d", g_controllers[NController].Input[NControl].Device, g_controllers[NController].Input[NControl].vkey);
         break;
 
     case INPUT_TYPE_JOY_AXIS:
@@ -812,13 +810,11 @@ void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)
     TCHAR ControlName[32];
 
     // IDC_CHECKACTIVE
-    SendDlgItemMessage(hDlg, IDC_CHECKACTIVE, BM_SETCHECK,
-                       g_controllers[NController].bActive ? BST_CHECKED : BST_UNCHECKED, 0);
+    SendDlgItemMessage(hDlg, IDC_CHECKACTIVE, BM_SETCHECK, g_controllers[NController].bActive ? BST_CHECKED : BST_UNCHECKED, 0);
     Dis_En_AbleControls(hDlg, g_controllers[NController].bActive);
 
     // IDC_CHECKMEMPAK
-    SendDlgItemMessage(hDlg, IDC_CHECKMEMPAK, BM_SETCHECK,
-                       g_controllers[NController].bMemPak ? BST_CHECKED : BST_UNCHECKED, 0);
+    SendDlgItemMessage(hDlg, IDC_CHECKMEMPAK, BM_SETCHECK, g_controllers[NController].bMemPak ? BST_CHECKED : BST_UNCHECKED, 0);
 
     // IDC_LDEVICES
     for (BYTE count = 0; count < MAX_DEVICES; count++)
@@ -924,8 +920,7 @@ void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)
     // IDC_SPINM1
     SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_SETBUDDY, (WPARAM)hChild, 0);
     SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_SETRANGE, 0, (LPARAM)MAKELONG((short)127, (short)1));
-    SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_SETPOS, 0,
-                       (LPARAM)MAKELONG((short)g_controllers[NController].Input[18].button, (short)0));
+    SendDlgItemMessage(hDlg, IDC_SPINM1, UDM_SETPOS, 0, (LPARAM)MAKELONG((short)g_controllers[NController].Input[18].button, (short)0));
 
     // IDC_B_M2
     GetAControlName(NController, 19, ControlName);
@@ -937,8 +932,7 @@ void WINAPI Initialize_Controller_Display(HWND hDlg, BYTE NController)
     // IDC_SPINM2
     SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_SETBUDDY, (WPARAM)hChild, 0);
     SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_SETRANGE, 0, (LPARAM)MAKELONG((short)127, (short)1));
-    SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_SETPOS, 0,
-                       (LPARAM)MAKELONG((short)g_controllers[NController].Input[19].button, (short)0));
+    SendDlgItemMessage(hDlg, IDC_SPINM2, UDM_SETPOS, 0, (LPARAM)MAKELONG((short)g_controllers[NController].Input[19].button, (short)0));
 
     // IDC_B_MAC1
     GetAControlName(NController, 20, ControlName);
@@ -1336,8 +1330,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
         {
             for (NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
             {
-                RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController],
-                                &dwSize);
+                RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController], &dwSize);
             }
         }
         RegCloseKey(hKey);
@@ -1452,8 +1445,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
         case IDC_LDEVICES:
             ZeroMemory(&g_controllers[NController].Devices, sizeof(g_controllers[NController].Devices));
             g_controllers[NController].NDevices = (BYTE)SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_GETSELCOUNT, 0, 0);
-            SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_GETSELITEMS, MAX_DEVICES,
-                               (LPARAM)g_controllers[NController].Devices);
+            SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_GETSELITEMS, MAX_DEVICES, (LPARAM)g_controllers[NController].Devices);
             Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
             break;
 
@@ -1474,8 +1466,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             {
                 break;
             }
-            hFile = CreateFile(szFilename, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
-                               NULL);
+            hFile = CreateFile(szFilename, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
             if (hFile == INVALID_HANDLE_VALUE)
             {
                 MessageBox(NULL, "Could not Save File.", "Error", MB_ICONERROR | MB_OK);
@@ -1508,8 +1499,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             {
                 return TRUE;
             }
-            hFile = CreateFile(szFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
-                               NULL);
+            hFile = CreateFile(szFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
             if (hFile == INVALID_HANDLE_VALUE)
             {
                 MessageBox(NULL, "Could not Open File.", "Error", MB_ICONERROR | MB_OK);
@@ -1802,8 +1792,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             {
                 for (NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
                 {
-                    RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController],
-                                    &dwSize);
+                    RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController], &dwSize);
                 }
             }
             RegCloseKey(hKey);

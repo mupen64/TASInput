@@ -351,7 +351,8 @@ EXPORT void CALL DllAbout(void* hParent)
         (HWND)hParent,
         PLUGIN_NAME
         "\nFor DirectX 7 or higher\nBased on Def's Direct Input 0.54 by Deflection\nTAS Modifications by Nitsuja\nContinued development by the Mupen64-rr-lua contributors.\nDo you want to visit the repository?",
-        "About", MB_ICONINFORMATION | MB_YESNO) == IDYES)
+        "About",
+        MB_ICONINFORMATION | MB_YESNO) == IDYES)
         ShellExecute(0, 0, "https://github.com/Mupen64-Rewrite/TASInput", 0, 0, SW_SHOW);
 }
 
@@ -359,7 +360,7 @@ EXPORT void CALL DllConfig(void* hParent)
 {
     dih_initialize_and_check_devices((HWND)hParent);
     cfgdiag_show((HWND)hParent);
-    
+
     // TODO: Do we have to restart the dialogs here like in old version?
 }
 
@@ -377,7 +378,7 @@ EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
         ++frame_counter;
         new_frame = false;
     }
-    
+
     if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
         status[Control].GetKeys(Keys);
     else
@@ -450,8 +451,7 @@ void Status::GetKeys(core_buttons* Keys)
             }
         }
 
-        set_status(std::format("Playing... ({} / {})", combo_frame + 1,
-                               combos[active_combo_index]->samples.size() - 1));
+        set_status(std::format("Playing... ({} / {})", combo_frame + 1, combos[active_combo_index]->samples.size() - 1));
         combo_frame++;
     }
 
@@ -631,8 +631,7 @@ EXPORT void CALL InitiateControllers(void* hMainWindow, core_controller Controls
         {
             g_controllers_default[i]->Present = new_config.controller_active[i];
 
-            if (RegQueryValueEx(hKey, g_controllers[i].szName, 0, &dwType, (LPBYTE)&g_controllers[i],
-                                &dwSize) == ERROR_SUCCESS)
+            if (RegQueryValueEx(hKey, g_controllers[i].szName, 0, &dwType, (LPBYTE)&g_controllers[i], &dwSize) == ERROR_SUCCESS)
             {
                 if (g_controllers[i].bMemPak)
                     g_controllers_default[i]->Plugin = ce_mempak;
@@ -655,8 +654,7 @@ EXPORT void CALL InitiateControllers(void* hMainWindow, core_controller Controls
                     wsprintf(g_controllers[i].szName, "Controller %d", i + 1);
 
                     RegDeleteValue(hKey, g_controllers[i].szName);
-                    RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i],
-                                  dwSize);
+                    RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i], dwSize);
                 }
             }
             else
@@ -664,8 +662,7 @@ EXPORT void CALL InitiateControllers(void* hMainWindow, core_controller Controls
                 dwType = REG_BINARY;
                 dwSize = sizeof(DEFCONTROLLER);
                 RegDeleteValue(hKey, g_controllers[i].szName);
-                RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i],
-                              dwSize);
+                RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i], dwSize);
             }
         }
     }
@@ -761,10 +758,7 @@ void Status::StartEdit(int id)
 {
     RECT item_rect;
     ListBox_GetItemRect(combo_listbox, id, &item_rect);
-    combo_edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left,
-                                    item_rect.top,
-                                    item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4,
-                                    combo_listbox, 0, g_inst, 0);
+    combo_edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left, item_rect.top, item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4, combo_listbox, 0, g_inst, 0);
     // Clear selection to prevent it from repainting randomly and fighting with our textbox
     ListBox_SetCurSel(combo_listbox, -1);
     SendMessage(combo_edit_box, WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
@@ -841,7 +835,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
     ADD_ITEM(async_visual_updates, "Async Visual Updates");
 
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
-    
+
     if (offset != 0)
     {
         // offset is the offset into menu config struct of the field which was selected by user, we need to convert it from byte offset to int-width offset
@@ -967,8 +961,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             {
                 POINT cursor_position = {0};
                 GetCursorPos(&cursor_position);
-                SetWindowPos(statusDlg, nullptr, cursor_position.x - dragging_window_cursor_diff.x,
-                             cursor_position.y - dragging_window_cursor_diff.y, 0, 0, SWP_NOSIZE | SWP_NOREDRAW);
+                SetWindowPos(statusDlg, nullptr, cursor_position.x - dragging_window_cursor_diff.x, cursor_position.y - dragging_window_cursor_diff.y, 0, 0, SWP_NOSIZE | SWP_NOREDRAW);
             }
 
             if (lmb_just_up || rmb_just_up)
@@ -1107,7 +1100,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             GetClientRect(statusDlg, &window_rect);
             POINT joystick_rect_size = {
-            joystick_rect.right - joystick_rect.left, joystick_rect.bottom - joystick_rect.top};
+            joystick_rect.right - joystick_rect.left,
+            joystick_rect.bottom - joystick_rect.top};
 
 
             // set up double buffering
@@ -1157,8 +1151,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             // now we can blit the new picture in one pass
             SetStretchBltMode(hdc, HALFTONE);
             SetStretchBltMode(compat_dc, HALFTONE);
-            StretchBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y,
-                       compat_dc, 0, 0, bmp_size.x, bmp_size.y, SRCCOPY);
+            StretchBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y, compat_dc, 0, 0, bmp_size.x, bmp_size.y, SRCCOPY);
             EndPaint(statusDlg, &ps);
             DeleteDC(compat_dc);
             DeleteObject(bmp);
