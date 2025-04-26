@@ -7,6 +7,7 @@
 #define DIRECTINPUT_VERSION 0x0800
 #define _USE_MATH_DEFINES
 
+#pragma warning(push, 0)
 #include <filesystem>
 #include <string>
 #include <format>
@@ -36,5 +37,6 @@
 #include <commctrl.h>
 #include <windowsx.h>
 #include <shellscalingapi.h>
-#include "core_plugin.h"
-#include "resource.h"
+#include <core_plugin.h>
+#include <resource.h>
+#pragma warning(pop)
