@@ -8,6 +8,7 @@
 #include <Combo.h>
 #include <ConfigDialog.h>
 #include <DirectInputHelper.h>
+#include <JoystickControl.h>
 #include <Main.h>
 #include <MiscHelpers.h>
 #include <NewConfig.h>
@@ -79,13 +80,6 @@ UINT systemDPI;
 std::vector<Combos::Combo*> combos{};
 
 struct Status {
-    enum class JoystickMode {
-        none,
-        abs,
-        sticky,
-        rel
-    };
-
     Status()
     {
         show_m64_inputs = false;
@@ -223,16 +217,6 @@ struct Status {
     bool combo_paused = false;
 
     /**
-     * \brief The current joystick move mode
-     */
-    JoystickMode joystick_mode = JoystickMode::none;
-
-    /**
-     * \brief The difference between the mouse and joystick's mapped position at the last middle mouse button down interaction
-     */
-    POINT joystick_mouse_diff = {0};
-
-    /**
      * \brief Handle of the edit box used for renaming combos
      */
     HWND combo_edit_box = nullptr;
@@ -273,13 +257,16 @@ struct Status {
     core_buttons autofire_input_b = {0};
     bool ready;
     HWND statusDlg;
+    HWND joystick_hwnd;
     HWND combo_listbox;
     int controller_index;
     int comboTask = C_IDLE;
 
+    JoystickControl::t_context joy_context{};
 
     void set_status(std::string str);
 
+    bool show_context_menu(int x, int y);
 
     LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -302,7 +289,6 @@ struct Status {
      */
     void activate_emulator_window();
 
-    void update_joystick_position();
     void GetKeys(core_buttons* Keys);
     void SetKeys(core_buttons ControllerInput);
 };
@@ -334,14 +320,9 @@ void start_dialogs()
     }
 }
 
-EXPORT void CALL CloseDLL(void)
+EXPORT void CALL CloseDLL()
 {
-    // Stop and Close Direct Input
     dih_free();
-}
-
-EXPORT void CALL ControllerCommand(int Control, BYTE* Command)
-{
 }
 
 EXPORT void CALL DllAbout(void* hParent)
@@ -477,58 +458,6 @@ end:
     }
 }
 
-void Status::update_joystick_position()
-{
-    // We don't receive "X_UP" messages when releasing buttons outside of the window, so we need to check here
-    if (joystick_mode == JoystickMode::abs && !(GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
-    {
-        joystick_mode = JoystickMode::none;
-    }
-
-    if (joystick_mode == JoystickMode::rel && !(GetAsyncKeyState(VK_MBUTTON) & 0x8000))
-    {
-        joystick_mode = JoystickMode::none;
-    }
-
-    if (joystick_mode == JoystickMode::none)
-    {
-        return;
-    }
-
-    POINT pt;
-    GetCursorPos(&pt);
-    ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &pt);
-
-    RECT pic_rect;
-    GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
-    int x = (pt.x * UINT8_MAX / (signed)(pic_rect.right - pic_rect.left) - INT8_MAX + 1);
-    int y = -(pt.y * UINT8_MAX / (signed)(pic_rect.bottom - pic_rect.top) - INT8_MAX + 1);
-
-    if (joystick_mode == JoystickMode::rel)
-    {
-        x -= joystick_mouse_diff.x;
-        y -= joystick_mouse_diff.y;
-    }
-
-    // Clamp the value to legal bounds
-    if (x > INT8_MAX || y > INT8_MAX || x < INT8_MIN || y < INT8_MIN)
-    {
-        int div = max(abs(x), abs(y));
-        x = x * INT8_MAX / div;
-        y = y * INT8_MAX / div;
-    }
-
-    // snap clicks to zero
-    if (abs(x) <= 8)
-        x = 0;
-    if (abs(y) <= 8)
-        y = 0;
-
-    current_input.x = x;
-    current_input.y = y;
-    set_visuals(current_input);
-}
-
 core_buttons Status::get_processed_input(core_buttons input)
 {
     input.value |= frame_counter % 2 == 0 ? autofire_input_a.value : autofire_input_b.value;
@@ -590,8 +519,9 @@ void Status::set_visuals(core_buttons input, bool needs_processing)
     CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, input.dr);
     CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, input.dd);
 
-    RECT rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
-    InvalidateRect(statusDlg, &rect, FALSE);
+    joy_context.x = input.x;
+    joy_context.y = input.y;
+    RedrawWindow(joystick_hwnd, nullptr, nullptr, RDW_INVALIDATE);
 }
 
 void Status::SetKeys(core_buttons ControllerInput)
@@ -690,12 +620,16 @@ EXPORT void CALL RomClosed(void)
     }
 }
 
-EXPORT void CALL DllTest(HWND hParent)
-{
-}
-
 EXPORT void CALL RomOpen(void)
 {
+    static bool first_time = true;
+
+    if (first_time)
+    {
+        JoystickControl::register_class(g_inst);
+        first_time = false;
+    }
+
     // Show a warning when no controllers are active
     size_t active_controllers = 0;
     for (size_t i = 0; i < NUMBER_OF_CONTROLS; i++)
@@ -809,22 +743,26 @@ void Status::load_combos(const char* path)
     }
 }
 
-
-static bool IsMouseOverControl(HWND hDlg, int dialogItemID)
+static bool IsMouseOverControl(HWND hwnd, HWND control_hwnd)
 {
     POINT pt;
     RECT rect;
 
     GetCursorPos(&pt);
-    if (GetWindowRect(GetDlgItem(hDlg, dialogItemID), &rect)) // failed to get the dimensions
+    if (GetWindowRect(control_hwnd, &rect)) // failed to get the dimensions
         return (pt.x <= rect.right && pt.x >= rect.left && pt.y <= rect.bottom && pt.y >= rect.top);
     return FALSE;
 }
 
-
-bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
+static bool IsMouseOverControl(HWND hwnd, int id)
 {
-    if (hitwnd != hwnd || IsMouseOverControl(hwnd, IDC_STICKPIC) || (GetKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
+    return IsMouseOverControl(hwnd, GetDlgItem(hwnd, id));
+}
+
+
+bool Status::show_context_menu(int x, int y)
+{
+    if (IsMouseOverControl(statusDlg, joystick_hwnd) || (GetKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
         return TRUE;
 
     // HACK: disable topmost so menu doesnt appear under tasinput
@@ -838,7 +776,7 @@ bool ShowContextMenu(HWND hwnd, HWND hitwnd, int x, int y)
     ADD_ITEM(hifi_joystick, "High-quality joystick");
     ADD_ITEM(async_visual_updates, "Async Visual Updates");
 
-    int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
+    int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, statusDlg, 0);
 
     if (offset != 0)
     {
@@ -906,7 +844,10 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {
     case WM_CONTEXTMENU:
-        ShowContextMenu(statusDlg, (HWND)wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        if ((HWND)wParam == statusDlg)
+        {
+            show_context_menu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        }
         break;
     case WM_INITDIALOG:
         {
@@ -935,8 +876,8 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 load_combos("combos.cmb");
             }
 
-            // windows likes to scale stick control in particular, so we force it to a specific size
-            SetWindowPos(GetDlgItem(statusDlg, IDC_STICKPIC), nullptr, 0, 0, 131, 131, SWP_NOMOVE);
+            joystick_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, "", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, statusDlg, nullptr, g_inst, nullptr);
+            SetWindowLongPtr(joystick_hwnd, GWLP_USERDATA, (LONG_PTR)&joy_context);
 
             // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile
             set_visuals(current_input);
@@ -959,6 +900,40 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             statusDlg = NULL;
         }
         break;
+    case JoystickControl::WM_JOYSTICK_POSITION_CHANGED:
+        current_input.x = joy_context.x;
+        current_input.y = joy_context.y;
+        set_visuals(current_input);
+        break;
+    case JoystickControl::WM_JOYSTICK_DRAG_BEGIN:
+        activate_emulator_window();
+        break;
+    case WM_LBUTTONDOWN:
+        {
+            if (!new_config.client_drag || IsMouseOverControl(statusDlg, joystick_hwnd))
+            {
+                break;
+            }
+
+            POINT cursor_position{};
+            GetCursorPos(&cursor_position);
+
+            if (WindowFromPoint(cursor_position) != statusDlg)
+            {
+                break;
+            }
+
+            RECT rect{};
+            GetWindowRect(statusDlg, &rect);
+
+            is_dragging_window = true;
+            dragging_window_cursor_diff = {
+            cursor_position.x - rect.left,
+            cursor_position.y - rect.top,
+            };
+
+            break;
+        }
     case WM_SETCURSOR:
         {
             if (is_dragging_window)
@@ -1013,13 +988,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         }
 
-        // We can't capture mouse correctly in a dialog,
-        // so we have to rely on WM_TIMER for updating the joystick position when the cursor is outside of client bounds
-        update_joystick_position();
-
         // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
         core_buttons controller_input = dih_get_input(g_controllers, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
-
+        
         if (controller_input.value != last_controller_input.value)
         {
             // Input changed, override everything with current
@@ -1090,81 +1061,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         last_controller_input = controller_input;
 
         break;
-    case WM_PAINT:
-        {
-            // get dimensions of target control in client(!!!) coordinates
-            RECT window_rect;
-            RECT joystick_rect = get_window_rect_client_space(statusDlg, GetDlgItem(statusDlg, IDC_STICKPIC));
-
-            // HACK: we compensate the static edge size
-            joystick_rect.left += 1;
-            joystick_rect.top += 1;
-            joystick_rect.right -= 2;
-            joystick_rect.bottom -= 2;
-
-            GetClientRect(statusDlg, &window_rect);
-            POINT joystick_rect_size = {
-            joystick_rect.right - joystick_rect.left,
-            joystick_rect.bottom - joystick_rect.top};
-
-
-            // set up double buffering
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(statusDlg, &ps);
-            HDC compat_dc = CreateCompatibleDC(hdc);
-            int scale = new_config.hifi_joystick ? 4 : 1;
-            POINT bmp_size = {joystick_rect_size.x * scale, joystick_rect_size.y * scale};
-            HBITMAP bmp = CreateCompatibleBitmap(hdc, bmp_size.x, bmp_size.y);
-            SelectObject(compat_dc, bmp);
-
-            HPEN outline_pen = CreatePen(PS_SOLID, 1 * scale, RGB(0, 0, 0));
-            HPEN line_pen = CreatePen(PS_SOLID, 3 * scale, RGB(0, 0, 255));
-            HPEN tip_pen = CreatePen(PS_SOLID, 7 * scale, RGB(255, 0, 0));
-
-            int mid_x = bmp_size.x / 2;
-            int mid_y = bmp_size.y / 2;
-            int stick_x = (current_input.x + 128) * bmp_size.x / 256;
-            int stick_y = (-current_input.y + 128) * bmp_size.y / 256;
-
-            // clear background with color which makes background (hopefully)
-            // cool idea: maybe use user accent color for joystick tip?
-            RECT normalized = {0, 0, bmp_size.x, bmp_size.y};
-            FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_BTNFACE));
-
-            // draw the back layer: ellipse and alignment lines
-            SelectObject(compat_dc, outline_pen);
-            Ellipse(compat_dc, 0, 0, bmp_size.x, bmp_size.y);
-            MoveToEx(compat_dc, 0, mid_y, NULL);
-            LineTo(compat_dc, bmp_size.x, mid_y);
-            MoveToEx(compat_dc, mid_x, 0, NULL);
-            LineTo(compat_dc, mid_x, bmp_size.y);
-
-            // now joystick line
-            SelectObject(compat_dc, line_pen);
-            MoveToEx(compat_dc, mid_x, mid_y, nullptr);
-            LineTo(compat_dc, stick_x, stick_y);
-
-            // and finally the joystick tip
-            SelectObject(compat_dc, tip_pen);
-            MoveToEx(compat_dc, stick_x, stick_y, NULL);
-            LineTo(compat_dc, stick_x, stick_y);
-
-            // release pen from dc or it will be leaked
-            SelectObject(compat_dc, nullptr);
-
-            // now we can blit the new picture in one pass
-            SetStretchBltMode(hdc, HALFTONE);
-            SetStretchBltMode(compat_dc, HALFTONE);
-            StretchBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect_size.x, joystick_rect_size.y, compat_dc, 0, 0, bmp_size.x, bmp_size.y, SRCCOPY);
-            EndPaint(statusDlg, &ps);
-            DeleteDC(compat_dc);
-            DeleteObject(bmp);
-            DeleteObject(outline_pen);
-            DeleteObject(line_pen);
-            DeleteObject(tip_pen);
-        }
-
-        break;
     case WM_NOTIFY:
         {
             switch (LOWORD(wParam))
@@ -1188,97 +1084,6 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 break;
             }
         }
-        break;
-    case WM_MOUSEWHEEL:
-        {
-            if (!IsMouseOverControl(statusDlg, IDC_STICKPIC))
-            {
-                break;
-            }
-            auto delta = GET_WHEEL_DELTA_WPARAM(wParam);
-            auto increment = delta < 0 ? -1 : 1;
-
-            if (GetKeyState(VK_CONTROL) & 0x8000)
-            {
-                current_input.y += increment;
-            }
-            else if (GetKeyState(VK_SHIFT) & 0x8000)
-            {
-                const auto angle = std::atan2(current_input.y, current_input.x);
-                const auto mag = std::ceil(std::sqrt(std::pow(current_input.x, 2) + std::pow(current_input.y, 2)));
-                const auto new_ang = angle + (increment * (M_PI / 180.0f));
-                current_input.x = (int)std::round(mag * std::cos(new_ang));
-                current_input.y = (int)std::round(mag * std::sin(new_ang));
-            }
-            else
-            {
-                current_input.x += increment;
-            }
-
-            set_visuals(current_input);
-        }
-        break;
-    case WM_MBUTTONDOWN:
-        if (IsMouseOverControl(statusDlg, IDC_STICKPIC))
-        {
-            POINT cursor;
-            GetCursorPos(&cursor);
-            ScreenToClient(GetDlgItem(statusDlg, IDC_STICKPIC), &cursor);
-
-            RECT pic_rect;
-            GetWindowRect(GetDlgItem(statusDlg, IDC_STICKPIC), &pic_rect);
-            int x = (cursor.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
-            int y = -(cursor.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
-
-            joystick_mouse_diff = POINT{
-            x - current_input.x,
-            y - current_input.y,
-            };
-
-            joystick_mode = JoystickMode::rel;
-            activate_emulator_window();
-        }
-        break;
-    case WM_RBUTTONDOWN:
-        if (IsMouseOverControl(statusDlg, IDC_STICKPIC))
-        {
-            joystick_mode = joystick_mode == JoystickMode::none ? JoystickMode::sticky : JoystickMode::none;
-            activate_emulator_window();
-        }
-        break;
-    case WM_LBUTTONDOWN:
-        {
-            if (IsMouseOverControl(statusDlg, IDC_STICKPIC))
-            {
-                joystick_mode = JoystickMode::abs;
-                activate_emulator_window();
-            }
-
-            if (!new_config.client_drag)
-            {
-                break;
-            }
-
-            POINT cursor_position{};
-            GetCursorPos(&cursor_position);
-            // NOTE: Windows doesn't consider STATIC controls when hittesting, so we need to check for the stick picture manually
-            if (WindowFromPoint(cursor_position) != statusDlg || IsMouseOverControl(statusDlg, IDC_STICKPIC))
-            {
-                break;
-            }
-
-            RECT window_rect{};
-            GetWindowRect(statusDlg, &window_rect);
-
-            is_dragging_window = true;
-            dragging_window_cursor_diff = {
-            cursor_position.x - window_rect.left,
-            cursor_position.y - window_rect.top,
-            };
-        }
-        break;
-    case WM_MOUSEMOVE:
-        update_joystick_position();
         break;
     case WM_EDIT_END:
         EndEdit(renaming_combo_index, (char*)lParam);
