@@ -5,7 +5,7 @@
  */
 
 #include "stdafx.h"
-#include "Combo.h"
+#include <Combo.h>
 
 std::vector<Combos::Combo*> Combos::find(const char* path)
 {

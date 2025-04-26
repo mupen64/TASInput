@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
-#include "Main.h"
-#include "DirectInputHelper.h"
+#include <Main.h>
+#include <DirectInputHelper.h>
 
 #define EXPORT __declspec(dllexport)
 #define CALL _cdecl

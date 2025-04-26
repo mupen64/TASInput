@@ -5,14 +5,13 @@
  */
 
 #include "stdafx.h"
-#include "TASInput.h"
-#include "Combo.h"
-#include "ConfigDialog.h"
-#include "DirectInputHelper.h"
-#include "Main.h"
-#include "NewConfig.h"
-#include "helpers/math_helpers.h"
-#include "helpers/win_helpers.h"
+#include <Combo.h>
+#include <ConfigDialog.h>
+#include <DirectInputHelper.h>
+#include <Main.h>
+#include <MiscHelpers.h>
+#include <NewConfig.h>
+#include <TASInput.h>
 
 #define EXPORT __declspec(dllexport)
 #define CALL _cdecl

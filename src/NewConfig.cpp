@@ -5,8 +5,8 @@
  */
 
 #include "stdafx.h"
-#include "NewConfig.h"
-#include "helpers/io_helpers.h"
+#include <NewConfig.h>
+#include <MiscHelpers.h>
 
 #define CONFIG_PATH "tasinput.cfg"
 

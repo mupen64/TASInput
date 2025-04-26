@@ -90,7 +90,7 @@
     </PropertyGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
         <ClCompile>
-            <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>lib;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>Disabled</Optimization>
             <PreprocessorDefinitions>
                 WIN32;_DEBUG;_WINDOWS;_USRDLL;TASINPUT_EXPORTS;CORE_PLUGIN_WITH_CALLBACKS;CORE_PLUGIN_INPUT_OLD_INITIATE_CONTROLLERS;%(PreprocessorDefinitions)
@@ -113,7 +113,7 @@
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
         <ClCompile>
-            <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>lib;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>MaxSpeed</Optimization>
             <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
             <PreprocessorDefinitions>
@@ -140,7 +140,7 @@
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <ClCompile>
-            <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>lib;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>Disabled</Optimization>
             <PreprocessorDefinitions>
                 WIN32;_DEBUG;_WINDOWS;_USRDLL;TASINPUT_EXPORTS;CORE_PLUGIN_WITH_CALLBACKS;CORE_PLUGIN_INPUT_OLD_INITIATE_CONTROLLERS;%(PreprocessorDefinitions)
@@ -163,7 +163,7 @@
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <ClCompile>
-            <AdditionalIncludeDirectories>lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>lib;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <Optimization>MaxSpeed</Optimization>
             <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
             <PreprocessorDefinitions>
@@ -200,21 +200,17 @@
         <ClCompile Include="src\ConfigDialog.cpp" />
         <ClCompile Include="src\TASInput.cpp" />
         <ClCompile Include="src\DirectInputHelper.cpp" />
-        <ClCompile Include="src\helpers\io_helpers.cpp"/>
         <ClCompile Include="src\NewConfig.cpp"/>
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="lib\core_plugin.h" />
+        <ClInclude Include="src\MiscHelpers.h" />
         <ClInclude Include="src\Main.h" />
         <ClInclude Include="src\stdafx.h"/>
         <ClInclude Include="src\Combo.h"/>
         <ClInclude Include="src\ConfigDialog.h" />
         <ClInclude Include="src\TASInput.h" />
         <ClInclude Include="src\DirectInputHelper.h" />
-        <ClInclude Include="src\helpers\io_helpers.h"/>
-        <ClInclude Include="src\helpers\math_helpers.h"/>
-        <ClInclude Include="src\helpers\string_helpers.h"/>
-        <ClInclude Include="src\helpers\win_helpers.h"/>
         <ClInclude Include="src\NewConfig.h"/>
         <ClInclude Include="src\resource.h"/>
     </ItemGroup>

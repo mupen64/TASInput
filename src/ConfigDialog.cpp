@@ -6,12 +6,11 @@
 
 
 #include "stdafx.h"
-#include "DirectInputHelper.h"
-#include "TASInput.h"
-#include "ConfigDialog.h"
-
-#include "Main.h"
-#include "NewConfig.h"
+#include <ConfigDialog.h>
+#include <DirectInputHelper.h>
+#include <Main.h>
+#include <NewConfig.h>
+#include <TASInput.h>
 
 #define IDT_TIMER1 1
 #define IDT_TIMER2 2
