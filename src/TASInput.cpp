@@ -33,18 +33,12 @@
 
 #define PLUGIN_NAME "TASInput " PLUGIN_VERSION PLUGIN_ARCH PLUGIN_TARGET
 
-#define IDT_TIMER_STATUS_0 5000
-#define IDT_TIMER_STATUS_1 5001
-#define IDT_TIMER_STATUS_2 5002
-#define IDT_TIMER_STATUS_3 5003
-
 #define C_IDLE 0
 #define C_PLAY 1
 #define C_RECORD 4
 
 #define WM_EDIT_END 10001
 #define WM_UPDATE_VISUALS 10002
-
 
 #define AUTOFIRE(id, field)                                          \
     {                                                                \
@@ -83,8 +77,7 @@ HMENU hMenu;
 
 UINT systemDPI;
 
-std::vector<Combos::Combo*> combos;
-#define ACTIVE_COMBO combos[activeCombo]
+std::vector<Combos::Combo*> combos{};
 
 struct Status {
     enum class JoystickMode {
@@ -741,14 +734,6 @@ EXPORT void CALL RomOpen(void)
     start_dialogs();
 }
 
-EXPORT void CALL WM_KeyDown(WPARAM wParam, LPARAM lParam)
-{
-}
-
-EXPORT void CALL WM_KeyUp(WPARAM wParam, LPARAM lParam)
-{
-}
-
 void Status::clear_combos()
 {
     for (auto combo : combos)
@@ -1198,10 +1183,10 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
             case IDC_SLIDERY:
                 {
-                    auto min = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETRANGEMIN, 0, 0);
-                    auto max = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETRANGEMAX, 0, 0);
-                    int pos = SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETPOS, 0, 0);
-                    new_config.y_scale[controller_index] = remap(pos, min, max, 0, 1);
+                    const auto min = (double)SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETRANGEMIN, 0, 0);
+                    const auto max = (double)SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETRANGEMAX, 0, 0);
+                    const auto pos = (double)SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_GETPOS, 0, 0);
+                    new_config.y_scale[controller_index] = remap(pos, min, max, 0.0, 1.0);
                 }
                 break;
             }
@@ -1222,12 +1207,11 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             }
             else if (GetKeyState(VK_SHIFT) & 0x8000)
             {
-                // We change the angle, keeping magnitude
-                float angle = atan2f(current_input.y, current_input.x);
-                float mag = ceilf(sqrtf(powf(current_input.x, 2) + powf(current_input.y, 2)));
-                float new_ang = angle + (increment * (M_PI / 180.0f));
-                current_input.x = mag * cosf(new_ang);
-                current_input.y = mag * sinf(new_ang);
+                const auto angle = std::atan2(current_input.y, current_input.x);
+                const auto mag = std::ceil(std::sqrt(std::pow(current_input.x, 2) + std::pow(current_input.y, 2)));
+                const auto new_ang = angle + (increment * (M_PI / 180.0f));
+                current_input.x = (int)std::round(mag * std::cos(new_ang));
+                current_input.y = (int)std::round(mag * std::sin(new_ang));
             }
             else
             {
@@ -1278,7 +1262,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 break;
             }
 
-            POINT cursor_position = {0};
+            POINT cursor_position{};
             GetCursorPos(&cursor_position);
             // NOTE: Windows doesn't consider STATIC controls when hittesting, so we need to check for the stick picture manually
             if (WindowFromPoint(cursor_position) != statusDlg || IsMouseOverControl(statusDlg, IDC_STICKPIC))
@@ -1286,7 +1270,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 break;
             }
 
-            RECT window_rect = {0};
+            RECT window_rect{};
             GetWindowRect(statusDlg, &window_rect);
 
             is_dragging_window = true;
@@ -1309,7 +1293,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_SIZE:
     case WM_MOVE:
         {
-            RECT window_rect = {0};
+            RECT window_rect{};
             GetWindowRect(statusDlg, &window_rect);
             window_position = {
             window_rect.left,
@@ -1351,46 +1335,46 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         // on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
         case IDC_CHECK_A:
-            TOGGLE(a);
+            TOGGLE(a)
             break;
         case IDC_CHECK_B:
-            TOGGLE(b);
+            TOGGLE(b)
             break;
         case IDC_CHECK_START:
-            TOGGLE(start);
+            TOGGLE(start)
             break;
         case IDC_CHECK_Z:
-            TOGGLE(z);
+            TOGGLE(z)
             break;
         case IDC_CHECK_L:
-            TOGGLE(l);
+            TOGGLE(l)
             break;
         case IDC_CHECK_R:
-            TOGGLE(r);
+            TOGGLE(r)
             break;
         case IDC_CHECK_CLEFT:
-            TOGGLE(cl);
+            TOGGLE(cl)
             break;
         case IDC_CHECK_CUP:
-            TOGGLE(cu);
+            TOGGLE(cu)
             break;
         case IDC_CHECK_CRIGHT:
-            TOGGLE(cr);
+            TOGGLE(cr)
             break;
         case IDC_CHECK_CDOWN:
-            TOGGLE(cd);
+            TOGGLE(cd)
             break;
         case IDC_CHECK_DLEFT:
-            TOGGLE(dl);
+            TOGGLE(dl)
             break;
         case IDC_CHECK_DUP:
-            TOGGLE(du);
+            TOGGLE(du)
             break;
         case IDC_CHECK_DRIGHT:
-            TOGGLE(dr);
+            TOGGLE(dr)
             break;
         case IDC_CHECK_DDOWN:
-            TOGGLE(dd);
+            TOGGLE(dd)
             break;
         case IDC_CLEARINPUT:
             current_input = {0};
@@ -1474,7 +1458,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case IDC_IMPORT:
             {
                 set_status("Importing...");
-                OPENFILENAME data = {0};
+                OPENFILENAME data{};
                 char file[MAX_PATH] = "\0";
                 data.lStructSize = sizeof(data);
                 data.lpstrFilter = "Combo file (*.cmb)\0*.cmb\0\0";

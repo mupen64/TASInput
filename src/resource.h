@@ -153,6 +153,7 @@
 #define IDC_LABEL_X 2104
 #define IDC_LABEL_Y 2105
 #define IDC_EXPAND 2106
+#define IDT_TIMER_STATUS_0 5000
 
 // Next default values for new objects
 //
