@@ -382,6 +382,11 @@ EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
         status[Control].GetKeys(Keys);
     else
         Keys->value = 0;
+
+    // DirectInputHelper is messing up the axes so we gotta flip these lol
+    const auto tmp = Keys->x;
+    Keys->x = Keys->y;
+    Keys->y = tmp;
 }
 
 EXPORT void CALL SetKeys(int Control, core_buttons ControllerInput)
