@@ -64,6 +64,8 @@
     }
 
 
+static ULONG gdi_plus_token{};
+
 volatile int64_t frame_counter = 0;
 volatile bool new_frame = false;
 
@@ -262,8 +264,6 @@ struct Status {
     int controller_index;
     int comboTask = C_IDLE;
 
-    JoystickControl::t_context joy_context{};
-
     void set_status(std::string str);
 
     bool show_context_menu(int x, int y);
@@ -322,6 +322,12 @@ void start_dialogs()
 
 EXPORT void CALL CloseDLL()
 {
+    if (gdi_plus_token)
+    {
+        Gdiplus::GdiplusShutdown(gdi_plus_token);
+        gdi_plus_token = 0;
+    }
+
     dih_free();
 }
 
@@ -519,9 +525,7 @@ void Status::set_visuals(core_buttons input, bool needs_processing)
     CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, input.dr);
     CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, input.dd);
 
-    joy_context.x = input.x;
-    joy_context.y = input.y;
-    RedrawWindow(joystick_hwnd, nullptr, nullptr, RDW_INVALIDATE);
+    JoystickControl::set_position(joystick_hwnd, input.x, input.y);
 }
 
 void Status::SetKeys(core_buttons ControllerInput)
@@ -626,6 +630,9 @@ EXPORT void CALL RomOpen(void)
 
     if (first_time)
     {
+        Gdiplus::GdiplusStartupInput startup_input;
+        GdiplusStartup(&gdi_plus_token, &startup_input, NULL);
+
         JoystickControl::register_class(g_inst);
         first_time = false;
     }
@@ -773,7 +780,6 @@ bool Status::show_context_menu(int x, int y)
     ADD_ITEM(float_from_parent, "Float from parent");
     ADD_ITEM(titlebar, "Titlebar");
     ADD_ITEM(client_drag, "Client drag");
-    ADD_ITEM(hifi_joystick, "High-quality joystick");
     ADD_ITEM(async_visual_updates, "Async Visual Updates");
 
     int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, statusDlg, 0);
@@ -876,7 +882,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 load_combos("combos.cmb");
             }
 
-            joystick_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, "", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, statusDlg, nullptr, g_inst, &joy_context);
+            joystick_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, "", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, statusDlg, nullptr, g_inst, nullptr);
 
             // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile
             set_visuals(current_input);
@@ -900,10 +906,19 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     case JoystickControl::WM_JOYSTICK_POSITION_CHANGED:
-        current_input.x = joy_context.x;
-        current_input.y = joy_context.y;
-        set_visuals(current_input);
-        break;
+        {
+            int x{}, y{};
+            JoystickControl::get_position(joystick_hwnd, &x, &y);
+
+            current_input.x = x;
+            current_input.y = y;
+
+            if (!wParam)
+            {
+                set_visuals(current_input);
+            }
+            break;
+        }
     case JoystickControl::WM_JOYSTICK_DRAG_BEGIN:
         activate_emulator_window();
         break;
@@ -989,7 +1004,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
 
         // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
         core_buttons controller_input = dih_get_input(g_controllers, controller_index, new_config.x_scale[controller_index], new_config.y_scale[controller_index]);
-        
+
         if (controller_input.value != last_controller_input.value)
         {
             // Input changed, override everything with current

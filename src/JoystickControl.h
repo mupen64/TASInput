@@ -12,32 +12,26 @@
 namespace JoystickControl
 {
     const auto CLASS_NAME = "JOYSTICK";
-    constexpr auto WM_JOYSTICK_POSITION_CHANGED = WM_USER + 10;
-    constexpr auto WM_JOYSTICK_DRAG_BEGIN = WM_USER + 11;
-
-    struct t_context {
-        struct t_internal {
-            enum class Mode {
-                None,
-                Absolute,
-                Sticky,
-                Relative
-            };
-            Mode mode = Mode::None;
-            POINT cursor_diff{};
-            HDC front_dc{};
-            HDC back_dc{};
-            HBITMAP back_bmp{};
-            HPEN outline_pen{};
-            HPEN line_pen{};
-            HPEN tip_pen{};
-        };
-
-        int x{};
-        int y{};
-        int scale = 1;
-        t_internal internal{};
-    };
+    constexpr auto WM_JOYSTICK_POSITION_CHANGED = WM_USER + 1;
+    constexpr auto WM_JOYSTICK_DRAG_BEGIN = WM_USER + 2;
 
     void register_class(HINSTANCE hinst);
+
+    /**
+     * \brief Gets the joystick's position.
+     * \param hwnd Handle to a joystick control.
+     * \param x The x coordinate of the joystick.
+     * \param y The y coordinate of the joystick.
+     * \return Whether the operation was successful.
+     */
+    BOOL get_position(HWND hwnd, int* x, int* y);
+
+    /**
+     * \brief Sets the joystick's position.
+     * \param hwnd Handle to a joystick control.
+     * \param x The x coordinate of the joystick.
+     * \param y The y coordinate of the joystick.
+     * \return Whether the operation was successful.
+     */
+    BOOL set_position(HWND hwnd, int x, int y);
 } // namespace JoystickControl

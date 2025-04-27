@@ -39,4 +39,5 @@
 #include <shellscalingapi.h>
 #include <core_plugin.h>
 #include <resource.h>
+#include <gdiplus.h>
 #pragma warning(pop)
