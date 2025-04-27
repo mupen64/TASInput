@@ -88,3 +88,19 @@ static float remap(const float value, const float from1, const float to1, const 
 {
     return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
 }
+
+static bool is_mouse_over_control(const HWND control_hwnd)
+{
+    POINT pt;
+    RECT rect;
+
+    GetCursorPos(&pt);
+    if (GetWindowRect(control_hwnd, &rect)) // failed to get the dimensions
+        return (pt.x <= rect.right && pt.x >= rect.left && pt.y <= rect.bottom && pt.y >= rect.top);
+    return FALSE;
+}
+
+static bool is_mouse_over_control(const HWND hwnd, const int id)
+{
+    return is_mouse_over_control(GetDlgItem(hwnd, id));
+}

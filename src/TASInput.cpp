@@ -17,136 +17,41 @@
 #define EXPORT __declspec(dllexport)
 #define CALL _cdecl
 
-#define PLUGIN_VERSION "1.2.0"
+#define WM_EDIT_END (WM_USER + 3)
+#define WM_UPDATE_VISUALS (WM_USER + 4)
 
-#ifdef _M_X64
-#define PLUGIN_ARCH "-x64"
-#else
-#define PLUGIN_ARCH "-x86"
-#endif
-
-#ifdef _DEBUG
-#define PLUGIN_TARGET "-debug"
-#else
-#define PLUGIN_TARGET "-release"
-#endif
-
-#define PLUGIN_NAME "TASInput " PLUGIN_VERSION PLUGIN_ARCH PLUGIN_TARGET
-
-#define C_IDLE 0
-#define C_PLAY 1
-#define C_RECORD 4
-
-#define WM_EDIT_END 10001
-#define WM_UPDATE_VISUALS 10002
-
-#define AUTOFIRE(id, field)                                          \
-    {                                                                \
-        if (IsMouseOverControl(statusDlg, id))                       \
-        {                                                            \
-            if (autofire_input_a.field || autofire_input_b.field)    \
-            {                                                        \
-                autofire_input_a.field = autofire_input_b.field = 0; \
-            }                                                        \
-            else                                                     \
-            {                                                        \
-                if (frame_counter % 2 == 0)                          \
-                    autofire_input_a.field ^= 1;                     \
-                else                                                 \
-                    autofire_input_b.field ^= 1;                     \
-            }                                                        \
-        }                                                            \
-    }
-#define TOGGLE(field)                                                                \
-    {                                                                                \
-        current_input.field = IsDlgButtonChecked(statusDlg, LOWORD(wParam)) ? 1 : 0; \
-        autofire_input_a.field = autofire_input_b.field = 0;                         \
-    }
-
+enum class ComboTask {
+    Idle,
+    Play,
+    Record
+};
 
 static ULONG gdi_plus_token{};
+static volatile int64_t frame_counter{};
+static volatile bool new_frame{};
+static HWND emulator_hwnd{};
+static bool rom_open{};
+static HMENU hmenu{};
+static std::vector<Combos::Combo*> combos{};
 
-volatile int64_t frame_counter = 0;
-volatile bool new_frame = false;
-
-HWND emulator_hwnd;
 LRESULT CALLBACK StatusDlgProc0(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc1(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc2(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK StatusDlgProc3(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-bool romIsOpen = false;
-HMENU hMenu;
-
-UINT systemDPI;
-
-std::vector<Combos::Combo*> combos{};
 
 struct Status {
-    Status()
-    {
-        show_m64_inputs = false;
-        statusDlg = NULL;
-    }
-
     /**
      * \brief Starts the dialog
      * \param controller_index The controller index the dialog is responsible for
      */
-    void start(int32_t controller_index)
-    {
-        load_config();
-        this->controller_index = controller_index;
-
-        int dialog_id = new_config.dialog_expanded[controller_index] ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
-
-        switch (controller_index)
-        {
-        case 0:
-            DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
-            break;
-        case 1:
-            DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
-            break;
-        case 2:
-            DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
-            break;
-        case 3:
-            DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
-            break;
-        default:
-            assert(false);
-        }
-    }
+    void start(int32_t controller_index);
 
     /**
      * \brief Stops the dialog
      */
-    void stop()
-    {
-        EndDialog(statusDlg, 0);
-    }
+    void stop();
 
-    void on_config_changed()
-    {
-        if (new_config.always_on_top)
-        {
-            SetWindowPos(statusDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-        }
-        else
-        {
-            SetWindowPos(statusDlg, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-        }
-        set_style(statusDlg, GWL_EXSTYLE, WS_EX_TOOLWINDOW, !new_config.float_from_parent);
-        set_style(statusDlg, GWL_STYLE, DS_SYSMODAL, !new_config.float_from_parent);
-        set_style(statusDlg, GWL_STYLE, WS_CAPTION, new_config.titlebar);
-
-        // If we remove the titlebar, window contents will get clipped due to the window size not expanding, so we need to account for that
-        RECT rect = new_config.titlebar ? initial_window_rect : initial_client_rect;
-        SetWindowPos(statusDlg, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
-        save_config();
-
-        CheckDlgButton(statusDlg, IDC_LOOP, new_config.loop_combo);
-    }
+    void on_config_changed();
 
     /**
      * \brief The instance's UI thread
@@ -176,27 +81,27 @@ struct Status {
     /**
      * \brief The window's position. Used for restoring the position after dialog changes and its position is reset by window manager
      */
-    POINT window_position = {0};
+    POINT window_position{};
 
     /**
      * \brief The current internal input state before any processing
      */
-    core_buttons current_input = {0};
+    core_buttons current_input{};
 
     /**
      * \brief The internal input state at the previous GetKeys call before any processing
      */
-    core_buttons last_controller_input = {0};
+    core_buttons last_controller_input{};
 
     /**
      * \brief Ignores the next joystick increment, used for relative mode tracking
      */
-    bool ignore_next_down[2] = {0};
+    bool ignore_next_down[2]{};
 
     /**
      * \brief Ignores the next joystick decrement, used for relative mode tracking
      */
-    bool ignore_next_up[2] = {0};
+    bool ignore_next_up[2]{};
 
     /**
      * \brief The index of the currently active combo into the combos array, or -1 if none is active
@@ -223,10 +128,26 @@ struct Status {
      */
     HWND combo_edit_box = nullptr;
 
-    bool combo_active()
-    {
-        return active_combo_index != -1;
-    }
+    bool is_getting_keys = false;
+    core_buttons autofire_input_a = {0};
+    core_buttons autofire_input_b = {0};
+    bool ready;
+    HWND statusDlg{};
+    HWND joy_hwnd;
+    HWND combo_listbox;
+    int controller_index;
+    ComboTask combo_task = ComboTask::Idle;
+
+    void set_status(std::string str);
+
+    bool show_context_menu(int x, int y);
+
+    LRESULT wndproc(UINT msg, WPARAM wparam, LPARAM lparam);
+
+    /**
+     * \brief Gets whether a combo is currently active.
+     */
+    bool combo_active();
 
     /**
      * \brief Clears the combo list
@@ -249,26 +170,9 @@ struct Status {
      */
     int create_new_combo();
 
-    void StartEdit(int);
-    void EndEdit(int, char*);
+    void start_edit(int);
 
-    bool is_getting_keys = false;
-    int show_m64_inputs;
-    // Bitflags for buttons with autofire enabled
-    core_buttons autofire_input_a = {0};
-    core_buttons autofire_input_b = {0};
-    bool ready;
-    HWND statusDlg;
-    HWND joystick_hwnd;
-    HWND combo_listbox;
-    int controller_index;
-    int comboTask = C_IDLE;
-
-    void set_status(std::string str);
-
-    bool show_context_menu(int x, int y);
-
-    LRESULT StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam);
+    void end_edit(int, char*);
 
     /**
      * \brief Updates the UI
@@ -422,7 +326,7 @@ void Status::GetKeys(core_buttons* Keys)
 {
     Keys->value = get_processed_input(current_input).value;
 
-    if (comboTask == C_PLAY && !combo_paused)
+    if (combo_task == ComboTask::Play && !combo_paused)
     {
         if (combo_frame >= combos[active_combo_index]->samples.size() - 1)
         {
@@ -433,7 +337,7 @@ void Status::GetKeys(core_buttons* Keys)
             else
             {
                 set_status("Finished combo");
-                comboTask = C_IDLE;
+                combo_task = ComboTask::Idle;
                 // Reset input on last frame, or it sticks which feels weird
                 // We also need to reprocess the inputs since source data change
                 current_input = {0};
@@ -447,7 +351,7 @@ void Status::GetKeys(core_buttons* Keys)
     }
 
 end:
-    if (comboTask == C_RECORD)
+    if (combo_task == ComboTask::Record)
     {
         // We process this last, because we need the processed inputs
         combos[active_combo_index]->samples.push_back(*Keys);
@@ -468,7 +372,7 @@ core_buttons Status::get_processed_input(core_buttons input)
 {
     input.value |= frame_counter % 2 == 0 ? autofire_input_a.value : autofire_input_b.value;
 
-    if (comboTask == C_PLAY && !combo_paused)
+    if (combo_task == ComboTask::Play && !combo_paused)
     {
         auto combo_input = combos[active_combo_index]->samples[combo_frame];
         if (!combos[active_combo_index]->uses_joystick())
@@ -525,7 +429,7 @@ void Status::set_visuals(core_buttons input, bool needs_processing)
     CheckDlgButton(statusDlg, IDC_CHECK_DRIGHT, input.dr);
     CheckDlgButton(statusDlg, IDC_CHECK_DDOWN, input.dd);
 
-    JoystickControl::set_position(joystick_hwnd, input.x, input.y);
+    JoystickControl::set_position(joy_hwnd, input.x, input.y);
 }
 
 void Status::SetKeys(core_buttons ControllerInput)
@@ -617,7 +521,7 @@ EXPORT void CALL ReadController(int Control, BYTE* Command)
 
 EXPORT void CALL RomClosed(void)
 {
-    romIsOpen = false;
+    rom_open = false;
     for (auto& val : status)
     {
         val.stop();
@@ -653,7 +557,7 @@ EXPORT void CALL RomOpen(void)
     }
 
     RomClosed();
-    romIsOpen = true;
+    rom_open = true;
 
     HKEY hKey;
     DWORD dwSize, dwType, dwDWSize, dwDWType;
@@ -674,6 +578,11 @@ EXPORT void CALL RomOpen(void)
     RegCloseKey(hKey);
 
     start_dialogs();
+}
+
+bool Status::combo_active()
+{
+    return active_combo_index != -1;
 }
 
 void Status::clear_combos()
@@ -698,8 +607,7 @@ void Status::set_status(std::string str)
     SendMessage(hTask, WM_SETTEXT, 0, (LPARAM)str.c_str());
 }
 
-// shows edit box
-void Status::StartEdit(int id)
+void Status::start_edit(int id)
 {
     RECT item_rect;
     ListBox_GetItemRect(combo_listbox, id, &item_rect);
@@ -708,13 +616,14 @@ void Status::StartEdit(int id)
     ListBox_SetCurSel(combo_listbox, -1);
     SendMessage(combo_edit_box, WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
     SetWindowSubclass(combo_edit_box, EditBoxProc, 0, 0);
-    char txt[MAX_PATH];
+
+    char txt[MAX_PATH]{};
     ListBox_GetText(combo_listbox, id, txt);
     SendMessage(combo_edit_box, WM_SETTEXT, 0, (LPARAM)txt);
     PostMessage(statusDlg, WM_NEXTDLGCTL, (WPARAM)combo_edit_box, TRUE);
 }
 
-void Status::EndEdit(int id, char* name)
+void Status::end_edit(int id, char* name)
 {
     if (name != NULL)
     {
@@ -750,39 +659,23 @@ void Status::load_combos(const char* path)
     }
 }
 
-static bool IsMouseOverControl(HWND hwnd, HWND control_hwnd)
-{
-    POINT pt;
-    RECT rect;
-
-    GetCursorPos(&pt);
-    if (GetWindowRect(control_hwnd, &rect)) // failed to get the dimensions
-        return (pt.x <= rect.right && pt.x >= rect.left && pt.y <= rect.bottom && pt.y >= rect.top);
-    return FALSE;
-}
-
-static bool IsMouseOverControl(HWND hwnd, int id)
-{
-    return IsMouseOverControl(hwnd, GetDlgItem(hwnd, id));
-}
-
 
 bool Status::show_context_menu(int x, int y)
 {
-    if (IsMouseOverControl(statusDlg, joystick_hwnd) || (GetKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
+    if (is_mouse_over_control(joy_hwnd) || (GetKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000))
         return TRUE;
 
     // HACK: disable topmost so menu doesnt appear under tasinput
-    hMenu = CreatePopupMenu();
-#define ADD_ITEM(x, y) AppendMenu(hMenu, new_config.x ? MF_CHECKED : 0, offsetof(t_config, x), y)
-    ADD_ITEM(relative_mode, "Relative");
-    ADD_ITEM(always_on_top, "Always on top");
-    ADD_ITEM(float_from_parent, "Float from parent");
-    ADD_ITEM(titlebar, "Titlebar");
-    ADD_ITEM(client_drag, "Client drag");
-    ADD_ITEM(async_visual_updates, "Async Visual Updates");
+    hmenu = CreatePopupMenu();
+#define ADD_ITEM(hmenu, x, y) AppendMenu(hmenu, new_config.x ? MF_CHECKED : 0, offsetof(t_config, x), y)
+    ADD_ITEM(hmenu, relative_mode, "Relative");
+    ADD_ITEM(hmenu, always_on_top, "Always on top");
+    ADD_ITEM(hmenu, float_from_parent, "Float from parent");
+    ADD_ITEM(hmenu, titlebar, "Titlebar");
+    ADD_ITEM(hmenu, client_drag, "Client drag");
+    ADD_ITEM(hmenu, async_visual_updates, "Async Visual Updates");
 
-    int offset = TrackPopupMenuEx(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, statusDlg, 0);
+    int offset = TrackPopupMenuEx(hmenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, statusDlg, 0);
 
     if (offset != 0)
     {
@@ -800,7 +693,7 @@ bool Status::show_context_menu(int x, int y)
         }
     }
 
-    DestroyMenu(hMenu);
+    DestroyMenu(hmenu);
     return TRUE;
 }
 
@@ -808,12 +701,65 @@ bool Status::show_context_menu(int x, int y)
     LRESULT CALLBACK StatusDlgProc##i(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
     {                                                                                    \
         status[i].statusDlg = hDlg;                                                      \
-        return status[i].StatusDlgMethod(msg, wParam, lParam);                           \
+        return status[i].wndproc(msg, wParam, lParam);                                   \
     }
 MAKE_DLG_PROC(0)
 MAKE_DLG_PROC(1)
 MAKE_DLG_PROC(2)
 MAKE_DLG_PROC(3)
+
+void Status::start(const int32_t controller_index)
+{
+    load_config();
+    this->controller_index = controller_index;
+
+    int dialog_id = new_config.dialog_expanded[controller_index] ? IDD_STATUS_COMBOS : IDD_STATUS_NORMAL;
+
+    switch (controller_index)
+    {
+    case 0:
+        DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc0);
+        break;
+    case 1:
+        DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc1);
+        break;
+    case 2:
+        DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc2);
+        break;
+    case 3:
+        DialogBox(g_inst, MAKEINTRESOURCE(dialog_id), NULL, (DLGPROC)StatusDlgProc3);
+        break;
+    default:
+        assert(false);
+    }
+}
+
+void Status::stop()
+{
+    EndDialog(statusDlg, 0);
+}
+
+void Status::on_config_changed()
+{
+    if (new_config.always_on_top)
+    {
+        SetWindowPos(statusDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    }
+    else
+    {
+        SetWindowPos(statusDlg, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    }
+    set_style(statusDlg, GWL_EXSTYLE, WS_EX_TOOLWINDOW, !new_config.float_from_parent);
+    set_style(statusDlg, GWL_STYLE, DS_SYSMODAL, !new_config.float_from_parent);
+    set_style(statusDlg, GWL_STYLE, WS_CAPTION, new_config.titlebar);
+
+    // If we remove the titlebar, window contents will get clipped due to the window size not expanding, so we need to account for that
+    RECT rect = new_config.titlebar ? initial_window_rect : initial_client_rect;
+    SetWindowPos(statusDlg, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
+    save_config();
+
+    CheckDlgButton(statusDlg, IDC_LOOP, new_config.loop_combo);
+}
 
 int get_joystick_increment(bool is_up)
 {
@@ -832,7 +778,7 @@ int get_joystick_increment(bool is_up)
     return increment;
 }
 
-LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT Status::wndproc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     static bool last_lmb_down = false;
     static bool last_rmb_down = false;
@@ -850,9 +796,9 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {
     case WM_CONTEXTMENU:
-        if ((HWND)wParam == statusDlg)
+        if ((HWND)wparam == statusDlg)
         {
-            show_context_menu(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            show_context_menu(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
         }
         break;
     case WM_INITDIALOG:
@@ -882,7 +828,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 load_combos("combos.cmb");
             }
 
-            joystick_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, "", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, statusDlg, nullptr, g_inst, nullptr);
+            joy_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, "", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, statusDlg, nullptr, g_inst, nullptr);
 
             // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile
             set_visuals(current_input);
@@ -894,7 +840,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     case SC_MINIMIZE:
-        DestroyMenu(hMenu); // nuke context menu when minimized...
+        DestroyMenu(hmenu); // nuke context menu when minimized...
         break;
     case WM_NCDESTROY:
     case WM_DESTROY:
@@ -908,12 +854,12 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
     case JoystickControl::WM_JOYSTICK_POSITION_CHANGED:
         {
             int x{}, y{};
-            JoystickControl::get_position(joystick_hwnd, &x, &y);
+            JoystickControl::get_position(joy_hwnd, &x, &y);
 
             current_input.x = x;
             current_input.y = y;
 
-            if (!wParam)
+            if (!wparam)
             {
                 set_visuals(current_input);
             }
@@ -924,7 +870,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_LBUTTONDOWN:
         {
-            if (!new_config.client_drag || IsMouseOverControl(statusDlg, joystick_hwnd))
+            if (!new_config.client_drag || is_mouse_over_control(joy_hwnd))
             {
                 break;
             }
@@ -963,18 +909,36 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 activate_emulator_window();
             }
 
-            if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERX))
+            if (rmb_just_down && is_mouse_over_control(statusDlg, IDC_SLIDERX))
             {
                 SendDlgItemMessage(statusDlg, IDC_SLIDERX, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
             }
 
-            if (rmb_just_down && IsMouseOverControl(statusDlg, IDC_SLIDERY))
+            if (rmb_just_down && is_mouse_over_control(statusDlg, IDC_SLIDERY))
             {
                 SendDlgItemMessage(statusDlg, IDC_SLIDERY, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
             }
 
             if (rmb_just_down)
             {
+
+#define AUTOFIRE(id, field)                                          \
+    {                                                                \
+        if (is_mouse_over_control(statusDlg, id))                    \
+        {                                                            \
+            if (autofire_input_a.field || autofire_input_b.field)    \
+            {                                                        \
+                autofire_input_a.field = autofire_input_b.field = 0; \
+            }                                                        \
+            else                                                     \
+            {                                                        \
+                if (frame_counter % 2 == 0)                          \
+                    autofire_input_a.field ^= 1;                     \
+                else                                                 \
+                    autofire_input_b.field ^= 1;                     \
+            }                                                        \
+        }                                                            \
+    }
                 AUTOFIRE(IDC_CHECK_A, a);
                 AUTOFIRE(IDC_CHECK_B, b);
                 AUTOFIRE(IDC_CHECK_START, start);
@@ -989,6 +953,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 AUTOFIRE(IDC_CHECK_DLEFT, dl);
                 AUTOFIRE(IDC_CHECK_DRIGHT, dr);
                 AUTOFIRE(IDC_CHECK_DDOWN, dd);
+#undef AUTOFIRE
                 set_visuals(current_input);
             }
 
@@ -1077,7 +1042,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_NOTIFY:
         {
-            switch (LOWORD(wParam))
+            switch (LOWORD(wparam))
             {
             case IDC_SLIDERX:
                 {
@@ -1100,11 +1065,11 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_EDIT_END:
-        EndEdit(renaming_combo_index, (char*)lParam);
+        end_edit(renaming_combo_index, (char*)lparam);
         combo_edit_box = nullptr;
         break;
     case WM_UPDATE_VISUALS:
-        set_visuals(static_cast<core_buttons>(lParam), false);
+        set_visuals(static_cast<core_buttons>(lparam), false);
         break;
     case WM_SIZE:
     case WM_MOVE:
@@ -1118,7 +1083,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_COMMAND:
-        switch (LOWORD(wParam))
+        switch (LOWORD(wparam))
         {
         case IDC_EDITX:
             {
@@ -1149,7 +1114,112 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
-        // on checkbox click set buttonOverride and buttonDisplayed field and reset autofire
+        case IDC_CLEARINPUT:
+            current_input = {0};
+            autofire_input_a = {0};
+            autofire_input_b = {0};
+            set_visuals(current_input);
+            break;
+        case IDC_X_DOWN:
+        case IDC_X_UP:
+            {
+                int increment = get_joystick_increment(LOWORD(wparam) == IDC_X_UP);
+                current_input.x += increment;
+                set_visuals(current_input);
+            }
+            break;
+        case IDC_Y_DOWN:
+        case IDC_Y_UP:
+            {
+                int increment = get_joystick_increment(LOWORD(wparam) == IDC_Y_DOWN);
+                current_input.y += increment;
+                set_visuals(current_input);
+            }
+            break;
+        case IDC_EXPAND:
+            {
+                new_config.dialog_expanded[controller_index] ^= true;
+                save_config();
+                start_dialogs();
+            }
+            break;
+        case IDC_PLAY:
+            active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
+            if (active_combo_index == -1)
+            {
+                set_status("No combo selected");
+                break;
+            }
+            set_status("Playing combo");
+            combo_frame = 0;
+            combo_task = ComboTask::Play;
+            break;
+        case IDC_STOP:
+            set_status("Idle");
+            combo_task = ComboTask::Idle;
+            break;
+        case IDC_PAUSE:
+            combo_paused ^= true;
+            break;
+        case IDC_LOOP:
+            new_config.loop_combo ^= true;
+            save_config();
+            break;
+        case IDC_RECORD:
+            if (combo_task == ComboTask::Record)
+            {
+                set_status("Recording stopped");
+                combo_task = ComboTask::Idle;
+                break;
+            }
+
+            set_status("Recording new combo...");
+            active_combo_index = create_new_combo();
+            ListBox_SetCurSel(combo_listbox, active_combo_index);
+            combo_task = ComboTask::Record;
+            break;
+        case IDC_EDIT:
+            renaming_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
+            if (renaming_combo_index == -1)
+            {
+                set_status("No combo selected");
+                break;
+            }
+            start_edit(renaming_combo_index);
+            break;
+        case IDC_CLEAR:
+            combo_task = ComboTask::Idle;
+            active_combo_index = -1;
+            clear_combos();
+            ListBox_ResetContent(combo_listbox);
+            break;
+        case IDC_IMPORT:
+            {
+                set_status("Importing...");
+                OPENFILENAME data{};
+                char file[MAX_PATH] = "\0";
+                data.lStructSize = sizeof(data);
+                data.lpstrFilter = "Combo file (*.cmb)\0*.cmb\0\0";
+                data.nFilterIndex = 1;
+                data.nMaxFile = MAX_PATH;
+                data.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+                data.lpstrFile = file;
+                if (GetOpenFileName(&data))
+                {
+                    load_combos(file);
+                }
+                set_status("Imported combo data");
+                break;
+            }
+        case IDC_SAVE:
+            save_combos();
+            set_status("Saved to combos.cmb");
+            break;
+#define TOGGLE(field)                                                                \
+    {                                                                                \
+        current_input.field = IsDlgButtonChecked(statusDlg, LOWORD(wparam)) ? 1 : 0; \
+        autofire_input_a.field = autofire_input_b.field = 0;                         \
+    }
         case IDC_CHECK_A:
             TOGGLE(a)
             break;
@@ -1192,107 +1262,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
         case IDC_CHECK_DDOWN:
             TOGGLE(dd)
             break;
-        case IDC_CLEARINPUT:
-            current_input = {0};
-            autofire_input_a = {0};
-            autofire_input_b = {0};
-            set_visuals(current_input);
-            break;
-        case IDC_X_DOWN:
-        case IDC_X_UP:
-            {
-                int increment = get_joystick_increment(LOWORD(wParam) == IDC_X_UP);
-                current_input.x += increment;
-                set_visuals(current_input);
-            }
-            break;
-        case IDC_Y_DOWN:
-        case IDC_Y_UP:
-            {
-                int increment = get_joystick_increment(LOWORD(wParam) == IDC_Y_DOWN);
-                current_input.y += increment;
-                set_visuals(current_input);
-            }
-            break;
-        case IDC_EXPAND:
-            {
-                new_config.dialog_expanded[controller_index] ^= true;
-                save_config();
-                start_dialogs();
-            }
-            break;
-        case IDC_PLAY:
-            active_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-            if (active_combo_index == -1)
-            {
-                set_status("No combo selected");
-                break;
-            }
-            set_status("Playing combo");
-            combo_frame = 0;
-            comboTask = C_PLAY;
-            break;
-        case IDC_STOP:
-            set_status("Idle");
-            comboTask = C_IDLE;
-            break;
-        case IDC_PAUSE:
-            combo_paused ^= true;
-            break;
-        case IDC_LOOP:
-            new_config.loop_combo ^= true;
-            save_config();
-            break;
-        case IDC_RECORD:
-            if (comboTask == C_RECORD)
-            {
-                set_status("Recording stopped");
-                comboTask = C_IDLE;
-                break;
-            }
-
-            set_status("Recording new combo...");
-            active_combo_index = create_new_combo();
-            ListBox_SetCurSel(combo_listbox, active_combo_index);
-            comboTask = C_RECORD;
-            break;
-        case IDC_EDIT:
-            renaming_combo_index = ListBox_GetCurSel(GetDlgItem(statusDlg, IDC_MACROLIST));
-            if (renaming_combo_index == -1)
-            {
-                set_status("No combo selected");
-                break;
-            }
-            StartEdit(renaming_combo_index);
-            break;
-        case IDC_CLEAR:
-            comboTask = C_IDLE;
-            active_combo_index = -1;
-            clear_combos();
-            ListBox_ResetContent(combo_listbox);
-            break;
-        case IDC_IMPORT:
-            {
-                set_status("Importing...");
-                OPENFILENAME data{};
-                char file[MAX_PATH] = "\0";
-                data.lStructSize = sizeof(data);
-                data.lpstrFilter = "Combo file (*.cmb)\0*.cmb\0\0";
-                data.nFilterIndex = 1;
-                data.nMaxFile = MAX_PATH;
-                data.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-                data.lpstrFile = file;
-                if (GetOpenFileName(&data))
-                {
-                    load_combos(file);
-                }
-                set_status("Imported combo data");
-                break;
-            }
-        case IDC_SAVE:
-            save_combos();
-            set_status("Saved to combos.cmb");
-            break;
+#undef TOGGLE
         default:
             break;
         }
