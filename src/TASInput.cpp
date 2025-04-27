@@ -876,8 +876,7 @@ LRESULT Status::StatusDlgMethod(UINT msg, WPARAM wParam, LPARAM lParam)
                 load_combos("combos.cmb");
             }
 
-            joystick_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, "", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, statusDlg, nullptr, g_inst, nullptr);
-            SetWindowLongPtr(joystick_hwnd, GWLP_USERDATA, (LONG_PTR)&joy_context);
+            joystick_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, "", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, statusDlg, nullptr, g_inst, &joy_context);
 
             // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile
             set_visuals(current_input);

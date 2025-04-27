@@ -25,10 +25,17 @@ namespace JoystickControl
             };
             Mode mode = Mode::None;
             POINT cursor_diff{};
+            HDC front_dc{};
+            HDC back_dc{};
+            HBITMAP back_bmp{};
+            HPEN outline_pen{};
+            HPEN line_pen{};
+            HPEN tip_pen{};
         };
 
         int x{};
         int y{};
+        int scale = 1;
         t_internal internal{};
     };
 

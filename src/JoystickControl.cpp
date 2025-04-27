@@ -5,8 +5,8 @@
  */
 
 #include "stdafx.h"
+#include "Main.h"
 #include <JoystickControl.h>
-#include <NewConfig.h>
 
 using Mode = JoystickControl::t_context::t_internal::Mode;
 
@@ -49,11 +49,75 @@ static void update_joystick_position(HWND hwnd, JoystickControl::t_context* ctx)
     SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_POSITION_CHANGED, 0, 0);
 }
 
+static void destroy_dcs(const HWND hwnd, JoystickControl::t_context* ctx)
+{
+    if (!ctx->internal.front_dc)
+    {
+        return;
+    }
+
+    ReleaseDC(hwnd, ctx->internal.front_dc);
+    ctx->internal.front_dc = nullptr;
+
+    SelectObject(ctx->internal.back_dc, nullptr);
+    DeleteObject(ctx->internal.back_bmp);
+    DeleteDC(ctx->internal.back_dc);
+
+    DeleteObject(ctx->internal.outline_pen);
+    DeleteObject(ctx->internal.line_pen);
+    DeleteObject(ctx->internal.tip_pen);
+}
+
+static void create_dcs(const HWND hwnd, JoystickControl::t_context* ctx)
+{
+    if (ctx->internal.front_dc)
+    {
+        return;
+    }
+
+    RECT rc{};
+    GetClientRect(hwnd, &rc);
+    g_ef->log_info(std::format(L"create_dcs with size {}x{}", rc.right, rc.bottom).c_str());
+
+    ctx->internal.front_dc = GetDC(hwnd);
+    ctx->internal.back_dc = CreateCompatibleDC(ctx->internal.front_dc);
+    ctx->internal.back_bmp = CreateCompatibleBitmap(ctx->internal.front_dc, rc.right, rc.bottom);
+    SelectObject(ctx->internal.back_dc, ctx->internal.back_bmp);
+    
+    SetStretchBltMode(ctx->internal.front_dc, HALFTONE);
+    SetStretchBltMode(ctx->internal.back_dc, HALFTONE);
+
+    ctx->internal.outline_pen = CreatePen(PS_SOLID, 1 * ctx->scale, RGB(0, 0, 0));
+    ctx->internal.line_pen = CreatePen(PS_SOLID, 3 * ctx->scale, RGB(0, 0, 255));
+    ctx->internal.tip_pen = CreatePen(PS_SOLID, 7 * ctx->scale, RGB(255, 0, 0));
+
+}
+
+static JoystickControl::t_context* get_ctx(HWND hwnd)
+{
+    return reinterpret_cast<JoystickControl::t_context*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+}
+
 static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    const auto ctx = reinterpret_cast<JoystickControl::t_context*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    const auto ctx = get_ctx(hwnd);
+
     switch (msg)
     {
+    case WM_NCCREATE:
+        {
+            const auto csp = reinterpret_cast<CREATESTRUCT*>(lparam);
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)csp->lpCreateParams);
+            create_dcs(hwnd, get_ctx(hwnd));
+            break;
+        }
+    case WM_NCDESTROY:
+        destroy_dcs(hwnd, ctx);
+        break;
+    case WM_SIZE:
+        destroy_dcs(hwnd, ctx);
+        create_dcs(hwnd, ctx);
+        break;
     case WM_MOUSEWHEEL:
         {
             const auto delta = GET_WHEEL_DELTA_WPARAM(wparam);
@@ -127,57 +191,37 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
         break;
     case WM_PAINT:
         {
-            RECT joystick_rect{};
-            GetClientRect(hwnd, &joystick_rect);
+            RECT rc{};
+            GetClientRect(hwnd, &rc);
+        
+            int mid_x = rc.right / 2;
+            int mid_y = rc.bottom / 2;
+            int stick_x = (ctx->x + 128) * rc.right / 256;
+            int stick_y = (-ctx->y + 128) * rc.bottom / 256;
 
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            HDC compat_dc = CreateCompatibleDC(hdc);
-            int scale = new_config.hifi_joystick ? 4 : 1;
-            POINT bmp_size = {joystick_rect.right * scale, joystick_rect.bottom * scale};
-            HBITMAP bmp = CreateCompatibleBitmap(hdc, bmp_size.x, bmp_size.y);
-            SelectObject(compat_dc, bmp);
+            FillRect(ctx->internal.back_dc, &rc, GetSysColorBrush(COLOR_BTNFACE));
 
-            HPEN outline_pen = CreatePen(PS_SOLID, 1 * scale, RGB(0, 0, 0));
-            HPEN line_pen = CreatePen(PS_SOLID, 3 * scale, RGB(0, 0, 255));
-            HPEN tip_pen = CreatePen(PS_SOLID, 7 * scale, RGB(255, 0, 0));
+            SelectObject(ctx->internal.back_dc, ctx->internal.outline_pen);
+            Ellipse(ctx->internal.back_dc, 0, 0, rc.right, rc.bottom);
+            MoveToEx(ctx->internal.back_dc, 0, mid_y, NULL);
+            LineTo(ctx->internal.back_dc, rc.right, mid_y);
+            MoveToEx(ctx->internal.back_dc, mid_x, 0, NULL);
+            LineTo(ctx->internal.back_dc, mid_x, rc.bottom);
 
-            int mid_x = bmp_size.x / 2;
-            int mid_y = bmp_size.y / 2;
-            int stick_x = (ctx->x + 128) * bmp_size.x / 256;
-            int stick_y = (-ctx->y + 128) * bmp_size.y / 256;
+            SelectObject(ctx->internal.back_dc, ctx->internal.line_pen);
+            MoveToEx(ctx->internal.back_dc, mid_x, mid_y, nullptr);
+            LineTo(ctx->internal.back_dc, stick_x, stick_y);
 
-            RECT normalized = {0, 0, bmp_size.x, bmp_size.y};
-            FillRect(compat_dc, &normalized, GetSysColorBrush(COLOR_BTNFACE));
+            SelectObject(ctx->internal.back_dc, ctx->internal.tip_pen);
+            MoveToEx(ctx->internal.back_dc, stick_x, stick_y, NULL);
+            LineTo(ctx->internal.back_dc, stick_x, stick_y);
 
-            SelectObject(compat_dc, outline_pen);
-            Ellipse(compat_dc, 0, 0, bmp_size.x, bmp_size.y);
-            MoveToEx(compat_dc, 0, mid_y, NULL);
-            LineTo(compat_dc, bmp_size.x, mid_y);
-            MoveToEx(compat_dc, mid_x, 0, NULL);
-            LineTo(compat_dc, mid_x, bmp_size.y);
-
-            SelectObject(compat_dc, line_pen);
-            MoveToEx(compat_dc, mid_x, mid_y, nullptr);
-            LineTo(compat_dc, stick_x, stick_y);
-
-            SelectObject(compat_dc, tip_pen);
-            MoveToEx(compat_dc, stick_x, stick_y, NULL);
-            LineTo(compat_dc, stick_x, stick_y);
-
-            SelectObject(compat_dc, nullptr);
-
-            SetStretchBltMode(hdc, HALFTONE);
-            SetStretchBltMode(compat_dc, HALFTONE);
-            StretchBlt(hdc, joystick_rect.left, joystick_rect.top, joystick_rect.right, joystick_rect.bottom, compat_dc, 0, 0, bmp_size.x, bmp_size.y, SRCCOPY);
-            EndPaint(hwnd, &ps);
-            DeleteDC(compat_dc);
-            DeleteObject(bmp);
-            DeleteObject(outline_pen);
-            DeleteObject(line_pen);
-            DeleteObject(tip_pen);
+            StretchBlt(ctx->internal.front_dc, rc.left, rc.top, rc.right, rc.bottom, ctx->internal.back_dc, 0, 0, rc.right, rc.bottom, SRCCOPY);
+        
+            ValidateRect(hwnd, nullptr);
+            return 0;
         }
-
+    default:
         break;
     }
     return DefWindowProc(hwnd, msg, wparam, lparam);
