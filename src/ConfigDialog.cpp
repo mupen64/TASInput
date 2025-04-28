@@ -19,7 +19,7 @@
     g_controllers[NController].Input[NControl].Device = 0;                 \
     g_controllers[NController].Input[NControl].type = INPUT_TYPE_NOT_USED; \
     g_controllers[NController].Input[NControl].vkey = 0;                   \
-    SetDlgItemText(hDlg, ControlValue, " ");                               \
+    SetDlgItemText(hDlg, ControlValue, L" ");                              \
     KillTimer(hDlg, IDT_TIMER1);                                           \
     KillTimer(hDlg, IDT_TIMER2);                                           \
     SetWindowText(hDlg, g_controllers[NController].szName);                \
@@ -46,7 +46,7 @@ void apply_settings()
     RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_WRITE, NULL, &hKey, 0);
     if (RegSetValueEx(hKey, g_controllers[NController].szName, 0, dwType, (LPBYTE)&g_controllers[NController], dwSize) != ERROR_SUCCESS)
     {
-        MessageBox(nullptr, "Error: Could not save current Contoller Config!", g_controllers[NController].szName, MB_ICONERROR | MB_OK);
+        MessageBox(nullptr, L"Error: Could not save current Contoller Config!", g_controllers[NController].szName, MB_ICONERROR | MB_OK);
     }
 
     RegCloseKey(hKey);
@@ -321,323 +321,323 @@ void WINAPI GetKeyName(BYTE Value, TCHAR KeyControlName[16])
     switch (Value)
     {
     case DIK_0:
-        wsprintf(KeyControlName, "0");
+        wsprintf(KeyControlName, L"0");
         break;
     case DIK_1:
-        wsprintf(KeyControlName, "1");
+        wsprintf(KeyControlName, L"1");
         break;
     case DIK_2:
-        wsprintf(KeyControlName, "2");
+        wsprintf(KeyControlName, L"2");
         break;
     case DIK_3:
-        wsprintf(KeyControlName, "3");
+        wsprintf(KeyControlName, L"3");
         break;
     case DIK_4:
-        wsprintf(KeyControlName, "4");
+        wsprintf(KeyControlName, L"4");
         break;
     case DIK_5:
-        wsprintf(KeyControlName, "5");
+        wsprintf(KeyControlName, L"5");
         break;
     case DIK_6:
-        wsprintf(KeyControlName, "6");
+        wsprintf(KeyControlName, L"6");
         break;
     case DIK_7:
-        wsprintf(KeyControlName, "7");
+        wsprintf(KeyControlName, L"7");
         break;
     case DIK_8:
-        wsprintf(KeyControlName, "8");
+        wsprintf(KeyControlName, L"8");
         break;
     case DIK_9:
-        wsprintf(KeyControlName, "9");
+        wsprintf(KeyControlName, L"9");
         break;
     case DIK_A:
-        wsprintf(KeyControlName, "A");
+        wsprintf(KeyControlName, L"A");
         break;
     case DIK_B:
-        wsprintf(KeyControlName, "B");
+        wsprintf(KeyControlName, L"B");
         break;
     case DIK_C:
-        wsprintf(KeyControlName, "C");
+        wsprintf(KeyControlName, L"C");
         break;
     case DIK_D:
-        wsprintf(KeyControlName, "D");
+        wsprintf(KeyControlName, L"D");
         break;
     case DIK_E:
-        wsprintf(KeyControlName, "E");
+        wsprintf(KeyControlName, L"E");
         break;
     case DIK_F:
-        wsprintf(KeyControlName, "F");
+        wsprintf(KeyControlName, L"F");
         break;
     case DIK_G:
-        wsprintf(KeyControlName, "G");
+        wsprintf(KeyControlName, L"G");
         break;
     case DIK_H:
-        wsprintf(KeyControlName, "H");
+        wsprintf(KeyControlName, L"H");
         break;
     case DIK_I:
-        wsprintf(KeyControlName, "I");
+        wsprintf(KeyControlName, L"I");
         break;
     case DIK_J:
-        wsprintf(KeyControlName, "J");
+        wsprintf(KeyControlName, L"J");
         break;
     case DIK_K:
-        wsprintf(KeyControlName, "K");
+        wsprintf(KeyControlName, L"K");
         break;
     case DIK_L:
-        wsprintf(KeyControlName, "L");
+        wsprintf(KeyControlName, L"L");
         break;
     case DIK_M:
-        wsprintf(KeyControlName, "M");
+        wsprintf(KeyControlName, L"M");
         break;
     case DIK_N:
-        wsprintf(KeyControlName, "N");
+        wsprintf(KeyControlName, L"N");
         break;
     case DIK_O:
-        wsprintf(KeyControlName, "O");
+        wsprintf(KeyControlName, L"O");
         break;
     case DIK_P:
-        wsprintf(KeyControlName, "P");
+        wsprintf(KeyControlName, L"P");
         break;
     case DIK_Q:
-        wsprintf(KeyControlName, "Q");
+        wsprintf(KeyControlName, L"Q");
         break;
     case DIK_R:
-        wsprintf(KeyControlName, "R");
+        wsprintf(KeyControlName, L"R");
         break;
     case DIK_S:
-        wsprintf(KeyControlName, "S");
+        wsprintf(KeyControlName, L"S");
         break;
     case DIK_T:
-        wsprintf(KeyControlName, "T");
+        wsprintf(KeyControlName, L"T");
         break;
     case DIK_U:
-        wsprintf(KeyControlName, "U");
+        wsprintf(KeyControlName, L"U");
         break;
     case DIK_V:
-        wsprintf(KeyControlName, "V");
+        wsprintf(KeyControlName, L"V");
         break;
     case DIK_W:
-        wsprintf(KeyControlName, "W");
+        wsprintf(KeyControlName, L"W");
         break;
     case DIK_X:
-        wsprintf(KeyControlName, "X");
+        wsprintf(KeyControlName, L"X");
         break;
     case DIK_Y:
-        wsprintf(KeyControlName, "Y");
+        wsprintf(KeyControlName, L"Y");
         break;
     case DIK_Z:
-        wsprintf(KeyControlName, "Z");
+        wsprintf(KeyControlName, L"Z");
         break;
     case DIK_F1:
-        wsprintf(KeyControlName, "F1");
+        wsprintf(KeyControlName, L"F1");
         break;
     case DIK_F2:
-        wsprintf(KeyControlName, "F2");
+        wsprintf(KeyControlName, L"F2");
         break;
     case DIK_F3:
-        wsprintf(KeyControlName, "F3");
+        wsprintf(KeyControlName, L"F3");
         break;
     case DIK_F4:
-        wsprintf(KeyControlName, "F4");
+        wsprintf(KeyControlName, L"F4");
         break;
     case DIK_F5:
-        wsprintf(KeyControlName, "F5");
+        wsprintf(KeyControlName, L"F5");
         break;
     case DIK_F6:
-        wsprintf(KeyControlName, "F6");
+        wsprintf(KeyControlName, L"F6");
         break;
     case DIK_F7:
-        wsprintf(KeyControlName, "F7");
+        wsprintf(KeyControlName, L"F7");
         break;
     case DIK_F8:
-        wsprintf(KeyControlName, "F8");
+        wsprintf(KeyControlName, L"F8");
         break;
     case DIK_F9:
-        wsprintf(KeyControlName, "F9");
+        wsprintf(KeyControlName, L"F9");
         break;
     case DIK_F10:
-        wsprintf(KeyControlName, "F10");
+        wsprintf(KeyControlName, L"F10");
         break;
     case DIK_F11:
-        wsprintf(KeyControlName, "F11");
+        wsprintf(KeyControlName, L"F11");
         break;
     case DIK_F12:
-        wsprintf(KeyControlName, "F12");
+        wsprintf(KeyControlName, L"F12");
         break;
     case DIK_LEFT:
-        wsprintf(KeyControlName, "Key Left");
+        wsprintf(KeyControlName, L"Key Left");
         break;
     case DIK_RIGHT:
-        wsprintf(KeyControlName, "Key Right");
+        wsprintf(KeyControlName, L"Key Right");
         break;
     case DIK_UP:
-        wsprintf(KeyControlName, "Key Up");
+        wsprintf(KeyControlName, L"Key Up");
         break;
     case DIK_DOWN:
-        wsprintf(KeyControlName, "Key Down");
+        wsprintf(KeyControlName, L"Key Down");
         break;
     case DIK_NUMPAD0:
-        wsprintf(KeyControlName, "Num 0");
+        wsprintf(KeyControlName, L"Num 0");
         break;
     case DIK_NUMPAD1:
-        wsprintf(KeyControlName, "Num 1");
+        wsprintf(KeyControlName, L"Num 1");
         break;
     case DIK_NUMPAD2:
-        wsprintf(KeyControlName, "Num 2");
+        wsprintf(KeyControlName, L"Num 2");
         break;
     case DIK_NUMPAD3:
-        wsprintf(KeyControlName, "Num 3");
+        wsprintf(KeyControlName, L"Num 3");
         break;
     case DIK_NUMPAD4:
-        wsprintf(KeyControlName, "Num 4");
+        wsprintf(KeyControlName, L"Num 4");
         break;
     case DIK_NUMPAD5:
-        wsprintf(KeyControlName, "Num 5");
+        wsprintf(KeyControlName, L"Num 5");
         break;
     case DIK_NUMPAD6:
-        wsprintf(KeyControlName, "Num 6");
+        wsprintf(KeyControlName, L"Num 6");
         break;
     case DIK_NUMPAD7:
-        wsprintf(KeyControlName, "Num 7");
+        wsprintf(KeyControlName, L"Num 7");
         break;
     case DIK_NUMPAD8:
-        wsprintf(KeyControlName, "Num 8");
+        wsprintf(KeyControlName, L"Num 8");
         break;
     case DIK_NUMPAD9:
-        wsprintf(KeyControlName, "Num 9");
+        wsprintf(KeyControlName, L"Num 9");
         break;
     case DIK_ADD:
-        wsprintf(KeyControlName, "Num +");
+        wsprintf(KeyControlName, L"Num +");
         break;
     case DIK_DECIMAL:
-        wsprintf(KeyControlName, "Num .");
+        wsprintf(KeyControlName, L"Num .");
         break;
     case DIK_DIVIDE:
-        wsprintf(KeyControlName, "Num /");
+        wsprintf(KeyControlName, L"Num /");
         break;
     case DIK_NUMLOCK:
-        wsprintf(KeyControlName, "Num Lock");
+        wsprintf(KeyControlName, L"Num Lock");
         break;
     case DIK_MULTIPLY:
-        wsprintf(KeyControlName, "Num *");
+        wsprintf(KeyControlName, L"Num *");
         break;
     case DIK_NUMPADENTER:
-        wsprintf(KeyControlName, "Num Enter");
+        wsprintf(KeyControlName, L"Num Enter");
         break;
     case DIK_NUMPADEQUALS:
-        wsprintf(KeyControlName, "Num =");
+        wsprintf(KeyControlName, L"Num =");
         break;
     case DIK_SUBTRACT:
-        wsprintf(KeyControlName, "Num -");
+        wsprintf(KeyControlName, L"Num -");
         break;
     case DIK_APOSTROPHE:
-        wsprintf(KeyControlName, "'");
+        wsprintf(KeyControlName, L"'");
         break;
     case DIK_APPS:
-        wsprintf(KeyControlName, "App");
+        wsprintf(KeyControlName, L"App");
         break;
     case DIK_BACK:
-        wsprintf(KeyControlName, "Backspace");
+        wsprintf(KeyControlName, L"Backspace");
         break;
     case DIK_BACKSLASH:
-        wsprintf(KeyControlName, "\\");
+        wsprintf(KeyControlName, L"\\");
         break;
     case DIK_CAPITAL:
-        wsprintf(KeyControlName, "Caps Lock");
+        wsprintf(KeyControlName, L"Caps Lock");
         break;
     case DIK_COMMA:
-        wsprintf(KeyControlName, ",");
+        wsprintf(KeyControlName, L",");
         break;
     case DIK_DELETE:
-        wsprintf(KeyControlName, "Delete");
+        wsprintf(KeyControlName, L"Delete");
         break;
     case DIK_END:
-        wsprintf(KeyControlName, "End");
+        wsprintf(KeyControlName, L"End");
         break;
     case DIK_EQUALS:
-        wsprintf(KeyControlName, "=");
+        wsprintf(KeyControlName, L"=");
         break;
     case DIK_ESCAPE:
-        wsprintf(KeyControlName, "Esc");
+        wsprintf(KeyControlName, L"Esc");
         break;
     case DIK_GRAVE:
-        wsprintf(KeyControlName, "`");
+        wsprintf(KeyControlName, L"`");
         break;
     case DIK_HOME:
-        wsprintf(KeyControlName, "Home");
+        wsprintf(KeyControlName, L"Home");
         break;
     case DIK_INSERT:
-        wsprintf(KeyControlName, "Insert");
+        wsprintf(KeyControlName, L"Insert");
         break;
     case DIK_LBRACKET:
-        wsprintf(KeyControlName, "[");
+        wsprintf(KeyControlName, L"[");
         break;
     case DIK_LCONTROL:
-        wsprintf(KeyControlName, "L Ctrl");
+        wsprintf(KeyControlName, L"L Ctrl");
         break;
     case DIK_LMENU:
-        wsprintf(KeyControlName, "L Alt");
+        wsprintf(KeyControlName, L"L Alt");
         break;
     case DIK_LSHIFT:
-        wsprintf(KeyControlName, "L Shift");
+        wsprintf(KeyControlName, L"L Shift");
         break;
     case DIK_LWIN:
-        wsprintf(KeyControlName, "L Win");
+        wsprintf(KeyControlName, L"L Win");
         break;
     case DIK_MINUS:
-        wsprintf(KeyControlName, "-");
+        wsprintf(KeyControlName, L"-");
         break;
     case DIK_NEXT:
-        wsprintf(KeyControlName, "Page Down");
+        wsprintf(KeyControlName, L"Page Down");
         break;
     case DIK_PAUSE:
-        wsprintf(KeyControlName, "Pause");
+        wsprintf(KeyControlName, L"Pause");
         break;
     case DIK_PERIOD:
-        wsprintf(KeyControlName, ".");
+        wsprintf(KeyControlName, L".");
         break;
     case DIK_PRIOR:
-        wsprintf(KeyControlName, "Page Up");
+        wsprintf(KeyControlName, L"Page Up");
         break;
     case DIK_RBRACKET:
-        wsprintf(KeyControlName, "]");
+        wsprintf(KeyControlName, L"]");
         break;
     case DIK_RCONTROL:
-        wsprintf(KeyControlName, "R Ctrl");
+        wsprintf(KeyControlName, L"R Ctrl");
         break;
     case DIK_RETURN:
-        wsprintf(KeyControlName, "Enter");
+        wsprintf(KeyControlName, L"Enter");
         break;
     case DIK_RMENU:
-        wsprintf(KeyControlName, "R Alt");
+        wsprintf(KeyControlName, L"R Alt");
         break;
     case DIK_RSHIFT:
-        wsprintf(KeyControlName, "R Shift");
+        wsprintf(KeyControlName, L"R Shift");
         break;
     case DIK_RWIN:
-        wsprintf(KeyControlName, "R Win");
+        wsprintf(KeyControlName, L"R Win");
         break;
     case DIK_SCROLL:
-        wsprintf(KeyControlName, "Scroll");
+        wsprintf(KeyControlName, L"Scroll");
         break;
     case DIK_SEMICOLON:
-        wsprintf(KeyControlName, ";");
+        wsprintf(KeyControlName, L";");
         break;
     case DIK_SLASH:
-        wsprintf(KeyControlName, "/");
+        wsprintf(KeyControlName, L"/");
         break;
     case DIK_SPACE:
-        wsprintf(KeyControlName, "Space");
+        wsprintf(KeyControlName, L"Space");
         break;
     case DIK_SYSRQ:
-        wsprintf(KeyControlName, "SysRq");
+        wsprintf(KeyControlName, L"SysRq");
         break;
     case DIK_TAB:
-        wsprintf(KeyControlName, "Tab");
+        wsprintf(KeyControlName, L"Tab");
         break;
 
     default:
-        wsprintf(KeyControlName, "%d", Value);
+        wsprintf(KeyControlName, L"%d", Value);
         break;
     }
 }
@@ -651,78 +651,78 @@ void WINAPI GetAControlName(BYTE NController, BYTE NControl, TCHAR ControlName[3
     {
     case INPUT_TYPE_KEY_BUT:
         GetKeyName(g_controllers[NController].Input[NControl].vkey, KeyControlName);
-        wsprintf(ControlName, "%s", KeyControlName);
+        wsprintf(ControlName, L"%s", KeyControlName);
         break;
 
     case INPUT_TYPE_JOY_BUT:
-        wsprintf(ControlName, "Joy%d %d", g_controllers[NController].Input[NControl].Device, g_controllers[NController].Input[NControl].vkey);
+        wsprintf(ControlName, L"Joy%d %d", g_controllers[NController].Input[NControl].Device, g_controllers[NController].Input[NControl].vkey);
         break;
 
     case INPUT_TYPE_JOY_AXIS:
         switch (g_controllers[NController].Input[NControl].vkey)
         {
         case DIJOFS_YN:
-            wsprintf(ControlName, "Joy%d -Y", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d -Y", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_YP:
-            wsprintf(ControlName, "Joy%d +Y", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d +Y", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_XN:
-            wsprintf(ControlName, "Joy%d -X", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d -X", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_XP:
-            wsprintf(ControlName, "Joy%d +X", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d +X", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_ZN:
-            wsprintf(ControlName, "Joy%d -Z", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d -Z", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_ZP:
-            wsprintf(ControlName, "Joy%d +Z", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d +Z", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RYN:
-            wsprintf(ControlName, "Joy%d -Ry", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d -Ry", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RYP:
-            wsprintf(ControlName, "Joy%d +Ry", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d +Ry", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RXN:
-            wsprintf(ControlName, "Joy%d -Rx", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d -Rx", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RXP:
-            wsprintf(ControlName, "Joy%d +Rx", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d +Rx", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RZN:
-            wsprintf(ControlName, "Joy%d -Rz", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d -Rz", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_RZP:
-            wsprintf(ControlName, "Joy%d +Rz", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d +Rz", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_SLIDER0N:
-            wsprintf(ControlName, "Joy%d -Sl0", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d -Sl0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_SLIDER0P:
-            wsprintf(ControlName, "Joy%d +Sl0", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d +Sl0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_SLIDER1N:
-            wsprintf(ControlName, "Joy%d -Sl1", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d -Sl1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_SLIDER1P:
-            wsprintf(ControlName, "Joy%d +Sl1", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d +Sl1", g_controllers[NController].Input[NControl].Device);
             break;
         }
         break;
@@ -731,73 +731,73 @@ void WINAPI GetAControlName(BYTE NController, BYTE NControl, TCHAR ControlName[3
         switch (g_controllers[NController].Input[NControl].vkey)
         {
         case DIJOFS_POV0N:
-            wsprintf(ControlName, "Joy%d NPoV0", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d NPoV0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV0E:
-            wsprintf(ControlName, "Joy%d EPoV0", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d EPoV0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV0S:
-            wsprintf(ControlName, "Joy%d SPoV0", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d SPoV0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV0W:
-            wsprintf(ControlName, "Joy%d WPoV0", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d WPoV0", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV1N:
-            wsprintf(ControlName, "Joy%d NPoV1", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d NPoV1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV1E:
-            wsprintf(ControlName, "Joy%d EPoV1", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d EPoV1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV1S:
-            wsprintf(ControlName, "Joy%d SPoV1", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d SPoV1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV1W:
-            wsprintf(ControlName, "Joy%d WPoV1", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d WPoV1", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV2N:
-            wsprintf(ControlName, "Joy%d NPoV2", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d NPoV2", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV2E:
-            wsprintf(ControlName, "Joy%d EPoV2", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d EPoV2", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV2S:
-            wsprintf(ControlName, "Joy%d SPoV2", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d SPoV2", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV2W:
-            wsprintf(ControlName, "Joy%d WPoV2", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d WPoV2", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV3N:
-            wsprintf(ControlName, "Joy%d NPoV3", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d NPoV3", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV3E:
-            wsprintf(ControlName, "Joy%d EPoV3", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d EPoV3", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV3S:
-            wsprintf(ControlName, "Joy%d SPoV3", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d SPoV3", g_controllers[NController].Input[NControl].Device);
             break;
 
         case DIJOFS_POV3W:
-            wsprintf(ControlName, "Joy%d WPoV3", g_controllers[NController].Input[NControl].Device);
+            wsprintf(ControlName, L"Joy%d WPoV3", g_controllers[NController].Input[NControl].Device);
             break;
         }
         break;
 
     default:
-        wsprintf(ControlName, " ");
+        wsprintf(ControlName, L" ");
         break;
     }
 }
@@ -1300,7 +1300,7 @@ BOOL WINAPI GetAControl(HWND hDlg, DWORD ControlValue, BYTE NController, BYTE NC
                             }
                             else
                             {
-                                MessageBox(nullptr, "Failed to set controller value", nullptr, MB_ICONERROR);
+                                MessageBox(nullptr, L"Failed to set controller value", nullptr, MB_ICONERROR);
                             }
 
                             GetAControlValue(hDlg, ControlValue, NController, NControl);
@@ -1341,13 +1341,13 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
         NController = (BYTE)SendDlgItemMessage(hDlg, IDC_COMBOCONT, CB_SETCURSEL, 0, 0);
 
         SetWindowText(hDlg, g_controllers[NController].szName);
-        wsprintf(CSWindowText, "%s:  Choose a button (Esc to Disable)", g_controllers[NController].szName);
+        wsprintf(CSWindowText, L"%s:  Choose a button (Esc to Disable)", g_controllers[NController].szName);
 
         for (NDeviceCount = 0; NDeviceCount < g_device_count; NDeviceCount++)
         {
             if (g_di_devices[NDeviceCount].lpDIDevice != NULL)
             {
-                wsprintf(szDeviceNum, "%d:  %s", NDeviceCount, g_di_devices[NDeviceCount].DIDevInst.tszInstanceName);
+                wsprintf(szDeviceNum, L"%d:  %s", NDeviceCount, g_di_devices[NDeviceCount].DIDevInst.tszInstanceName);
                 SendDlgItemMessage(hDlg, IDC_LDEVICES, LB_ADDSTRING, 0, (LPARAM)szDeviceNum);
             }
         }
@@ -1397,7 +1397,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
                 NController = (BYTE)SendDlgItemMessage(hDlg, IDC_COMBOCONT, CB_GETCURSEL, 0, 0);
 
                 SetWindowText(hDlg, g_controllers[NController].szName);
-                wsprintf(CSWindowText, "%s:  Choose a button (Esc to Disable)", g_controllers[NController].szName);
+                wsprintf(CSWindowText, L"%s:  Choose a button (Esc to Disable)", g_controllers[NController].szName);
 
                 // if (RegOpenKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, KEY_READ, &hKey) == ERROR_SUCCESS )
                 //	RegQueryValueEx(hKey, Controller[NController].szName, 0, &dwType, (LPBYTE)&Controller[NController], &dwSize);
@@ -1468,7 +1468,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             hFile = CreateFile(szFilename, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
             if (hFile == INVALID_HANDLE_VALUE)
             {
-                MessageBox(NULL, "Could not Save File.", "Error", MB_ICONERROR | MB_OK);
+                MessageBox(NULL, L"Could not Save File.", L"Error", MB_ICONERROR | MB_OK);
                 CloseHandle(hFile);
                 break;
             }
@@ -1476,7 +1476,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             lstrcpy(tempController.szName, TEXT("cdf Save File"));
             if (!WriteFile(hFile, &tempController, sizeof(DEFCONTROLLER), &lNumBytes, NULL))
             {
-                MessageBox(NULL, "Could not Save File.", "Error", MB_ICONERROR | MB_OK);
+                MessageBox(NULL, L"Could not Save File.", L"Error", MB_ICONERROR | MB_OK);
             }
             CloseHandle(hFile);
             break;
@@ -1501,13 +1501,13 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
             hFile = CreateFile(szFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
             if (hFile == INVALID_HANDLE_VALUE)
             {
-                MessageBox(NULL, "Could not Open File.", "Error", MB_ICONERROR | MB_OK);
+                MessageBox(NULL, L"Could not Open File.", L"Error", MB_ICONERROR | MB_OK);
                 CloseHandle(hFile);
                 return TRUE;
             }
             if (!ReadFile(hFile, &tempController, sizeof(DEFCONTROLLER), &lNumBytes, NULL))
             {
-                MessageBox(NULL, "Could not Open File.", "Error", MB_ICONERROR | MB_OK);
+                MessageBox(NULL, L"Could not Open File.", L"Error", MB_ICONERROR | MB_OK);
             }
             else
             {
@@ -1519,7 +1519,7 @@ LRESULT CALLBACK ConfigDlgProc(HWND hDlg, UINT Message, WPARAM wParam, LPARAM lP
                     Dis_En_AbleApply(hDlg, bApply[NController] = TRUE);
                 }
                 else
-                    MessageBox(NULL, "Could not Open File.\n Older version.", "Error", MB_ICONERROR | MB_OK);
+                    MessageBox(NULL, L"Could not Open File.\n Older version.", L"Error", MB_ICONERROR | MB_OK);
             }
             CloseHandle(hFile);
             break;

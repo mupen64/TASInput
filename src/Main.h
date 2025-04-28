@@ -11,18 +11,18 @@ extern core_plugin_extended_funcs* g_ef;
 extern int MOUSE_LBUTTONREDEFINITION;
 extern int MOUSE_RBUTTONREDEFINITION;
 
-#define PLUGIN_VERSION "1.2.0"
+#define PLUGIN_VERSION L"1.2.0"
 
 #ifdef _M_X64
-#define PLUGIN_ARCH "-x64"
+#define PLUGIN_ARCH L"-x64"
 #else
-#define PLUGIN_ARCH "-x86"
+#define PLUGIN_ARCH L"-x86"
 #endif
 
 #ifdef _DEBUG
-#define PLUGIN_TARGET "-debug"
+#define PLUGIN_TARGET L"-debug"
 #else
-#define PLUGIN_TARGET "-release"
+#define PLUGIN_TARGET L"-release"
 #endif
 
-#define PLUGIN_NAME "TASInput " PLUGIN_VERSION PLUGIN_ARCH PLUGIN_TARGET
+#define PLUGIN_NAME L"TASInput " PLUGIN_VERSION PLUGIN_ARCH PLUGIN_TARGET

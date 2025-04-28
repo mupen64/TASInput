@@ -11,7 +11,7 @@
  */
 namespace JoystickControl
 {
-    const auto CLASS_NAME = "JOYSTICK";
+    const auto CLASS_NAME = L"JOYSTICK";
     constexpr auto WM_JOYSTICK_POSITION_CHANGED = WM_USER + 1;
     constexpr auto WM_JOYSTICK_DRAG_BEGIN = WM_USER + 2;
 

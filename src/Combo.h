@@ -38,7 +38,7 @@ namespace Combos
      * \brief Gets all available combos
      * \param path The path to a file to look for combos in
      */
-    std::vector<Combo*> find(const char* path);
+    std::vector<Combo*> find(const std::filesystem::path& path);
 
     /**
      * \brief Writes combos to a file

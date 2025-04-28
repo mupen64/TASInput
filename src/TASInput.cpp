@@ -134,7 +134,7 @@ struct Status {
     /**
      * \brief Loads the combo list from a file
      */
-    void load_combos(const char*);
+    void load_combos(const std::filesystem::path& path);
 
     /**
      * \brief Creates a new combo and inserts it into the combos list
@@ -192,13 +192,14 @@ EXPORT void CALL CloseDLL()
 
 EXPORT void CALL DllAbout(void* hParent)
 {
+    // TODO: Simplify
     if (MessageBox(
         (HWND)hParent,
         PLUGIN_NAME
         "\nFor DirectX 7 or higher\nBased on Def's Direct Input 0.54 by Deflection\nTAS Modifications by Nitsuja\nContinued development by the Mupen64-rr-lua contributors.\nDo you want to visit the repository?",
-        "About",
+        L"About",
         MB_ICONINFORMATION | MB_YESNO) == IDYES)
-        ShellExecute(0, 0, "https://github.com/Mupen64-Rewrite/TASInput", 0, 0, SW_SHOW);
+        ShellExecute(0, 0, L"https://github.com/Mupen64-Rewrite/TASInput", 0, 0, SW_SHOW);
 }
 
 EXPORT void CALL DllConfig(void* hParent)
@@ -213,7 +214,7 @@ EXPORT void CALL GetDllInfo(core_plugin_info* info)
 {
     info->ver = 0x0100;
     info->type = plugin_input;
-    wsprintf(info->name, PLUGIN_NAME);
+    strncpy_s(info->name, wstring_to_string(PLUGIN_NAME).c_str(), std::size(info->name));
 }
 
 EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
@@ -361,12 +362,12 @@ void Status::set_visuals(core_buttons input, bool needs_processing)
     // We don't want to mess with the user's selection
     if (GetFocus() != GetDlgItem(hwnd, IDC_EDITX))
     {
-        SetDlgItemText(hwnd, IDC_EDITX, std::to_string(input.x).c_str());
+        SetDlgItemText(hwnd, IDC_EDITX, std::to_wstring(input.x).c_str());
     }
 
     if (GetFocus() != GetDlgItem(hwnd, IDC_EDITY))
     {
-        SetDlgItemText(hwnd, IDC_EDITY, std::to_string(input.y).c_str());
+        SetDlgItemText(hwnd, IDC_EDITY, std::to_wstring(input.y).c_str());
     }
 
     CheckDlgButton(hwnd, IDC_CHECK_A, input.a);
@@ -434,7 +435,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
             SetWindowPos(ctx->hwnd, nullptr, ctx->window_position.x, ctx->window_position.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
 
-            SetWindowText(ctx->hwnd, std::format("TASInput - Controller {}", ctx->controller_index + 1).c_str());
+            SetWindowText(ctx->hwnd, std::format(L"TASInput - Controller {}", ctx->controller_index + 1).c_str());
 
             SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_SETRANGE, TRUE, MAKELONG(10, 2010));
             SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_SETPOS, TRUE, remap(new_config.x_scale[ctx->controller_index], 0, 1, 10, 2010));
@@ -443,7 +444,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
             if (new_config.dialog_expanded[ctx->controller_index])
             {
-                SetDlgItemText(ctx->hwnd, IDC_EXPAND, "Less");
+                SetDlgItemText(ctx->hwnd, IDC_EXPAND, L"Less");
             }
 
             ctx->combo_listbox = GetDlgItem(ctx->hwnd, IDC_MACROLIST);
@@ -453,7 +454,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                 ctx->load_combos("combos.cmb");
             }
 
-            ctx->joy_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, "", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, ctx->hwnd, nullptr, g_inst, nullptr);
+            ctx->joy_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, L"", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, ctx->hwnd, nullptr, g_inst, nullptr);
 
             // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile
             ctx->set_visuals(ctx->current_input);
@@ -724,9 +725,9 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         case IDC_EDITX:
             {
                 core_buttons last_input = ctx->current_input;
-                char str[32] = {0};
-                GetDlgItemText(ctx->hwnd, IDC_EDITX, str, std::size(str));
-                ctx->current_input.x = std::atoi(str);
+                wchar_t str[8]{};
+                GetDlgItemText(ctx->hwnd, LOWORD(wparam), str, std::size(str));
+                ctx->current_input.x = std::stol(str);
 
                 // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
                 if (ctx->current_input.x != last_input.x)
@@ -739,9 +740,9 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         case IDC_EDITY:
             {
                 core_buttons last_input = ctx->current_input;
-                char str[32] = {0};
-                GetDlgItemText(ctx->hwnd, IDC_EDITY, str, std::size(str));
-                ctx->current_input.y = std::atoi(str);
+                wchar_t str[8]{};
+                GetDlgItemText(ctx->hwnd, LOWORD(wparam), str, std::size(str));
+                ctx->current_input.x = std::stol(str);
 
                 // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
                 if (ctx->current_input.y != last_input.y)
@@ -830,11 +831,12 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             break;
         case IDC_IMPORT:
             {
+                wchar_t file[MAX_PATH]{};
+            
                 ctx->set_status("Importing...");
                 OPENFILENAME data{};
-                char file[MAX_PATH] = "\0";
                 data.lStructSize = sizeof(data);
-                data.lpstrFilter = "Combo file (*.cmb)\0*.cmb\0\0";
+                data.lpstrFilter = L"Combo file (*.cmb)\0*.cmb\0\0";
                 data.nFilterIndex = 1;
                 data.nMaxFile = MAX_PATH;
                 data.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
@@ -928,7 +930,7 @@ EXPORT void CALL InitiateControllers(void* hMainWindow, core_controller Controls
         g_controllers[i].SensMin = 32;
         g_controllers[i].Input[18].button = 42;
         g_controllers[i].Input[19].button = 20;
-        wsprintf(g_controllers[i].szName, "Controller %d", i + 1);
+        wsprintf(g_controllers[i].szName, L"Controller %d", i + 1);
     }
 
     dih_initialize_and_check_devices((HWND)hMainWindow);
@@ -938,7 +940,7 @@ EXPORT void CALL InitiateControllers(void* hMainWindow, core_controller Controls
 
     if (RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, 0) != ERROR_SUCCESS)
     {
-        MessageBox(NULL, "Could not create Registry Key", "Error", MB_ICONERROR | MB_OK);
+        MessageBox(NULL, L"Could not create Registry Key", L"Error", MB_ICONERROR | MB_OK);
     }
     else
     {
@@ -966,7 +968,7 @@ EXPORT void CALL InitiateControllers(void* hMainWindow, core_controller Controls
                     g_controllers[i].SensMin = 32;
                     g_controllers[i].Input[18].button = 42;
                     g_controllers[i].Input[19].button = 20;
-                    wsprintf(g_controllers[i].szName, "Controller %d", i + 1);
+                    wsprintf(g_controllers[i].szName, L"Controller %d", i + 1);
 
                     RegDeleteValue(hKey, g_controllers[i].szName);
                     RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i], dwSize);
@@ -1127,7 +1129,7 @@ void Status::start_edit(int id)
 {
     RECT item_rect;
     ListBox_GetItemRect(combo_listbox, id, &item_rect);
-    combo_edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left, item_rect.top, item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4, combo_listbox, 0, g_inst, 0);
+    combo_edit_box = CreateWindowEx(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP, item_rect.left, item_rect.top, item_rect.right - item_rect.left, item_rect.bottom - item_rect.top + 4, combo_listbox, 0, g_inst, 0);
     // Clear selection to prevent it from repainting randomly and fighting with our textbox
     ListBox_SetCurSel(combo_listbox, -1);
     SendMessage(combo_edit_box, WM_SETFONT, (WPARAM)SendMessage(combo_listbox, WM_GETFONT, 0, 0), 0);
@@ -1163,7 +1165,7 @@ void Status::save_combos()
     Combos::save("combos.cmb", combos);
 }
 
-void Status::load_combos(const char* path)
+void Status::load_combos(const std::filesystem::path& path)
 {
     combos = Combos::find(path);
 
@@ -1183,12 +1185,12 @@ bool Status::show_context_menu(int x, int y)
     // HACK: disable topmost so menu doesnt appear under tasinput
     hmenu = CreatePopupMenu();
 #define ADD_ITEM(hmenu, x, y) AppendMenu(hmenu, new_config.x ? MF_CHECKED : 0, offsetof(t_config, x), y)
-    ADD_ITEM(hmenu, relative_mode, "Relative");
-    ADD_ITEM(hmenu, always_on_top, "Always on top");
-    ADD_ITEM(hmenu, float_from_parent, "Float from parent");
-    ADD_ITEM(hmenu, titlebar, "Titlebar");
-    ADD_ITEM(hmenu, client_drag, "Client drag");
-    ADD_ITEM(hmenu, async_visual_updates, "Async Visual Updates");
+    ADD_ITEM(hmenu, relative_mode, L"Relative");
+    ADD_ITEM(hmenu, always_on_top, L"Always on top");
+    ADD_ITEM(hmenu, float_from_parent, L"Float from parent");
+    ADD_ITEM(hmenu, titlebar, L"Titlebar");
+    ADD_ITEM(hmenu, client_drag, L"Client drag");
+    ADD_ITEM(hmenu, async_visual_updates, L"Async Visual Updates");
 
     int offset = TrackPopupMenuEx(hmenu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, hwnd, 0);
 

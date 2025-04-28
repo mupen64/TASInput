@@ -7,9 +7,9 @@
 #include "stdafx.h"
 #include <Combo.h>
 
-std::vector<Combos::Combo*> Combos::find(const char* path)
+std::vector<Combos::Combo*> Combos::find(const std::filesystem::path& path)
 {
-    FILE* f = fopen(path, "rb");
+    FILE* f = fopen(path.string().c_str(), "rb");
 
     if (!f)
     {

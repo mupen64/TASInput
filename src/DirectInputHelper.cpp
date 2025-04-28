@@ -203,7 +203,7 @@ BOOL CALLBACK DIEnumDevicesCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
 
     if (g_di_devices[g_device_count].lpDIDevice == NULL)
     {
-        MessageBox(0, std::format("Fatal device error, please report issue on github. Type {}, name: {} / {}", lpddi->dwDevType, lpddi->tszInstanceName, lpddi->tszProductName).c_str(), "error", MB_ICONERROR);
+        MessageBox(0, std::format(L"Fatal device error, please report issue on github. Type {}, name: {} / {}", lpddi->dwDevType, lpddi->tszInstanceName, lpddi->tszProductName).c_str(), L"error", MB_ICONERROR);
         return DIENUM_CONTINUE;
     }
 
@@ -232,7 +232,7 @@ BOOL dih_init(HWND hMainWindow)
     if FAILED (hr = DirectInput8Create(GetModuleHandle(0), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&g_di, NULL))
     {
         if (hr == DIERR_OLDDIRECTINPUTVERSION)
-            MessageBox(NULL, "Old version of DirectX detected. Use DirectX 7 or higher!", "Error", MB_ICONERROR | MB_OK);
+            MessageBox(NULL, L"Old version of DirectX detected. Use DirectX 7 or higher!", L"Error", MB_ICONERROR | MB_OK);
         return FALSE;
     }
     else
@@ -689,7 +689,7 @@ void dih_initialize_and_check_devices(HWND hMainWindow)
     // Initialize Direct Input function
     if (FAILED(dih_init(hMainWindow)))
     {
-        MessageBox(NULL, "DirectInput Initialization Failed!", "Error", MB_ICONERROR | MB_OK);
+        MessageBox(NULL, L"DirectInput Initialization Failed!", L"Error", MB_ICONERROR | MB_OK);
         dih_free();
     }
     else

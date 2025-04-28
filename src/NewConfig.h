@@ -6,7 +6,7 @@
 
 #pragma once
 
-#define SUBKEY "Software\\N64 Emulation\\DLL\\TASDI"
+#define SUBKEY L"Software\\N64 Emulation\\DLL\\TASDI"
 
 typedef struct s_config {
     int32_t version = 5;
