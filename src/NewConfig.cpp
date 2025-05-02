@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include <NewConfig.h>
 #include <MiscHelpers.h>
+#include <Main.h>
 
 #define CONFIG_PATH "tasinput.cfg"
 
@@ -16,11 +17,11 @@ t_config new_config;
 
 void save_config()
 {
-    printf("Saving config...\n");
+    g_ef->log_trace(L"Saving config...");
     FILE* f = fopen(CONFIG_PATH, "wb");
     if (!f)
     {
-        printf("Can't save config\n");
+        g_ef->log_error(L"Couldn't save config");
         return;
     }
     fwrite(&new_config, sizeof(t_config), 1, f);
@@ -29,15 +30,14 @@ void save_config()
 
 void load_config()
 {
-    printf("Loading config...\n");
+    g_ef->log_trace(L"Loading config...");
 
     auto buffer = read_file_buffer(CONFIG_PATH);
     t_config loaded_config;
 
     if (buffer.empty() || buffer.size() != sizeof(t_config))
     {
-        // Failed, reset to default
-        printf("No config found, using default\n");
+        g_ef->log_trace(L"No config found, using default");
         loaded_config = default_config;
     }
     else
@@ -48,8 +48,7 @@ void load_config()
 
     if (loaded_config.version < default_config.version)
     {
-        // Outdated version, reset to default
-        printf("Outdated config version, using default\n");
+        g_ef->log_trace(L"Outdated config version, using default");
         loaded_config = default_config;
     }
 

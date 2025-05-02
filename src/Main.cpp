@@ -11,8 +11,21 @@
 #define EXPORT __declspec(dllexport)
 #define CALL _cdecl
 
+static void log_shim(const wchar_t* str)
+{
+    wprintf(str);
+}
+
+static core_plugin_extended_funcs ef_shim = {
+    .size = sizeof(core_plugin_extended_funcs),
+    .log_trace = log_shim,
+    .log_info = log_shim,
+    .log_warn = log_shim,
+    .log_error = log_shim,
+};
+
 HINSTANCE g_inst;
-core_plugin_extended_funcs* g_ef{};
+core_plugin_extended_funcs* g_ef = &ef_shim;
 int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
 int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
 

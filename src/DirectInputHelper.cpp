@@ -5,6 +5,7 @@
  */
 
 #include "stdafx.h"
+#include <Main.h>
 #include <DirectInputHelper.h>
 #include <NewConfig.h>
 
@@ -678,7 +679,7 @@ void dih_initialize_and_check_devices(HWND hMainWindow)
 {
     if (g_di != NULL)
     {
-        printf("InitializeAndCheckDevices early return because g_lpDI != NULL\n");
+        g_ef->log_trace(L"InitializeAndCheckDevices early return because g_lpDI != NULL");
         return;
     }
 
