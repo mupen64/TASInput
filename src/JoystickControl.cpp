@@ -56,7 +56,7 @@ static void update_joystick_position(HWND hwnd, t_context* ctx)
     RECT pic_rect;
     GetWindowRect(hwnd, &pic_rect);
 
-    ctx->x = (pt.x * UINT8_MAX / (signed)(pic_rect.right - pic_rect.left) - INT8_MAX + 1);
+    ctx->x = pt.x * UINT8_MAX / (signed)(pic_rect.right - pic_rect.left) - INT8_MAX + 1;
     ctx->y = -(pt.y * UINT8_MAX / (signed)(pic_rect.bottom - pic_rect.top) - INT8_MAX + 1);
 
     if (ctx->mode == Mode::Relative)
@@ -120,10 +120,12 @@ static void create_dcs(const HWND hwnd, t_context* ctx)
     ctx->g = new Gdiplus::Graphics(ctx->back_dc);
     ctx->g->SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
 
+    const auto scale = (float)GetDpiForWindow(hwnd) / 96.0f;
+
     ctx->bg_brush = new Gdiplus::SolidBrush(Gdiplus::Color::White);
     ctx->tip_brush = new Gdiplus::SolidBrush(Gdiplus::Color(255, 255, 0, 0));
-    ctx->outline_pen = new Gdiplus::Pen(Gdiplus::Color(255, 0, 0, 0), 1);
-    ctx->line_pen = new Gdiplus::Pen(Gdiplus::Color(255, 0, 0, 255), 3);
+    ctx->outline_pen = new Gdiplus::Pen(Gdiplus::Color(255, 0, 0, 0), 1.0f * scale);
+    ctx->line_pen = new Gdiplus::Pen(Gdiplus::Color(255, 0, 0, 255), 3.0f * scale);
 }
 
 static auto get_ctx(const HWND hwnd)
@@ -150,6 +152,11 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
         destroy_dcs(hwnd, ctx);
         create_dcs(hwnd, ctx);
         break;
+    case WM_DPICHANGED:
+        destroy_dcs(hwnd, ctx);
+        create_dcs(hwnd, ctx);
+        RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
+        break;
     case WM_MOUSEWHEEL:
         {
             const auto delta = GET_WHEEL_DELTA_WPARAM(wparam);
@@ -163,7 +170,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
             {
                 const auto angle = std::atan2(ctx->y, ctx->x);
                 const auto mag = std::ceil(std::sqrt(std::pow(ctx->x, 2) + std::pow(ctx->y, 2)));
-                const auto new_ang = angle + (increment * (M_PI / 180.0f));
+                const auto new_ang = angle + increment * (M_PI / 180.0f);
                 ctx->x = (int)std::round(mag * std::cos(new_ang));
                 ctx->y = (int)std::round(mag * std::sin(new_ang));
             }
@@ -185,7 +192,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
             RECT pic_rect;
             GetWindowRect(hwnd, &pic_rect);
 
-            int x = (cursor.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1);
+            int x = cursor.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1;
             int y = -(cursor.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
 
             ctx->cursor_diff = POINT{
@@ -228,22 +235,24 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 
             rc.right -= 1;
             rc.bottom -= 1;
-            int mid_x = rc.right / 2;
-            int mid_y = rc.bottom / 2;
-            int stick_x = (ctx->x + 128) * rc.right / 256;
-            int stick_y = (-ctx->y + 128) * rc.bottom / 256;
+            const float mid_x = rc.right / 2.0;
+            const float mid_y = rc.bottom / 2.0;
+            const float stick_x = (ctx->x + 128.0) * rc.right / 256.0;
+            const float stick_y = (-ctx->y + 128.0) * rc.bottom / 256.0;
 
             const COLORREF bg_color = GetSysColor(COLOR_BTNFACE);
             Gdiplus::Color bg_gdip_color{};
             bg_gdip_color.SetFromCOLORREF(bg_color);
             ctx->g->Clear(bg_gdip_color);
 
+            const auto tip_size = ctx->outline_pen->GetWidth() * 8.0f;
+        
             ctx->g->FillEllipse(ctx->bg_brush, 0, 0, rc.right, rc.bottom);
             ctx->g->DrawEllipse(ctx->outline_pen, 0, 0, rc.right, rc.bottom);
-            ctx->g->DrawLine(ctx->outline_pen, mid_x, 0, mid_x, rc.bottom);
-            ctx->g->DrawLine(ctx->outline_pen, 0, mid_y, rc.right, mid_y);
+            ctx->g->DrawLine(ctx->outline_pen, mid_x, 0.0f, mid_x, (float)rc.bottom);
+            ctx->g->DrawLine(ctx->outline_pen, 0.0f, mid_y, (float)rc.right, mid_y);
             ctx->g->DrawLine(ctx->line_pen, mid_x, mid_y, stick_x, stick_y);
-            ctx->g->FillEllipse(ctx->tip_brush, stick_x - 4, stick_y - 4, 8, 8);
+            ctx->g->FillEllipse(ctx->tip_brush, stick_x - tip_size / 2, stick_y - tip_size / 2, tip_size, tip_size);
 
             rc.right += 1;
             rc.bottom += 1;

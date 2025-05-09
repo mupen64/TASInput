@@ -454,7 +454,9 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                 ctx->load_combos("combos.cmb");
             }
 
-            ctx->joy_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, L"", WS_CHILD | WS_VISIBLE, 8, 4, 131, 131, ctx->hwnd, nullptr, g_inst, nullptr);
+            const auto scale = GetDpiForWindow(hwnd) / 96.0;
+        
+            ctx->joy_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, L"", WS_CHILD | WS_VISIBLE, 8, 4, 131 * scale, 131 * scale, ctx->hwnd, nullptr, g_inst, nullptr);
 
             // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile
             ctx->set_visuals(ctx->current_input);
