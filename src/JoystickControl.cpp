@@ -217,7 +217,13 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
             break;
         }
     case WM_RBUTTONDOWN:
-        ctx->mode = ctx->mode == Mode::None ? Mode::Sticky : Mode::None;
+        if (ctx->mode == Mode::Sticky)
+        {
+            ctx->mode = Mode::None;
+            ReleaseCapture();
+            break;
+        }
+        ctx->mode = Mode::Sticky;
         SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_DRAG_BEGIN, 0, 0);
         SetCapture(hwnd);
         break;
