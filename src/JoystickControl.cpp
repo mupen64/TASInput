@@ -7,6 +7,8 @@
 #include "stdafx.h"
 #include <JoystickControl.h>
 
+#undef max
+
 #define WITH_VALID_CTX()            \
     if (!IsWindow(hwnd))            \
     {                               \
@@ -26,10 +28,11 @@ struct t_context {
         Relative
     };
 
-    int x{};
-    int y{};
+    double x{};
+    double y{};
+    double cursor_diff_x{};
+    double cursor_diff_y{};
     Mode mode = Mode::None;
-    POINT cursor_diff{};
     HDC front_dc{};
     HDC back_dc{};
     HBITMAP back_bmp{};
@@ -42,6 +45,17 @@ struct t_context {
 
 using Mode = t_context::Mode;
 
+static void control_relative_pos_to_joystick_pos(const HWND hwnd, const POINT& pt, double& x, double& y)
+{
+    RECT rc{};
+    GetClientRect(hwnd, &rc);
+
+    x = (double)pt.x * (double)UINT8_MAX / (double)rc.right - (double)INT8_MAX + 1.0;
+    y = (double)pt.y * (double)UINT8_MAX / (double)rc.bottom - (double)INT8_MAX + 1.0;
+
+    y *= -1.0;
+}
+
 static void update_joystick_position(HWND hwnd, t_context* ctx)
 {
     if (ctx->mode == Mode::None)
@@ -53,24 +67,23 @@ static void update_joystick_position(HWND hwnd, t_context* ctx)
     GetCursorPos(&pt);
     ScreenToClient(hwnd, &pt);
 
-    RECT pic_rect;
-    GetWindowRect(hwnd, &pic_rect);
-
-    ctx->x = pt.x * UINT8_MAX / (signed)(pic_rect.right - pic_rect.left) - INT8_MAX + 1;
-    ctx->y = -(pt.y * UINT8_MAX / (signed)(pic_rect.bottom - pic_rect.top) - INT8_MAX + 1);
+    control_relative_pos_to_joystick_pos(hwnd, pt, ctx->x, ctx->y);
 
     if (ctx->mode == Mode::Relative)
     {
-        ctx->x -= ctx->cursor_diff.x;
-        ctx->y -= ctx->cursor_diff.y;
+        ctx->x -= ctx->cursor_diff_x;
+        ctx->y -= ctx->cursor_diff_y;
     }
 
     if (ctx->x > INT8_MAX || ctx->y > INT8_MAX || ctx->x < INT8_MIN || ctx->y < INT8_MIN)
     {
-        int div = max(abs(ctx->x), abs(ctx->y));
-        ctx->x = ctx->x * INT8_MAX / div;
-        ctx->y = ctx->y * INT8_MAX / div;
+        const auto div = std::max(std::abs(ctx->x), std::abs(ctx->y));
+        ctx->x = ctx->x * (double)INT8_MAX / div;
+        ctx->y = ctx->y * (double)INT8_MAX / div;
     }
+
+    ctx->x = std::clamp(ctx->x, (double)INT8_MIN, (double)INT8_MAX);
+    ctx->y = std::clamp(ctx->y, (double)INT8_MIN, (double)INT8_MAX);
 
     if (abs(ctx->x) <= 8)
         ctx->x = 0;
@@ -160,7 +173,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
     case WM_MOUSEWHEEL:
         {
             const auto delta = GET_WHEEL_DELTA_WPARAM(wparam);
-            const auto increment = delta < 0 ? -1 : 1;
+            const auto increment = delta < 0.0 ? -1.0 : 1.0;
 
             if (GetKeyState(VK_CONTROL) & 0x8000)
             {
@@ -169,10 +182,10 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
             else if (GetKeyState(VK_SHIFT) & 0x8000)
             {
                 const auto angle = std::atan2(ctx->y, ctx->x);
-                const auto mag = std::ceil(std::sqrt(std::pow(ctx->x, 2) + std::pow(ctx->y, 2)));
-                const auto new_ang = angle + increment * (M_PI / 180.0f);
-                ctx->x = (int)std::round(mag * std::cos(new_ang));
-                ctx->y = (int)std::round(mag * std::sin(new_ang));
+                const auto mag = std::max(30.0, std::sqrt(ctx->x * ctx->x + ctx->y * ctx->y));
+                const auto new_ang = angle + increment * (M_PI / 180.0);
+                ctx->x = mag * std::cos(new_ang);
+                ctx->y = mag * std::sin(new_ang);
             }
             else
             {
@@ -185,20 +198,18 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
         break;
     case WM_MBUTTONDOWN:
         {
-            POINT cursor;
-            GetCursorPos(&cursor);
-            ScreenToClient(hwnd, &cursor);
+            POINT pt{};
+            GetCursorPos(&pt);
+            ScreenToClient(hwnd, &pt);
 
-            RECT pic_rect;
-            GetWindowRect(hwnd, &pic_rect);
+            RECT rc{};
+            GetClientRect(hwnd, &rc);
 
-            int x = cursor.x * 256 / (signed)(pic_rect.right - pic_rect.left) - 128 + 1;
-            int y = -(cursor.y * 256 / (signed)(pic_rect.bottom - pic_rect.top) - 128 + 1);
+            double x{}, y{};
+            control_relative_pos_to_joystick_pos(hwnd, pt, x, y);
 
-            ctx->cursor_diff = POINT{
-            x - ctx->x,
-            y - ctx->y,
-            };
+            ctx->cursor_diff_x = x - ctx->x;
+            ctx->cursor_diff_y = y - ctx->y;
 
             ctx->mode = Mode::Relative;
             SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_DRAG_BEGIN, 0, 0);
@@ -235,10 +246,10 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 
             rc.right -= 1;
             rc.bottom -= 1;
-            const float mid_x = rc.right / 2.0;
-            const float mid_y = rc.bottom / 2.0;
-            const float stick_x = (ctx->x + 128.0) * rc.right / 256.0;
-            const float stick_y = (-ctx->y + 128.0) * rc.bottom / 256.0;
+            const auto mid_x = (float)(rc.right / 2.0);
+            const auto mid_y = (float)(rc.bottom / 2.0);
+            const auto stick_x = (float)((ctx->x + 128.0) * rc.right / 256.0);
+            const auto stick_y = (float)((-ctx->y + 128.0) * rc.bottom / 256.0);
 
             const COLORREF bg_color = GetSysColor(COLOR_BTNFACE);
             Gdiplus::Color bg_gdip_color{};
@@ -246,7 +257,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
             ctx->g->Clear(bg_gdip_color);
 
             const auto tip_size = ctx->outline_pen->GetWidth() * 8.0f;
-        
+
             ctx->g->FillEllipse(ctx->bg_brush, 0, 0, rc.right, rc.bottom);
             ctx->g->DrawEllipse(ctx->outline_pen, 0, 0, rc.right, rc.bottom);
             ctx->g->DrawLine(ctx->outline_pen, mid_x, 0.0f, mid_x, (float)rc.bottom);
@@ -284,11 +295,11 @@ BOOL JoystickControl::get_position(HWND hwnd, int* x, int* y)
 
     if (x)
     {
-        *x = ctx->x;
+        *x = (int)std::round(ctx->x);
     }
     if (y)
     {
-        *y = ctx->y;
+        *y = (int)std::round(ctx->y);
     }
 
     return TRUE;
