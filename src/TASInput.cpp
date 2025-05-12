@@ -455,7 +455,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             }
 
             const auto scale = GetDpiForWindow(hwnd) / 96.0;
-        
+
             ctx->joy_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, L"", WS_CHILD | WS_VISIBLE, 8, 4, 131 * scale, 131 * scale, ctx->hwnd, nullptr, g_inst, nullptr);
 
             // It can take a bit until we receive the first GetKeys, so let's just show some basic default state in the meanwhile
@@ -726,6 +726,10 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         {
         case IDC_EDITX:
             {
+                if (HIWORD(wparam) != EN_CHANGE)
+                {
+                    break;
+                }
                 core_buttons last_input = ctx->current_input;
                 wchar_t str[8]{};
                 GetDlgItemText(ctx->hwnd, LOWORD(wparam), str, std::size(str));
@@ -747,12 +751,16 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
         case IDC_EDITY:
             {
+                if (HIWORD(wparam) != EN_CHANGE)
+                {
+                    break;
+                }
                 core_buttons last_input = ctx->current_input;
                 wchar_t str[8]{};
                 GetDlgItemText(ctx->hwnd, LOWORD(wparam), str, std::size(str));
                 try
                 {
-                    ctx->current_input.x = std::stol(str);
+                    ctx->current_input.y = std::stol(str);
                 }
                 catch (...)
                 {
