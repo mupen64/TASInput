@@ -5,8 +5,9 @@
  */
 
 #include "stdafx.h"
-#include <Main.h>
 #include <DirectInputHelper.h>
+#include <Main.h>
+#include <TASInput.h>
 
 #define EXPORT __declspec(dllexport)
 #define CALL _cdecl
@@ -17,11 +18,11 @@ static void log_shim(const wchar_t* str)
 }
 
 static core_plugin_extended_funcs ef_shim = {
-    .size = sizeof(core_plugin_extended_funcs),
-    .log_trace = log_shim,
-    .log_info = log_shim,
-    .log_warn = log_shim,
-    .log_error = log_shim,
+.size = sizeof(core_plugin_extended_funcs),
+.log_trace = log_shim,
+.log_info = log_shim,
+.log_warn = log_shim,
+.log_error = log_shim,
 };
 
 HINSTANCE g_inst;
@@ -40,6 +41,7 @@ int WINAPI DllMain(const HINSTANCE h_instance, const DWORD fdw_reason, PVOID)
 
     case DLL_PROCESS_DETACH:
         dih_free();
+        TASInput::on_detach();
         break;
     }
 

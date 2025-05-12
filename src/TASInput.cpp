@@ -178,6 +178,7 @@ static bool rom_open{};
 static HMENU hmenu{};
 static std::vector<Combos::Combo*> combos{};
 static Status status[NUMBER_OF_CONTROLS]{};
+static HFONT icon_font{};
 
 EXPORT void CALL CloseDLL()
 {
@@ -388,9 +389,9 @@ void Status::set_visuals(core_buttons input, bool needs_processing)
     JoystickControl::set_position(joy_hwnd, input.x, input.y);
 }
 
-static int get_joystick_increment(bool is_up)
+static int get_joystick_increment(const bool up)
 {
-    int increment = is_up ? -1 : 1;
+    int increment = up ? 1 : -1;
 
     if (GetKeyState(VK_CONTROL) & 0x8000)
     {
@@ -441,6 +442,17 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_SETPOS, TRUE, remap(new_config.x_scale[ctx->controller_index], 0, 1, 10, 2010));
             SendDlgItemMessage(ctx->hwnd, IDC_SLIDERY, TBM_SETRANGE, TRUE, MAKELONG(10, 2010));
             SendDlgItemMessage(ctx->hwnd, IDC_SLIDERY, TBM_SETPOS, TRUE, remap(new_config.y_scale[ctx->controller_index], 0, 1, 10, 2010));
+
+
+            SendMessage(GetDlgItem(ctx->hwnd, IDC_X_DOWN), WM_SETFONT, (WPARAM)icon_font, TRUE);
+            SendMessage(GetDlgItem(ctx->hwnd, IDC_X_UP), WM_SETFONT, (WPARAM)icon_font, TRUE);
+            SendMessage(GetDlgItem(ctx->hwnd, IDC_Y_DOWN), WM_SETFONT, (WPARAM)icon_font, TRUE);
+            SendMessage(GetDlgItem(ctx->hwnd, IDC_Y_UP), WM_SETFONT, (WPARAM)icon_font, TRUE);
+
+            SetDlgItemText(ctx->hwnd, IDC_X_DOWN, L"3");
+            SetDlgItemText(ctx->hwnd, IDC_X_UP, L"4");
+            SetDlgItemText(ctx->hwnd, IDC_Y_DOWN, L"6");
+            SetDlgItemText(ctx->hwnd, IDC_Y_UP, L"5");
 
             if (new_config.dialog_expanded[ctx->controller_index])
             {
@@ -790,7 +802,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         case IDC_Y_DOWN:
         case IDC_Y_UP:
             {
-                int increment = get_joystick_increment(LOWORD(wparam) == IDC_Y_DOWN);
+                int increment = get_joystick_increment(LOWORD(wparam) == IDC_Y_UP);
                 ctx->current_input.y += increment;
                 ctx->set_visuals(ctx->current_input);
             }
@@ -1106,6 +1118,22 @@ EXPORT void CALL RomOpen()
         Gdiplus::GdiplusStartupInput startup_input;
         GdiplusStartup(&gdi_plus_token, &startup_input, NULL);
 
+        icon_font = CreateFont(
+        -20,
+        0,
+        0,
+        0,
+        FW_NORMAL,
+        FALSE,
+        FALSE,
+        FALSE,
+        SYMBOL_CHARSET,
+        OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        DEFAULT_QUALITY,
+        DEFAULT_PITCH,
+        TEXT("Marlett"));
+
         JoystickControl::register_class(g_inst);
 
         std::thread(ui_thread).detach();
@@ -1256,4 +1284,13 @@ void Status::on_config_changed()
     save_config();
 
     CheckDlgButton(hwnd, IDC_LOOP, new_config.loop_combo);
+}
+
+void TASInput::on_detach()
+{
+    if (icon_font)
+    {
+        DeleteFont(icon_font);
+        icon_font = {};
+    }
 }

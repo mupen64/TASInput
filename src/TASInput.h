@@ -5,3 +5,11 @@
  */
 
 #pragma once
+
+/**
+ * \brief A module responsible for implementing the TASInput frontend.
+ */
+namespace TASInput
+{
+    void on_detach();
+}
