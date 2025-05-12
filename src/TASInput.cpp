@@ -729,7 +729,13 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                 core_buttons last_input = ctx->current_input;
                 wchar_t str[8]{};
                 GetDlgItemText(ctx->hwnd, LOWORD(wparam), str, std::size(str));
-                ctx->current_input.x = std::stol(str);
+                try
+                {
+                    ctx->current_input.x = std::stol(str);
+                }
+                catch (...)
+                {
+                }
 
                 // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
                 if (ctx->current_input.x != last_input.x)
@@ -744,7 +750,13 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                 core_buttons last_input = ctx->current_input;
                 wchar_t str[8]{};
                 GetDlgItemText(ctx->hwnd, LOWORD(wparam), str, std::size(str));
-                ctx->current_input.x = std::stol(str);
+                try
+                {
+                    ctx->current_input.x = std::stol(str);
+                }
+                catch (...)
+                {
+                }
 
                 // We don't want an infinite loop, since set_visuals will send IDC_EDITX again
                 if (ctx->current_input.y != last_input.y)
@@ -834,7 +846,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         case IDC_IMPORT:
             {
                 wchar_t file[MAX_PATH]{};
-            
+
                 ctx->set_status("Importing...");
                 OPENFILENAME data{};
                 data.lStructSize = sizeof(data);
