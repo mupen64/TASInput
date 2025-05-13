@@ -11,7 +11,7 @@ extern core_plugin_extended_funcs* g_ef;
 extern int MOUSE_LBUTTONREDEFINITION;
 extern int MOUSE_RBUTTONREDEFINITION;
 
-#define PLUGIN_VERSION L"1.2.0"
+#define PLUGIN_VERSION L"2.0.0-rc1"
 
 #ifdef _M_X64
 #define PLUGIN_ARCH L"-x64"
