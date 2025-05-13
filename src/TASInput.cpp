@@ -550,12 +550,14 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
             if (rmb_just_down && is_mouse_over_control(ctx->hwnd, IDC_SLIDERX))
             {
-                SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
+                const auto max = SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_GETRANGEMAX, 0, 0);
+                SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_SETPOS, TRUE, max);
             }
 
             if (rmb_just_down && is_mouse_over_control(ctx->hwnd, IDC_SLIDERY))
             {
-                SendDlgItemMessage(ctx->hwnd, IDC_SLIDERY, TBM_SETPOS, TRUE, (LPARAM)(LONG)(1000));
+                const auto max = SendDlgItemMessage(ctx->hwnd, IDC_SLIDERY, TBM_GETRANGEMAX, 0, 0);
+                SendDlgItemMessage(ctx->hwnd, IDC_SLIDERY, TBM_SETPOS, TRUE, max);
             }
 
             if (rmb_just_down)
