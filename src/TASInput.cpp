@@ -102,7 +102,6 @@ struct Status {
      */
     HWND combo_edit_box = nullptr;
 
-    bool is_getting_keys = false;
     core_buttons autofire_input_a{};
     core_buttons autofire_input_b{};
     bool ready;
@@ -602,11 +601,6 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         }
         break;
     case WM_TIMER:
-        if (ctx->is_getting_keys)
-        {
-            break;
-        }
-
         // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
         core_buttons controller_input = dih_get_input(g_controllers, ctx->controller_index, new_config.x_scale[ctx->controller_index], new_config.y_scale[ctx->controller_index]);
 
@@ -685,21 +679,24 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             switch (LOWORD(wparam))
             {
             case IDC_SLIDERX:
-                {
-                    auto min = SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_GETRANGEMIN, 0, 0);
-                    auto max = SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_GETRANGEMAX, 0, 0);
-                    int pos = SendDlgItemMessage(ctx->hwnd, IDC_SLIDERX, TBM_GETPOS, 0, 0);
-                    new_config.x_scale[ctx->controller_index] = remap(pos, min, max, 0, 1);
-                }
-                break;
-
             case IDC_SLIDERY:
                 {
-                    const auto min = (double)SendDlgItemMessage(ctx->hwnd, IDC_SLIDERY, TBM_GETRANGEMIN, 0, 0);
-                    const auto max = (double)SendDlgItemMessage(ctx->hwnd, IDC_SLIDERY, TBM_GETRANGEMAX, 0, 0);
-                    const auto pos = (double)SendDlgItemMessage(ctx->hwnd, IDC_SLIDERY, TBM_GETPOS, 0, 0);
-                    new_config.y_scale[ctx->controller_index] = remap(pos, min, max, 0.0, 1.0);
+                    const auto id = LOWORD(wparam);
+                    const auto min = SendDlgItemMessage(ctx->hwnd, id, TBM_GETRANGEMIN, 0, 0);
+                    const auto max = SendDlgItemMessage(ctx->hwnd, id, TBM_GETRANGEMAX, 0, 0);
+                    const int pos = SendDlgItemMessage(ctx->hwnd, id, TBM_GETPOS, 0, 0);
+                    const auto scale = remap(pos, min, max, 0, 1);
+                    if (id == IDC_SLIDERX)
+                    {
+                        new_config.x_scale[ctx->controller_index] = scale;
+                    }
+                    else
+                    {
+                        new_config.y_scale[ctx->controller_index] = scale;
+                    }
                 }
+                break;
+            default:
                 break;
             }
         }
