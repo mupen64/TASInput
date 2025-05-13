@@ -102,6 +102,8 @@ struct Status {
      */
     HWND combo_edit_box = nullptr;
 
+    bool last_lmb_down{};
+    bool last_rmb_down{};
     core_buttons autofire_input_a{};
     core_buttons autofire_input_b{};
     bool ready;
@@ -158,14 +160,14 @@ struct Status {
 };
 
 static ULONG gdi_plus_token{};
-static volatile int64_t frame_counter{};
-static volatile bool new_frame{};
-static HWND emulator_hwnd{};
-static bool rom_open{};
-static HMENU hmenu{};
+static std::atomic<int64_t> frame_counter{};
+static std::atomic<bool> new_frame{};
+static std::atomic<bool> rom_open{};
 static std::vector<t_combo> combos{};
-static Status status[NUMBER_OF_CONTROLS]{};
+static HWND emulator_hwnd{};
+static HMENU hmenu{};
 static HFONT icon_font{};
+static Status status[NUMBER_OF_CONTROLS]{};
 
 EXPORT void CALL CloseDLL()
 {
@@ -397,13 +399,8 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
     auto ctx = reinterpret_cast<Status*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
-    static bool last_lmb_down = false;
-    static bool last_rmb_down = false;
     bool lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
     bool rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
-    bool lmb_just_up = !lmb_down && last_lmb_down;
-    bool rmb_just_up = !rmb_down && last_rmb_down;
-    bool rmb_just_down = rmb_down && !last_rmb_down;
 
     if (!lmb_down && ctx)
     {
@@ -535,6 +532,10 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         }
     case WM_SETCURSOR:
         {
+            const bool lmb_just_up = !lmb_down && ctx->last_lmb_down;
+            const bool rmb_just_up = !rmb_down && ctx->last_rmb_down;
+            const bool rmb_just_down = rmb_down && !ctx->last_rmb_down;
+
             if (ctx->is_dragging_window)
             {
                 POINT cursor_position = {0};
@@ -598,8 +599,8 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                 ctx->set_visuals(ctx->current_input);
             }
 
-            last_lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
-            last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
+            ctx->last_lmb_down = GetAsyncKeyState(MOUSE_LBUTTONREDEFINITION) & 0x8000;
+            ctx->last_rmb_down = GetAsyncKeyState(MOUSE_RBUTTONREDEFINITION) & 0x8000;
         }
         break;
     case WM_TIMER:
