@@ -31,6 +31,7 @@
 #include <cfloat>
 #include <stack>
 #include <numeric>
+#include <variant>
 #include <Windows.h>
 #include <dinput.h>
 #include <shlobj.h>

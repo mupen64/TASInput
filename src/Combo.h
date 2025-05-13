@@ -6,45 +6,48 @@
 
 #pragma once
 
-namespace Combos
-{
+/**
+ * \brief Represents a combo.
+ */
+struct t_combo {
     /**
-     * \brief Represents an individual combo
+     * \brief The combo's name.
      */
-    class Combo {
-    public:
-        /**
-         * \brief The combo's name
-         */
-        std::string name = "Unnamed Combo";
-
-        /**
-         * \brief The combo's samples
-         */
-        std::vector<core_buttons> samples;
-
-        /**
-         * \return Whether any sample utilizes the joystick (magnitude > 0)
-         */
-        bool uses_joystick() const
-        {
-            return std::any_of(samples.begin(), samples.end(), [](const core_buttons sample) {
-                return sample.x != 0 || sample.y != 0;
-            });
-        }
-    };
+    std::string name{};
 
     /**
-     * \brief Gets all available combos
-     * \param path The path to a file to look for combos in
+     * \brief The combo's samples.
      */
-    std::vector<Combo*> find(const std::filesystem::path& path);
+    std::vector<core_buttons> samples{};
 
     /**
-     * \brief Writes combos to a file
-     * \param path The path to the combo file
-     * \param combos A list of combos
-     * \return Whether the operation succeeded
+     * \return Whether any sample utilizes the joystick (magnitude > 0).
      */
-    bool save(const char* path, std::vector<Combo*> combos);
-}; // namespace Combos
+    [[nodiscard]] bool uses_joystick() const;
+
+    /**
+     * \brief Serializes the combo to a byte array.
+     */
+    [[nodiscard]] std::vector<uint8_t> serialize() const;
+
+    /**
+     * \brief Deserializes a byte array into a combo.
+     * \param data The byte array to deserialize.
+     * \return The deserialized combo, or an error message if the data is malformed.
+     */
+    [[nodiscard]] static std::variant<t_combo, std::wstring> deserialize(const std::span<uint8_t>& data);
+
+    /**
+     * \brief Serializes a vector of combos to a byte array.
+     * \param combos The combos to serialize.
+     * \return The serialized byte array.
+     */
+    [[nodiscard]] static std::vector<uint8_t> serialize_combos(const std::vector<t_combo>& combos);
+
+    /**
+     * \brief Deserializes a byte array into a combo vector.
+     * \param data The combos to deserialize.
+     * \return The deserialized combos.
+     */
+    [[nodiscard]] static std::vector<t_combo> deserialize_combos(const std::span<uint8_t>& data);
+};
