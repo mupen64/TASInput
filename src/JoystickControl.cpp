@@ -37,6 +37,7 @@ struct t_context {
     HDC back_dc{};
     HBITMAP back_bmp{};
     Gdiplus::Graphics* g{};
+    Gdiplus::Color clear_color{};
     Gdiplus::Brush* bg_brush{};
     Gdiplus::Brush* tip_brush{};
     Gdiplus::Pen* outline_pen{};
@@ -139,6 +140,19 @@ static void create_dcs(const HWND hwnd, t_context* ctx)
     ctx->tip_brush = new Gdiplus::SolidBrush(Gdiplus::Color(255, 255, 0, 0));
     ctx->outline_pen = new Gdiplus::Pen(Gdiplus::Color(255, 0, 0, 0), 1.0f * scale);
     ctx->line_pen = new Gdiplus::Pen(Gdiplus::Color(255, 0, 0, 255), 3.0f * scale);
+
+    // We get the clear color by asking the parent window for its background brush, so this works even with weird themes
+    const auto parent_hwnd = GetParent(hwnd);
+    const auto parent_dc = GetDC(parent_hwnd);
+    const auto clear_brush = (HBRUSH)SendMessage(parent_hwnd, WM_CTLCOLORDLG, (WPARAM)parent_dc, 0);
+
+    LOGBRUSH log_brush{};
+    GetObject(clear_brush, sizeof(log_brush), &log_brush);
+
+    ctx->clear_color.SetFromCOLORREF(log_brush.lbColor);
+
+    ReleaseDC(parent_hwnd, parent_dc);
+    DeleteObject(clear_brush);
 }
 
 static auto get_ctx(const HWND hwnd)
@@ -257,10 +271,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
             const auto stick_x = (float)((ctx->x + 128.0) * rc.right / 256.0);
             const auto stick_y = (float)((-ctx->y + 128.0) * rc.bottom / 256.0);
 
-            const COLORREF bg_color = GetSysColor(COLOR_BTNFACE);
-            Gdiplus::Color bg_gdip_color{};
-            bg_gdip_color.SetFromCOLORREF(bg_color);
-            ctx->g->Clear(bg_gdip_color);
+            ctx->g->Clear(ctx->clear_color);
 
             const auto tip_size = ctx->outline_pen->GetWidth() * 8.0f;
 
