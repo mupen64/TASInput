@@ -1276,6 +1276,11 @@ void Status::on_config_changed()
 
     // If we remove the titlebar, window contents will get clipped due to the window size not expanding, so we need to account for that
     RECT rect = new_config.titlebar ? initial_window_rect : initial_client_rect;
+    if (!new_config.titlebar)
+    {
+        rect.right += 4;
+        rect.bottom += 4;
+    }
     SetWindowPos(hwnd, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
     save_config();
 
