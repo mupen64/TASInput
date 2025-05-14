@@ -46,15 +46,18 @@ struct t_context {
 
 using Mode = t_context::Mode;
 
-static void control_relative_pos_to_joystick_pos(const HWND hwnd, const POINT& pt, double& x, double& y)
+static double remap(const double value, const double from1, const double to1, const double from2, const double to2)
+{
+    return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
+}
+
+static void control_to_joystick_pos(const HWND hwnd, const POINT& pt, double& x, double& y)
 {
     RECT rc{};
     GetClientRect(hwnd, &rc);
 
-    x = (double)pt.x * (double)UINT8_MAX / (double)rc.right - (double)INT8_MAX + 1.0;
-    y = (double)pt.y * (double)UINT8_MAX / (double)rc.bottom - (double)INT8_MAX + 1.0;
-
-    y *= -1.0;
+    x = remap(pt.x, 0, rc.right, -1.0, 1.0);
+    y = remap(pt.y, 0, rc.bottom, -1.0, 1.0);
 }
 
 static void update_joystick_position(HWND hwnd, t_context* ctx)
@@ -64,11 +67,11 @@ static void update_joystick_position(HWND hwnd, t_context* ctx)
         return;
     }
 
-    POINT pt;
+    POINT pt{};
     GetCursorPos(&pt);
     ScreenToClient(hwnd, &pt);
 
-    control_relative_pos_to_joystick_pos(hwnd, pt, ctx->x, ctx->y);
+    control_to_joystick_pos(hwnd, pt, ctx->x, ctx->y);
 
     if (ctx->mode == Mode::Relative)
     {
@@ -76,19 +79,22 @@ static void update_joystick_position(HWND hwnd, t_context* ctx)
         ctx->y -= ctx->cursor_diff_y;
     }
 
-    if (ctx->x > INT8_MAX || ctx->y > INT8_MAX || ctx->x < INT8_MIN || ctx->y < INT8_MIN)
+    if (ctx->x > 1.0 || ctx->y > 1.0 || ctx->x < -1.0 || ctx->y < -1.0)
     {
         const auto div = std::max(std::abs(ctx->x), std::abs(ctx->y));
-        ctx->x = ctx->x * (double)INT8_MAX / div;
-        ctx->y = ctx->y * (double)INT8_MAX / div;
+        ctx->x /= div;
+        ctx->y /= div;
     }
 
-    ctx->x = std::clamp(ctx->x, (double)INT8_MIN, (double)INT8_MAX);
-    ctx->y = std::clamp(ctx->y, (double)INT8_MIN, (double)INT8_MAX);
+    ctx->x = std::clamp(ctx->x, -1.0, 1.0);
+    ctx->y = std::clamp(ctx->y, -1.0, 1.0);
 
-    if (abs(ctx->x) <= 8)
+    RECT rc{};
+    GetClientRect(hwnd, &rc);
+
+    if (abs(ctx->x) <= 8.0 / rc.right)
         ctx->x = 0;
-    if (abs(ctx->y) <= 8)
+    if (abs(ctx->y) <= 8.0 / rc.bottom)
         ctx->y = 0;
 
     RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
@@ -187,23 +193,28 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
     case WM_MOUSEWHEEL:
         {
             const auto delta = GET_WHEEL_DELTA_WPARAM(wparam);
-            const auto increment = delta < 0.0 ? -1.0 : 1.0;
+            RECT rc{};
+            GetClientRect(hwnd, &rc);
+
+            const auto increment_sign = delta > 0.0 ? 1.0 : -1.0;
+            const auto increment_x = 1.0 / rc.right * increment_sign;
+            const auto increment_y = -1.0 / rc.bottom * increment_sign;
 
             if (GetKeyState(VK_CONTROL) & 0x8000)
             {
-                ctx->y += increment;
+                ctx->y += increment_y;
             }
             else if (GetKeyState(VK_SHIFT) & 0x8000)
             {
-                const auto angle = std::atan2(ctx->y, ctx->x);
-                const auto mag = std::max(30.0, std::sqrt(ctx->x * ctx->x + ctx->y * ctx->y));
-                const auto new_ang = angle + increment * (M_PI / 180.0);
-                ctx->x = mag * std::cos(new_ang);
-                ctx->y = mag * std::sin(new_ang);
+                const auto angle = increment_sign * M_PI / 180.0;
+                const auto cos_angle = cos(angle);
+                const auto sin_angle = sin(angle);
+                ctx->x = ctx->x * cos_angle - ctx->y * sin_angle;
+                ctx->y = ctx->x * sin_angle + ctx->y * cos_angle;
             }
             else
             {
-                ctx->x += increment;
+                ctx->x += increment_x;
             }
 
             RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
@@ -216,11 +227,8 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
             GetCursorPos(&pt);
             ScreenToClient(hwnd, &pt);
 
-            RECT rc{};
-            GetClientRect(hwnd, &rc);
-
             double x{}, y{};
-            control_relative_pos_to_joystick_pos(hwnd, pt, x, y);
+            control_to_joystick_pos(hwnd, pt, x, y);
 
             ctx->cursor_diff_x = x - ctx->x;
             ctx->cursor_diff_y = y - ctx->y;
@@ -266,10 +274,10 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 
             rc.right -= 1;
             rc.bottom -= 1;
-            const auto mid_x = (float)(rc.right / 2.0);
-            const auto mid_y = (float)(rc.bottom / 2.0);
-            const auto stick_x = (float)((ctx->x + 128.0) * rc.right / 256.0);
-            const auto stick_y = (float)((-ctx->y + 128.0) * rc.bottom / 256.0);
+            const float mid_x = rc.right / 2.0;
+            const float mid_y = rc.bottom / 2.0;
+            const float stick_x = remap(ctx->x, -1.0, 1.0, 0.0, rc.right);
+            const float stick_y = remap(ctx->y, -1.0, 1.0, 0.0, rc.bottom);
 
             ctx->g->Clear(ctx->clear_color);
 
@@ -310,13 +318,16 @@ BOOL JoystickControl::get_position(HWND hwnd, int* x, int* y)
 {
     WITH_VALID_CTX()
 
-    if (x)
+    RECT rc{};
+    GetClientRect(hwnd, &rc);
+
+    if (x)  
     {
-        *x = (int)std::round(ctx->x);
+        *x = (int)std::round(remap(ctx->x, -1.0, 1.0, -INT8_MAX, INT8_MAX));
     }
     if (y)
     {
-        *y = (int)std::round(ctx->y);
+        *y = (int)std::round(remap(ctx->y, 1.0, -1.0, -INT8_MAX, INT8_MAX));
     }
 
     return TRUE;
@@ -326,8 +337,8 @@ BOOL JoystickControl::set_position(HWND hwnd, int x, int y)
 {
     WITH_VALID_CTX()
 
-    ctx->x = x;
-    ctx->y = y;
+    ctx->x = std::clamp((double)x / (double)INT8_MAX, -1.0, 1.0);
+    ctx->y = -std::clamp((double)y / (double)INT8_MAX, -1.0, 1.0);
     RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
     SendMessage(GetParent(hwnd), WM_JOYSTICK_POSITION_CHANGED, 1, 0);
 
