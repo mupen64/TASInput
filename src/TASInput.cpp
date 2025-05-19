@@ -1292,7 +1292,7 @@ void Status::on_config_changed()
     }
     set_style(hwnd, GWL_EXSTYLE, WS_EX_TOOLWINDOW, !new_config.float_from_parent);
     set_style(hwnd, GWL_STYLE, DS_SYSMODAL, !new_config.float_from_parent);
-    set_style(hwnd, GWL_STYLE, WS_CAPTION, new_config.titlebar);
+    set_style(hwnd, GWL_STYLE, WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, new_config.titlebar);
 
     // If we remove the titlebar, window contents will get clipped due to the window size not expanding, so we need to account for that
     RECT rect = new_config.titlebar ? initial_window_rect : initial_client_rect;
