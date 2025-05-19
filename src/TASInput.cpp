@@ -547,11 +547,6 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             SetDlgItemText(ctx->hwnd, IDC_Y_DOWN, L"6");
             SetDlgItemText(ctx->hwnd, IDC_Y_UP, L"5");
 
-            if (new_config.dialog_expanded[ctx->controller_index])
-            {
-                SetDlgItemText(ctx->hwnd, IDC_EXPAND, L"Less");
-            }
-
             const auto scale = GetDpiForWindow(hwnd) / 96.0;
 
             ctx->joy_hwnd = CreateWindowEx(WS_EX_CLIENTEDGE, JoystickControl::CLASS_NAME, L"", WS_CHILD | WS_VISIBLE, 8, 4, 131 * scale, 131 * scale, ctx->hwnd, nullptr, g_inst, nullptr);
@@ -1294,36 +1289,40 @@ void Status::on_config_changed()
     set_style(hwnd, GWL_STYLE, DS_SYSMODAL, !new_config.float_from_parent);
     set_style(hwnd, GWL_STYLE, WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, new_config.titlebar);
 
-    // If we remove the titlebar, window contents will get clipped due to the window size not expanding, so we need to account for that
+    // HACK: Fix window size when switching between titlebar and no titlebar
     RECT rect = new_config.titlebar ? initial_window_rect : initial_client_rect;
     if (!new_config.titlebar)
     {
-        rect.right += 4;
-        rect.bottom += 4;
+        rect.right += 8;
+        rect.bottom += 5;
     }
     SetWindowPos(hwnd, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
 
-    DestroyWindow(combos_hwnd);
-    combos_hwnd = nullptr;
+    const bool expanded = new_config.dialog_expanded[controller_index];
 
-    if (new_config.dialog_expanded[controller_index])
+    if (!expanded)
+    {
+        DestroyWindow(combos_hwnd);
+        combos_hwnd = nullptr;
+    }
+
+    if (expanded)
     {
         combos_hwnd = CreateDialogParam(g_inst, MAKEINTRESOURCE(IDD_COMBOS), hwnd, combos_dlgproc, (LPARAM)this);
+        CheckDlgButton(combos_hwnd, IDC_LOOP, new_config.loop_combo);
+
+        RECT expanded_rect = rect;
+        RECT combos_dlg_rect{};
+        GetClientRect(combos_hwnd, &combos_dlg_rect);
+        expanded_rect.bottom += combos_dlg_rect.bottom;
+
+        SetWindowPos(hwnd, nullptr, 0, 0, expanded_rect.right, expanded_rect.bottom, SWP_NOMOVE);
         SetWindowPos(combos_hwnd, nullptr, 0, initial_client_rect.bottom, 0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
     }
 
-    rect = initial_window_rect;
-    if (new_config.dialog_expanded[controller_index])
-    {
-        RECT combos_dlg_rect{};
-        GetClientRect(combos_hwnd, &combos_dlg_rect);
-        rect.bottom += combos_dlg_rect.bottom;
-    }
-    SetWindowPos(hwnd, nullptr, 0, 0, rect.right, rect.bottom, SWP_NOMOVE);
+    SetDlgItemText(hwnd, IDC_EXPAND, expanded ? L"Less" : L"More");
 
     save_config();
-
-    CheckDlgButton(hwnd, IDC_LOOP, new_config.loop_combo);
 }
 
 void TASInput::on_detach()
