@@ -230,8 +230,7 @@ EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
 
 EXPORT void CALL SetKeys(int Control, core_buttons ControllerInput)
 {
-    if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
-        status[Control].set_visuals(ControllerInput);
+    status[Control].set_visuals(ControllerInput, false);
 }
 
 LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR sId, DWORD_PTR dwRefData)
