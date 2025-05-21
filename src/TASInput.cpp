@@ -187,14 +187,12 @@ EXPORT void CALL CloseDLL()
 
 EXPORT void CALL DllAbout(void* hParent)
 {
-    // TODO: Simplify
-    if (MessageBox(
-        (HWND)hParent,
-        PLUGIN_NAME
-        "\nFor DirectX 7 or higher\nBased on Def's Direct Input 0.54 by Deflection\nTAS Modifications by Nitsuja\nContinued development by the Mupen64-rr-lua contributors.\nDo you want to visit the repository?",
-        L"About",
-        MB_ICONINFORMATION | MB_YESNO) == IDYES)
-        ShellExecute(0, 0, L"https://github.com/Mupen64-Rewrite/TASInput", 0, 0, SW_SHOW);
+    const auto msg = PLUGIN_NAME L"\n"
+                                 L"Part of the Mupen64 project family."
+                                 L"\n\n"
+                                 L"https://github.com/mupen64/TASInput";
+
+    MessageBox((HWND)hParent, msg, L"About", MB_ICONINFORMATION | MB_OK);
 }
 
 EXPORT void CALL DllConfig(void* hParent)
