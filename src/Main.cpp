@@ -5,7 +5,6 @@
  */
 
 #include "stdafx.h"
-#include <DirectInputHelper.h>
 #include <Main.h>
 #include <TASInput.h>
 
@@ -27,8 +26,6 @@ static core_plugin_extended_funcs ef_shim = {
 
 HINSTANCE g_inst;
 core_plugin_extended_funcs* g_ef = &ef_shim;
-int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
-int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
 
 // ReSharper disable once CppInconsistentNaming
 int WINAPI DllMain(const HINSTANCE h_instance, const DWORD fdw_reason, PVOID)
@@ -40,17 +37,8 @@ int WINAPI DllMain(const HINSTANCE h_instance, const DWORD fdw_reason, PVOID)
         break;
 
     case DLL_PROCESS_DETACH:
-        dih_free();
         TASInput::on_detach();
         break;
-    }
-
-    // HACK: perform windows left handed mode check
-    // and adjust accordingly
-    if (GetSystemMetrics(SM_SWAPBUTTON))
-    {
-        MOUSE_LBUTTONREDEFINITION = VK_RBUTTON;
-        MOUSE_RBUTTONREDEFINITION = VK_LBUTTON;
     }
 
     return TRUE;

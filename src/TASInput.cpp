@@ -171,6 +171,9 @@ static HMENU hmenu{};
 static HFONT icon_font{};
 static Status status[NUMBER_OF_CONTROLS]{};
 
+static int MOUSE_LBUTTONREDEFINITION = VK_LBUTTON;
+static int MOUSE_RBUTTONREDEFINITION = VK_RBUTTON;
+
 EXPORT void CALL CloseDLL()
 {
     if (gdi_plus_token)
@@ -1056,6 +1059,35 @@ static void create_dialog_for_status(Status* status, size_t i)
 
 static void ui_thread()
 {
+    Gdiplus::GdiplusStartupInput startup_input;
+    GdiplusStartup(&gdi_plus_token, &startup_input, NULL);
+
+    icon_font = CreateFont(
+    -20,
+    0,
+    0,
+    0,
+    FW_NORMAL,
+    FALSE,
+    FALSE,
+    FALSE,
+    SYMBOL_CHARSET,
+    OUT_DEFAULT_PRECIS,
+    CLIP_DEFAULT_PRECIS,
+    DEFAULT_QUALITY,
+    DEFAULT_PITCH,
+    TEXT("Marlett"));
+
+    // HACK: perform windows left handed mode check
+    // and adjust accordingly
+    if (GetSystemMetrics(SM_SWAPBUTTON))
+    {
+        MOUSE_LBUTTONREDEFINITION = VK_RBUTTON;
+        MOUSE_RBUTTONREDEFINITION = VK_LBUTTON;
+    }
+
+    JoystickControl::register_class(g_inst);
+
     for (size_t i = 0; i < std::size(status); ++i)
     {
         status[i].controller_index = i;
@@ -1116,27 +1148,6 @@ EXPORT void CALL RomOpen()
 
     if (first_time)
     {
-        Gdiplus::GdiplusStartupInput startup_input;
-        GdiplusStartup(&gdi_plus_token, &startup_input, NULL);
-
-        icon_font = CreateFont(
-        -20,
-        0,
-        0,
-        0,
-        FW_NORMAL,
-        FALSE,
-        FALSE,
-        FALSE,
-        SYMBOL_CHARSET,
-        OUT_DEFAULT_PRECIS,
-        CLIP_DEFAULT_PRECIS,
-        DEFAULT_QUALITY,
-        DEFAULT_PITCH,
-        TEXT("Marlett"));
-
-        JoystickControl::register_class(g_inst);
-
         std::thread(ui_thread).detach();
 
         first_time = false;
@@ -1326,6 +1337,8 @@ void Status::on_config_changed()
 
 void TASInput::on_detach()
 {
+    dih_free();
+
     if (icon_font)
     {
         DeleteFont(icon_font);
