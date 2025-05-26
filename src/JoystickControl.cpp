@@ -248,11 +248,15 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
         ctx->mode = Mode::Sticky;
         SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_DRAG_BEGIN, 0, 0);
         SetCapture(hwnd);
+        
+        update_joystick_position(hwnd, ctx);
         break;
     case WM_LBUTTONDOWN:
         ctx->mode = Mode::Absolute;
         SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_DRAG_BEGIN, 0, 0);
         SetCapture(hwnd);
+        
+        update_joystick_position(hwnd, ctx);
         break;
     case WM_LBUTTONUP:
     case WM_RBUTTONUP:
