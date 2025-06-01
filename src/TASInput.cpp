@@ -229,9 +229,13 @@ EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
     Keys->y = tmp;
 }
 
-EXPORT void CALL SetKeys(int Control, core_buttons ControllerInput)
+EXPORT void CALL SetKeys(int32_t controller, core_buttons keys)
 {
-    status[Control].set_visuals(ControllerInput, false);
+    const auto temp = keys.x;
+    keys.x = keys.y;
+    keys.y = temp;
+    
+    status[controller].set_visuals(keys, false);
 }
 
 LRESULT CALLBACK EditBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR sId, DWORD_PTR dwRefData)
