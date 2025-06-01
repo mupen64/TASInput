@@ -46,6 +46,20 @@ struct t_context {
 
 using Mode = t_context::Mode;
 
+template <typename T>
+static T wrapping_clamp(T value, T min, T max)
+{
+    if (value < min)
+    {
+        return max - (min - value);
+    }
+    if (value > max)
+    {
+        return min + (min - value);
+    }
+    return value;
+}
+
 static double remap(const double value, const double from1, const double to1, const double from2, const double to2)
 {
     return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
@@ -217,8 +231,8 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
                 ctx->x += increment_x;
             }
 
-            ctx->x = std::clamp(ctx->x, -1.0, 1.0);
-            ctx->y = std::clamp(ctx->y, -1.0, 1.0);
+            ctx->x = wrapping_clamp(ctx->x, -1.0, 1.0);
+            ctx->y = wrapping_clamp(ctx->y, -1.0, 1.0);
 
             RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
             SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_POSITION_CHANGED, 0, 0);
