@@ -132,3 +132,17 @@ static std::string wstring_to_string(const std::wstring& wstr)
     return str;
 #endif
 }
+
+template <typename T>
+static T wrapping_clamp(T value, T min, T max)
+{
+    if (value < min)
+    {
+        return max - (min - value);
+    }
+    if (value > max)
+    {
+        return min + (min - value);
+    }
+    return value;
+}
