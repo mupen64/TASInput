@@ -217,6 +217,9 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
                 ctx->x += increment_x;
             }
 
+            ctx->x = std::clamp(ctx->x, -1.0, 1.0);
+            ctx->y = std::clamp(ctx->y, -1.0, 1.0);
+
             RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
             SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_POSITION_CHANGED, 0, 0);
         }
@@ -248,14 +251,14 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
         ctx->mode = Mode::Sticky;
         SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_DRAG_BEGIN, 0, 0);
         SetCapture(hwnd);
-        
+
         update_joystick_position(hwnd, ctx);
         break;
     case WM_LBUTTONDOWN:
         ctx->mode = Mode::Absolute;
         SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_DRAG_BEGIN, 0, 0);
         SetCapture(hwnd);
-        
+
         update_joystick_position(hwnd, ctx);
         break;
     case WM_LBUTTONUP:
@@ -325,7 +328,7 @@ BOOL JoystickControl::get_position(HWND hwnd, int* x, int* y)
     RECT rc{};
     GetClientRect(hwnd, &rc);
 
-    if (x)  
+    if (x)
     {
         *x = (int)std::round(remap(ctx->x, -1.0, 1.0, -INT8_MAX, INT8_MAX));
     }
