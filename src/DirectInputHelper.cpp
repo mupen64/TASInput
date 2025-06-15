@@ -17,41 +17,6 @@ LPDIRECTINPUT8 g_di = NULL;
 DIINPUTDEVICE g_di_devices[MAX_DEVICES];
 BYTE g_device_count;
 
-BOOL dih_check_for_device_change(HKEY hKey)
-{
-    BOOL DeviceChanged;
-    DWORD dwSize, dwType;
-
-    dwType = REG_BINARY;
-    dwSize = sizeof(DEFCONTROLLER);
-
-    DeviceChanged = FALSE;
-
-    for (BYTE DeviceNumCheck = 0; DeviceNumCheck < MAX_DEVICES; DeviceNumCheck++)
-    {
-        if (memcmp(&g_guids[DeviceNumCheck], &g_di_devices[DeviceNumCheck].DIDevInst.guidInstance, sizeof(GUID)) != 0)
-        {
-            DeviceChanged = TRUE;
-            for (BYTE NController = 0; NController < NUMBER_OF_CONTROLS; NController++)
-            {
-                RegQueryValueEx(hKey, g_controllers[NController].szName, 0, &dwType, (LPBYTE)&g_controllers[NController], &dwSize);
-                for (BYTE DeviceNum = 0; DeviceNum < g_controllers[NController].NDevices; DeviceNum++)
-                {
-                    if (g_controllers[NController].Devices[DeviceNum] == DeviceNumCheck)
-                    {
-                        g_controllers[NController].NDevices = 0;
-                        g_controllers[NController].bActive = FALSE;
-                        RegSetValueEx(hKey, g_controllers[NController].szName, 0, dwType, (LPBYTE)&g_controllers[NController], dwSize);
-                    }
-                }
-            }
-        }
-    }
-
-    return DeviceChanged;
-}
-
-
 void WINAPI GetNegAxisVal(LONG AxisValue, int Control, LONG count, core_buttons* ControllerInput, int& M1Speed, int& M2Speed)
 {
     switch (count)
@@ -683,49 +648,33 @@ void dih_initialize_and_check_devices(HWND hMainWindow)
         return;
     }
 
-    HKEY hKey;
-    BYTE i;
-    DWORD dwSize, dwType;
-
-    // Initialize Direct Input function
     if (FAILED(dih_init(hMainWindow)))
     {
-        MessageBox(NULL, L"DirectInput Initialization Failed!", L"Error", MB_ICONERROR | MB_OK);
+        MessageBox(nullptr, L"DirectInput initialization failed.\nVerify that all connected devices are compatible.", PLUGIN_NAME, MB_ICONERROR | MB_OK);
         dih_free();
+        return;
     }
-    else
+
+    HKEY h_key{};
+    DWORD dw_type = REG_BINARY;
+    DWORD dw_size = sizeof(g_guids);
+
+    RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &h_key, 0);
+    RegQueryValueEx(h_key, TEXT("Guids"), 0, &dw_type, (LPBYTE)g_guids, &dw_size);
+
+    for (size_t i = 0; i < MAX_DEVICES; i++)
     {
-        dwType = REG_BINARY;
-        dwSize = sizeof(g_guids);
-        // Check Guids for Device Changes
-        RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, 0);
-        if (RegQueryValueEx(hKey, TEXT("Guids"), 0, &dwType, (LPBYTE)g_guids, &dwSize) != ERROR_SUCCESS)
+        if (g_di_devices[i].lpDIDevice)
         {
-            for (i = 0; i < MAX_DEVICES; i++)
-            {
-                if (g_di_devices[i].lpDIDevice == NULL)
-                    ZeroMemory(&g_guids[i], sizeof(GUID));
-                else
-                    memcpy(&g_guids[i], &g_di_devices[i].DIDevInst.guidInstance, sizeof(GUID));
-            }
-            dwType = REG_BINARY;
-            RegSetValueEx(hKey, TEXT("Guids"), 0, dwType, (LPBYTE)g_guids, dwSize);
+            memcpy(&g_guids[i], &g_di_devices[i].DIDevInst.guidInstance, sizeof(GUID));
+            continue;
         }
-        else
-        {
-            if (dih_check_for_device_change(hKey))
-            {
-                for (i = 0; i < MAX_DEVICES; i++)
-                {
-                    if (g_di_devices[i].lpDIDevice == NULL)
-                        ZeroMemory(&g_guids[i], sizeof(GUID));
-                    else
-                        memcpy(&g_guids[i], &g_di_devices[i].DIDevInst.guidInstance, sizeof(GUID));
-                }
-                dwType = REG_BINARY;
-                RegSetValueEx(hKey, TEXT("Guids"), 0, dwType, (LPBYTE)g_guids, dwSize);
-            }
-        }
-        RegCloseKey(hKey);
+
+        ZeroMemory(&g_guids[i], sizeof(GUID));
     }
+
+    dw_type = REG_BINARY;
+    RegSetValueEx(h_key, TEXT("Guids"), 0, dw_type, (LPBYTE)g_guids, dw_size);
+
+    RegCloseKey(h_key);
 }

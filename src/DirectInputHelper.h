@@ -99,5 +99,4 @@ BOOL dih_init(HWND hMainWindow);
  */
 core_buttons dih_get_input(DEFCONTROLLER* controllers, size_t index, float x_scale, float y_scale);
 
-BOOL dih_check_for_device_change(HKEY hKey);
 void dih_initialize_and_check_devices(HWND hMainWindow);
