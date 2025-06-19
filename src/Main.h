@@ -9,7 +9,7 @@
 extern HINSTANCE g_inst;
 extern core_plugin_extended_funcs* g_ef;
 
-#define PLUGIN_VERSION L"2.0.0-rc3"
+#define PLUGIN_VERSION L"2.0.0-rc4"
 
 #ifdef _M_X64
 #define PLUGIN_ARCH L" x64"
