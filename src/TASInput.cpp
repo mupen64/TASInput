@@ -234,7 +234,7 @@ EXPORT void CALL SetKeys(int32_t controller, core_buttons keys)
     const auto temp = keys.x;
     keys.x = keys.y;
     keys.y = temp;
-    
+
     status[controller].set_visuals(keys, false);
 }
 
