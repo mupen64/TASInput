@@ -1,0 +1,51 @@
+name: main
+
+on: [ push ]
+
+env:
+  DUMMY: a
+
+jobs:
+  check-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: DoozyX/clang-format-lint-action@v0.18.2
+        with:
+          source: './src'
+          exclude: './lib ./tools'
+          extensions: 'h,cpp'
+          clangFormatVersion: 18.1.8
+          style: file
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set VERSION_SUFFIX
+        shell: powershell
+        run: |
+          $branch = git rev-parse --abbrev-ref HEAD
+          $commit = git rev-parse --short HEAD
+          $VERSION_SUFFIX = "-$branch-$commit"
+          echo "VERSION_SUFFIX=$VERSION_SUFFIX" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+
+      - name: Display VERSION_SUFFIX
+        shell: powershell
+        run: echo "VERSION_SUFFIX is $env:VERSION_SUFFIX"
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build x86
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run:  msbuild TASInput.sln /p:Configuration=Release /p:Platform=x86 /m -restore -p:RestorePackagesConfig=true
+
+      - name: 'Upload x86 build'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TASInput-x86
+          path: build
+          retention-days: 14
