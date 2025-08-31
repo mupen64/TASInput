@@ -46,32 +46,29 @@ struct t_context {
 
 using Mode = t_context::Mode;
 
-template <typename T>
-static T wrapping_clamp(T value, T min, T max)
-{
-    if (value < min)
-    {
-        return max - (min - value);
-    }
-    if (value > max)
-    {
-        return min + (min - value);
-    }
-    return value;
-}
-
 static double remap(const double value, const double from1, const double to1, const double from2, const double to2)
 {
     return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
 }
 
-static void control_to_joystick_pos(const HWND hwnd, const POINT& pt, double& x, double& y)
+static void get_cursor_to_joystick_position(const HWND hwnd, double& x, double& y)
 {
     RECT rc{};
     GetClientRect(hwnd, &rc);
 
+    POINT pt{};
+    GetCursorPos(&pt);
+    ScreenToClient(hwnd, &pt);
+
     x = remap(pt.x, 0, rc.right, -1.0, 1.0);
     y = remap(pt.y, 0, rc.bottom, -1.0, 1.0);
+
+    if (std::abs(x) > 1.0 || std::abs(y) > 1.0)
+    {
+        const auto div = std::max(std::abs(x), std::abs(y));
+        x /= div;
+        y /= div;
+    }
 }
 
 static void update_joystick_position(HWND hwnd, t_context* ctx)
@@ -81,11 +78,7 @@ static void update_joystick_position(HWND hwnd, t_context* ctx)
         return;
     }
 
-    POINT pt{};
-    GetCursorPos(&pt);
-    ScreenToClient(hwnd, &pt);
-
-    control_to_joystick_pos(hwnd, pt, ctx->x, ctx->y);
+    get_cursor_to_joystick_position(hwnd, ctx->x, ctx->y);
 
     if (ctx->mode == Mode::Relative)
     {
@@ -93,23 +86,13 @@ static void update_joystick_position(HWND hwnd, t_context* ctx)
         ctx->y -= ctx->cursor_diff_y;
     }
 
-    if (ctx->x > 1.0 || ctx->y > 1.0 || ctx->x < -1.0 || ctx->y < -1.0)
-    {
-        const auto div = std::max(std::abs(ctx->x), std::abs(ctx->y));
-        ctx->x /= div;
-        ctx->y /= div;
-    }
-
-    ctx->x = std::clamp(ctx->x, -1.0, 1.0);
-    ctx->y = std::clamp(ctx->y, -1.0, 1.0);
-
     RECT rc{};
     GetClientRect(hwnd, &rc);
 
     if (abs(ctx->x) <= 8.0 / rc.right)
-        ctx->x = 0;
+        ctx->x = 0.0;
     if (abs(ctx->y) <= 8.0 / rc.bottom)
-        ctx->y = 0;
+        ctx->y = 0.0;
 
     RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
     SendMessage(GetParent(hwnd), JoystickControl::WM_JOYSTICK_POSITION_CHANGED, 0, 0);
@@ -240,12 +223,8 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
         break;
     case WM_MBUTTONDOWN:
         {
-            POINT pt{};
-            GetCursorPos(&pt);
-            ScreenToClient(hwnd, &pt);
-
             double x{}, y{};
-            control_to_joystick_pos(hwnd, pt, x, y);
+            get_cursor_to_joystick_position(hwnd, x, y);
 
             ctx->cursor_diff_x = x - ctx->x;
             ctx->cursor_diff_y = y - ctx->y;
@@ -344,11 +323,11 @@ BOOL JoystickControl::get_position(HWND hwnd, int* x, int* y)
 
     if (x)
     {
-        *x = (int)std::round(remap(ctx->x, -1.0, 1.0, -INT8_MAX, INT8_MAX));
+        *x = (int)std::round(remap(ctx->x, -1.0, 1.0, -128, 127));
     }
     if (y)
     {
-        *y = (int)std::round(remap(ctx->y, 1.0, -1.0, -INT8_MAX, INT8_MAX));
+        *y = (int)std::round(remap(ctx->y, 1.0, -1.0, -127, 128));
     }
 
     return TRUE;
@@ -358,8 +337,9 @@ BOOL JoystickControl::set_position(HWND hwnd, int x, int y)
 {
     WITH_VALID_CTX()
 
-    ctx->x = std::clamp((double)x / (double)INT8_MAX, -1.0, 1.0);
-    ctx->y = -std::clamp((double)y / (double)INT8_MAX, -1.0, 1.0);
+    ctx->x = remap(x, -128, 127, -1.0, 1.0);
+    ctx->y = -remap(y, -127, 128, -1.0, 1.0);
+
     RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
     SendMessage(GetParent(hwnd), WM_JOYSTICK_POSITION_CHANGED, 1, 0);
 

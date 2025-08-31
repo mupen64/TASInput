@@ -875,7 +875,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         case IDC_X_UP:
             {
                 int increment = get_joystick_increment(LOWORD(wparam) == IDC_X_UP);
-                ctx->current_input.x = wrapping_clamp(ctx->current_input.x + increment, -127, 127);
+                ctx->current_input.x = wrapping_clamp(ctx->current_input.x + increment, -128, 127);
                 ctx->set_visuals(ctx->current_input);
             }
             break;
@@ -883,7 +883,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         case IDC_Y_UP:
             {
                 int increment = get_joystick_increment(LOWORD(wparam) == IDC_Y_UP);
-                ctx->current_input.y = wrapping_clamp(ctx->current_input.y + increment, -127, 127);
+                ctx->current_input.y = wrapping_clamp(ctx->current_input.y + increment, -127, 128);
                 ctx->set_visuals(ctx->current_input);
             }
             break;

@@ -42,3 +42,5 @@
 #include <resource.h>
 #include <gdiplus.h>
 #pragma warning(pop)
+
+#include <MiscHelpers.h>

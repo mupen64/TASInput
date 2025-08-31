@@ -136,9 +136,13 @@ static std::string wstring_to_string(const std::wstring& wstr)
 template <typename T>
 static T wrapping_clamp(T value, T min, T max)
 {
-    const T range = max - min + 1;
-    T offset = (value - min) % range;
-    if (offset < 0)
-        offset += range;
-    return min + offset;
+    if (value < min)
+    {
+        return max - (min - value);
+    }
+    if (value > max)
+    {
+        return min + (value - max);
+    }
+    return value;
 }
