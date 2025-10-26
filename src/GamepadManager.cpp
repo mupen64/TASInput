@@ -15,10 +15,33 @@ struct gamepad_manager_context {
 
 static gamepad_manager_context g_ctx;
 
+static int8_t remap_axis(int16_t value, const bool is_y_axis)
+{
+    value = std::clamp(value, static_cast<int16_t>(-32768), static_cast<int16_t>(32767));
+
+    const int min_target = is_y_axis ? -127 : -128;
+    const int max_target = is_y_axis ? 128 : 127;
+
+    int32_t mapped = (static_cast<int32_t>(value) * max_target) / 32767;
+
+    if (value == -32768)
+    {
+        mapped = min_target;
+    }
+
+    mapped = std::clamp(mapped, min_target, max_target);
+
+    return static_cast<int8_t>(mapped);
+}
+
 void GamepadManager::init()
 {
-    RT_ASSERT(SDL_Init(SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK), L"Failed to initialize SDL gamepad subsystem");
+    SDL_SetHint(SDL_HINT_JOYSTICK_DIRECTINPUT, "0");
+    SDL_SetHint(SDL_HINT_JOYSTICK_RAWINPUT, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_RAWINPUT_CORRELATE_XINPUT, "0");
+    RT_ASSERT(SDL_Init(SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK), L"Failed to initialize SDL subsystems");
 }
+
 void GamepadManager::poll_events()
 {
     SDL_Event e;
@@ -28,18 +51,15 @@ void GamepadManager::poll_events()
         {
         case SDL_EVENT_GAMEPAD_ADDED:
             {
-                SDL_Gamepad* pad = SDL_OpenGamepad(e.gdevice.which);
-                const auto name = SDL_GetGamepadName(pad);
-                MessageBoxA(NULL, std::format("Gamepad {} connected", name).c_str(), "Info", MB_OK);
+                g_ctx.gamepad = SDL_OpenGamepad(e.gdevice.which);
+                break;
             }
-            break;
-
         case SDL_EVENT_GAMEPAD_REMOVED:
-            printf("Gamepad removed: %d\n", e.gdevice.which);
-            break;
-
-        case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-            printf("Button %d pressed\n", e.gbutton.button);
+            if (g_ctx.gamepad)
+            {
+                SDL_CloseGamepad(g_ctx.gamepad);
+                g_ctx.gamepad = nullptr;
+            }
             break;
         default:
             break;
@@ -49,5 +69,25 @@ void GamepadManager::poll_events()
 
 core_buttons GamepadManager::get_input()
 {
-    return {};
+    core_buttons buttons{};
+
+    if (!g_ctx.gamepad)
+        return buttons;
+
+    buttons.a = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_SOUTH);
+    buttons.b = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_EAST);
+    buttons.z = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_WEST);
+    buttons.start = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_START);
+    buttons.l = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
+    buttons.r = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+
+    buttons.du = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_DPAD_UP);
+    buttons.dd = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
+    buttons.dl = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
+    buttons.dr = SDL_GetGamepadButton(g_ctx.gamepad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
+
+    buttons.x = remap_axis(SDL_GetGamepadAxis(g_ctx.gamepad, SDL_GAMEPAD_AXIS_LEFTX), false);
+    buttons.y = remap_axis(SDL_GetGamepadAxis(g_ctx.gamepad, SDL_GAMEPAD_AXIS_LEFTY), true);
+
+    return buttons;
 }
