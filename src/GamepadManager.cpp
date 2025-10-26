@@ -15,23 +15,21 @@ struct gamepad_manager_context {
 
 static gamepad_manager_context g_ctx;
 
-static int8_t remap_axis(int16_t value, const bool is_y_axis)
+static int32_t remap_axis(int16_t value, const bool is_y_axis)
 {
     value = std::clamp(value, static_cast<int16_t>(-32768), static_cast<int16_t>(32767));
 
-    const int min_target = is_y_axis ? -127 : -128;
-    const int max_target = is_y_axis ? 128 : 127;
+    const int32_t min_target = is_y_axis ? -127 : -128;
+    const int32_t max_target = is_y_axis ? 128 : 127;
 
-    int32_t mapped = (static_cast<int32_t>(value) * max_target) / 32767;
+    int32_t mapped = static_cast<int32_t>(value) * max_target / 32767;
 
     if (value == -32768)
     {
         mapped = min_target;
     }
 
-    mapped = std::clamp(mapped, min_target, max_target);
-
-    return static_cast<int8_t>(mapped);
+    return std::clamp(mapped, min_target, max_target);
 }
 
 void GamepadManager::init()
