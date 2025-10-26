@@ -33,7 +33,6 @@
 #include <numeric>
 #include <variant>
 #include <Windows.h>
-#include <dinput.h>
 #include <shlobj.h>
 #include <commctrl.h>
 #include <windowsx.h>

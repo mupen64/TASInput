@@ -7,7 +7,6 @@
 #include "stdafx.h"
 #include <Combo.h>
 #include <ConfigDialog.h>
-#include <DirectInputHelper.h>
 #include <JoystickControl.h>
 #include <Main.h>
 #include <MiscHelpers.h>
@@ -181,8 +180,6 @@ EXPORT void CALL CloseDLL()
         Gdiplus::GdiplusShutdown(gdi_plus_token);
         gdi_plus_token = 0;
     }
-
-    dih_free();
 }
 
 EXPORT void CALL DllAbout(void* hParent)
@@ -197,7 +194,6 @@ EXPORT void CALL DllAbout(void* hParent)
 
 EXPORT void CALL DllConfig(void* hParent)
 {
-    dih_initialize_and_check_devices((HWND)hParent);
     cfgdiag_show((HWND)hParent);
 
     // TODO: Do we have to restart the dialogs here like in old version?
@@ -218,15 +214,7 @@ EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
         new_frame = false;
     }
 
-    if (Control >= 0 && Control < NUMBER_OF_CONTROLS && g_controllers[Control].bActive)
-        status[Control].get_input(Keys);
-    else
-        Keys->value = 0;
-
-    // DirectInputHelper is messing up the axes so we gotta flip these lol
-    const auto tmp = Keys->x;
-    Keys->x = Keys->y;
-    Keys->y = tmp;
+    status[Control].get_input(Keys);
 }
 
 EXPORT void CALL SetKeys(int32_t controller, core_buttons keys)
@@ -700,7 +688,9 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         break;
     case WM_TIMER:
         // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
-        core_buttons controller_input = dih_get_input(g_controllers, ctx->controller_index, new_config.x_scale[ctx->controller_index], new_config.y_scale[ctx->controller_index]);
+        // FIXME
+        // core_buttons controller_input = dih_get_input(g_controllers, ctx->controller_index, new_config.x_scale[ctx->controller_index], new_config.y_scale[ctx->controller_index]);
+        core_buttons controller_input = ctx->last_controller_input;
 
         if (controller_input.value != ctx->last_controller_input.value)
         {
@@ -961,76 +951,14 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 EXPORT void CALL InitiateControllers(void* hMainWindow, core_controller Controls[4])
 {
-    HKEY hKey;
-    DWORD dwSize, dwType;
     emulator_hwnd = (HWND)hMainWindow;
-    for (BYTE i = 0; i < NUMBER_OF_CONTROLS; i++)
+
+    for (int i = 0; i < 4; ++i)
     {
-        g_controllers_default[i] = &Controls[i];
-        g_controllers_default[i]->Present = FALSE;
-        g_controllers_default[i]->RawData = FALSE;
-        g_controllers_default[i]->Plugin = ce_none;
-
-        g_controllers[i].NDevices = 0;
-        g_controllers[i].bActive = i == 0 ? TRUE : FALSE;
-        g_controllers[i].SensMax = 128;
-        g_controllers[i].SensMin = 32;
-        g_controllers[i].Input[18].button = 42;
-        g_controllers[i].Input[19].button = 20;
-        wsprintf(g_controllers[i].szName, L"Controller %d", i + 1);
+        Controls[i].Present = new_config.controller_active[i];
+        Controls[i].RawData = false;
+        Controls[i].Plugin = ce_none;
     }
-
-    dih_initialize_and_check_devices((HWND)hMainWindow);
-
-    dwType = REG_BINARY;
-    dwSize = sizeof(DEFCONTROLLER);
-
-    if (RegCreateKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, 0) != ERROR_SUCCESS)
-    {
-        MessageBox(NULL, L"Could not create Registry Key", L"Error", MB_ICONERROR | MB_OK);
-    }
-    else
-    {
-        for (size_t i = 0; i < NUMBER_OF_CONTROLS; i++)
-        {
-            g_controllers_default[i]->Present = new_config.controller_active[i];
-
-            if (RegQueryValueEx(hKey, g_controllers[i].szName, 0, &dwType, (LPBYTE)&g_controllers[i], &dwSize) == ERROR_SUCCESS)
-            {
-                if (g_controllers[i].bMemPak)
-                    g_controllers_default[i]->Plugin = ce_mempak;
-                else
-                    g_controllers_default[i]->Plugin = ce_none;
-
-                if (dwSize != sizeof(DEFCONTROLLER))
-                {
-                    dwType = REG_BINARY;
-                    dwSize = sizeof(DEFCONTROLLER);
-                    ZeroMemory(&g_controllers[i], sizeof(DEFCONTROLLER));
-
-                    g_controllers[i].NDevices = 0;
-                    g_controllers[i].bActive = i == 0 ? TRUE : FALSE;
-                    g_controllers_default[i]->Plugin = ce_none;
-                    g_controllers[i].SensMax = 128;
-                    g_controllers[i].SensMin = 32;
-                    g_controllers[i].Input[18].button = 42;
-                    g_controllers[i].Input[19].button = 20;
-                    wsprintf(g_controllers[i].szName, L"Controller %d", i + 1);
-
-                    RegDeleteValue(hKey, g_controllers[i].szName);
-                    RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i], dwSize);
-                }
-            }
-            else
-            {
-                dwType = REG_BINARY;
-                dwSize = sizeof(DEFCONTROLLER);
-                RegDeleteValue(hKey, g_controllers[i].szName);
-                RegSetValueEx(hKey, g_controllers[i].szName, 0, dwType, (LPBYTE)&g_controllers[i], dwSize);
-            }
-        }
-    }
-    RegCloseKey(hKey);
 }
 
 EXPORT void CALL ReadController(int Control, BYTE* Command)
@@ -1138,19 +1066,6 @@ static void ui_thread()
 
 EXPORT void CALL RomOpen()
 {
-    HKEY h_key;
-    DWORD dw_type = REG_BINARY;
-    DWORD dw_size = sizeof(DEFCONTROLLER);
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, SUBKEY, 0, KEY_READ, &h_key) == ERROR_SUCCESS)
-    {
-        for (size_t i = 0; i < NUMBER_OF_CONTROLS; i++)
-        {
-            g_controllers_default[i]->Present = new_config.controller_active[i];
-            RegQueryValueEx(h_key, g_controllers[i].szName, 0, &dw_type, (LPBYTE)&g_controllers[i], &dw_size);
-        }
-    }
-    RegCloseKey(h_key);
-
     load_config();
 
     static bool first_time = true;
@@ -1346,8 +1261,6 @@ void Status::on_config_changed()
 
 void TASInput::on_detach()
 {
-    dih_free();
-
     if (icon_font)
     {
         DeleteFont(icon_font);
