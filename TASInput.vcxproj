@@ -23,6 +23,11 @@
         <ProjectGuid>{FEADD90C-0176-4BD9-86AA-32322B7EDACB}</ProjectGuid>
         <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     </PropertyGroup>
+    <PropertyGroup Label="Vcpkg">
+        <VcpkgEnableManifest>true</VcpkgEnableManifest>
+        <VcpkgUseStatic>true</VcpkgUseStatic>
+        <VcpkgTriplet>x86-windows-static</VcpkgTriplet>
+    </PropertyGroup>
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
         <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -99,7 +104,7 @@
             <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
         </ClCompile>
         <Link>
-            <AdditionalDependencies>dxguid.lib;winmm.lib;comctl32.lib;shcore.lib;Gdiplus.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies>setupapi.lib;hid.lib;imm32.lib;version.lib;winmm.lib;comctl32.lib;shcore.lib;Gdiplus.lib;%(AdditionalDependencies)</AdditionalDependencies>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
     </ItemDefinitionGroup>
@@ -125,6 +130,7 @@
     </ItemDefinitionGroup>
 
     <ItemGroup>
+        <ClCompile Include="src\GamepadManager.cpp" />
         <ClCompile Include="src\stdafx.cpp">
             <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
             <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -140,6 +146,7 @@
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="lib\core_plugin.h" />
+        <ClInclude Include="src\GamepadManager.h" />
         <ClInclude Include="src\MiscHelpers.h" />
         <ClInclude Include="src\JoystickControl.h" />
         <ClInclude Include="src\Main.h" />
@@ -152,6 +159,9 @@
     </ItemGroup>
     <ItemGroup>
         <ResourceCompile Include="src\rsrc.rc" />
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="vcpkg.json" />
     </ItemGroup>
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
     <ImportGroup Label="ExtensionTargets">

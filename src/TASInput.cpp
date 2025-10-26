@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include <Combo.h>
 #include <ConfigDialog.h>
+#include <GamepadManager.h>
 #include <JoystickControl.h>
 #include <Main.h>
 #include <MiscHelpers.h>
@@ -687,10 +688,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         }
         break;
     case WM_TIMER:
-        // Looks like there  isn't an event mechanism in DirectInput, so we just poll and diff the inputs to emulate events
-        // FIXME
-        // core_buttons controller_input = dih_get_input(g_controllers, ctx->controller_index, new_config.x_scale[ctx->controller_index], new_config.y_scale[ctx->controller_index]);
-        core_buttons controller_input = ctx->last_controller_input;
+        core_buttons controller_input = GamepadManager::get_input();
 
         if (controller_input.value != ctx->last_controller_input.value)
         {
@@ -996,6 +994,8 @@ static void create_dialog_for_status(Status* status, size_t i)
 
 static void ui_thread()
 {
+    GamepadManager::init();
+
     Gdiplus::GdiplusStartupInput startup_input;
     GdiplusStartup(&gdi_plus_token, &startup_input, NULL);
 
@@ -1033,31 +1033,45 @@ static void ui_thread()
 
     show_activated_windows();
 
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0))
+    MSG msg{};
+    bool running = true;
+    while (running)
     {
-        for (size_t i = 0; i < std::size(status); ++i)
-        {
-            if (!status[i].hwnd)
-            {
-                create_dialog_for_status(&status[i], i);
-            }
-        }
+        DWORD result = MsgWaitForMultipleObjects(
+        0,
+        NULL,
+        FALSE,
+        INFINITE,
+        QS_ALLINPUT);
 
-        bool handled = false;
-        for (auto& st : status)
+        if (result == WAIT_OBJECT_0)
         {
-            if (IsDialogMessage(st.hwnd, &msg))
+            while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
             {
-                handled = true;
-                break;
-            }
-        }
+                if (msg.message == WM_QUIT)
+                {
+                    running = false;
+                    break;
+                }
 
-        if (!handled)
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+                bool handled = false;
+                for (auto& st : status)
+                {
+                    if (IsDialogMessage(st.hwnd, &msg))
+                    {
+                        handled = true;
+                        break;
+                    }
+                }
+
+                if (!handled)
+                {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
+            }
+
+            GamepadManager::poll_events();
         }
     }
 

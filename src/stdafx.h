@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#define DIRECTINPUT_VERSION 0x0800
 #define _USE_MATH_DEFINES
 
 #pragma warning(push, 0)
@@ -40,6 +39,7 @@
 #include <core_plugin.h>
 #include <resource.h>
 #include <gdiplus.h>
+#include <SDL3/SDL.h>
 #pragma warning(pop)
 
 #include <MiscHelpers.h>
