@@ -715,40 +715,33 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     {                                                                \
         ctx->current_input.field = 0;                                \
     }
-#define JOY(field, i)                                                           \
-    if (controller_input.field != ctx->last_controller_input.field)             \
-    {                                                                           \
-        if (new_config.relative_mode)                                           \
-        {                                                                       \
-            if (controller_input.field > ctx->last_controller_input.field)      \
-            {                                                                   \
-                if (ctx->ignore_next_down[i])                                   \
-                {                                                               \
-                    ctx->ignore_next_down[i] = false;                           \
-                }                                                               \
-                else                                                            \
-                {                                                               \
-                    ctx->current_input.field = ctx->current_input.field + 5;    \
-                    ctx->ignore_next_up[i] = true;                              \
-                }                                                               \
-            }                                                                   \
-            else if (controller_input.field < ctx->last_controller_input.field) \
-            {                                                                   \
-                if (ctx->ignore_next_up[i])                                     \
-                {                                                               \
-                    ctx->ignore_next_up[i] = false;                             \
-                }                                                               \
-                else                                                            \
-                {                                                               \
-                    ctx->current_input.field = ctx->current_input.field - 5;    \
-                    ctx->ignore_next_down[i] = true;                            \
-                }                                                               \
-            }                                                                   \
-        }                                                                       \
-        else                                                                    \
-        {                                                                       \
-            ctx->current_input.field = controller_input.field;                  \
-        }                                                                       \
+#define JOY(field, i)                                                       \
+    if (controller_input.field != ctx->last_controller_input.field)         \
+    {                                                                       \
+        if (controller_input.field > ctx->last_controller_input.field)      \
+        {                                                                   \
+            if (ctx->ignore_next_down[i])                                   \
+            {                                                               \
+                ctx->ignore_next_down[i] = false;                           \
+            }                                                               \
+            else                                                            \
+            {                                                               \
+                ctx->current_input.field = ctx->current_input.field + 5;    \
+                ctx->ignore_next_up[i] = true;                              \
+            }                                                               \
+        }                                                                   \
+        else if (controller_input.field < ctx->last_controller_input.field) \
+        {                                                                   \
+            if (ctx->ignore_next_up[i])                                     \
+            {                                                               \
+                ctx->ignore_next_up[i] = false;                             \
+            }                                                               \
+            else                                                            \
+            {                                                               \
+                ctx->current_input.field = ctx->current_input.field - 5;    \
+                ctx->ignore_next_down[i] = true;                            \
+            }                                                               \
+        }                                                                   \
     }
             BTN(dr)
             BTN(dl)
@@ -764,8 +757,22 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             BTN(cu)
             BTN(r)
             BTN(l)
-            JOY(x, 0)
-            JOY(y, 1)
+
+            if (new_config.relative_mode)
+            {
+                JOY(x, 0)
+                JOY(y, 1)
+            }
+            else
+            {
+                // If either axis changed, just override both
+                if (controller_input.x != ctx->last_controller_input.x || controller_input.y != ctx->last_controller_input.y)
+                {
+                    ctx->current_input.x = controller_input.x;
+                    ctx->current_input.y = controller_input.y;
+                }
+            }
+
 
             ctx->set_visuals(ctx->current_input);
         }
