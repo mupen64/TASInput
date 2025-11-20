@@ -327,7 +327,7 @@ BOOL JoystickControl::get_position(HWND hwnd, int* x, int* y)
     }
     if (y)
     {
-        *y = (int)std::round(remap(ctx->y, 1.0, -1.0, -127, 128));
+        *y = (int)std::round(remap(ctx->y, 1.0, -1.0, -128, 127));
     }
 
     return TRUE;
@@ -338,7 +338,7 @@ BOOL JoystickControl::set_position(HWND hwnd, int x, int y)
     WITH_VALID_CTX()
 
     ctx->x = remap(x, -128, 127, -1.0, 1.0);
-    ctx->y = -remap(y, -127, 128, -1.0, 1.0);
+    ctx->y = -remap(y, -128, 127, -1.0, 1.0);
 
     RedrawWindow(hwnd, nullptr, nullptr, RDW_INVALIDATE);
     SendMessage(GetParent(hwnd), WM_JOYSTICK_POSITION_CHANGED, 1, 0);

@@ -14,13 +14,13 @@ extern core_plugin_extended_funcs* g_ef;
 #ifdef _M_X64
 #define PLUGIN_ARCH L" x64"
 #else
-#define PLUGIN_ARCH L" x86"
+#define PLUGIN_ARCH L" "
 #endif
 
 #ifdef _DEBUG
 #define PLUGIN_TARGET L" Debug"
 #else
-#define PLUGIN_TARGET L" Release"
+#define PLUGIN_TARGET L" "
 #endif
 
 #define PLUGIN_NAME L"TASInput " PLUGIN_VERSION PLUGIN_ARCH PLUGIN_TARGET
