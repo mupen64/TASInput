@@ -586,9 +586,9 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             int x{}, y{};
             JoystickControl::get_position(ctx->joy_hwnd, &x, &y);
 
-            ctx->current_input.x = x;
-            ctx->current_input.y = y;
-
+            ctx->current_input.x = (int8_t)x;
+            ctx->current_input.y = (int8_t)y;
+        
             if (!wparam)
             {
                 ctx->set_visuals(ctx->current_input);
@@ -890,7 +890,7 @@ INT_PTR CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         case IDC_Y_UP:
             {
                 int increment = get_joystick_increment(LOWORD(wparam) == IDC_Y_UP);
-                ctx->current_input.y = wrapping_clamp(ctx->current_input.y + increment, -127, 128);
+                ctx->current_input.y = wrapping_clamp(ctx->current_input.y + increment, -128, 127);
                 ctx->set_visuals(ctx->current_input);
             }
             break;
