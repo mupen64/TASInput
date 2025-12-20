@@ -41,7 +41,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         with:
           manifest-dir: ${{ github.workspace }}
-          triplet: x86-windows-release
+          triplet: x86-windows-static
           token: ${{ github.token }}
           
       - name: Integrate vcpkg
