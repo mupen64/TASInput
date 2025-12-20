@@ -2,9 +2,6 @@ name: main
 
 on: [ push ]
 
-env:
-  DUMMY: a
-
 jobs:
   check-format:
     runs-on: ubuntu-latest
@@ -38,6 +35,14 @@ jobs:
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
+
+      - name: vcpkg build
+        id: vcpkg
+        uses: johnwason/vcpkg-action@v7
+        with:
+          manifest-dir: ${{ github.workspace }}
+          triplet: x64-windows-release
+          token: ${{ github.token }}
 
       - name: Build x86
         working-directory: ${{env.GITHUB_WORKSPACE}}
