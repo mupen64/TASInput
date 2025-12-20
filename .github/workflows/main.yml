@@ -43,10 +43,6 @@ jobs:
           manifest-dir: ${{ github.workspace }}
           triplet: x86-windows-static
           token: ${{ github.token }}
-          
-      - name: Integrate vcpkg
-        shell: powershell
-        run: .\vcpkg integrate install
 
       - name: Build x86
         working-directory: ${{env.GITHUB_WORKSPACE}}
