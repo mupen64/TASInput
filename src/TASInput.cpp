@@ -216,6 +216,10 @@ EXPORT void CALL GetKeys(int Control, core_buttons* Keys)
     }
 
     status[Control].get_input(Keys);
+    
+    const auto temp = Keys->x;
+    Keys->x = Keys->y;
+    Keys->y = temp;
 }
 
 EXPORT void CALL SetKeys(int32_t controller, core_buttons keys)
