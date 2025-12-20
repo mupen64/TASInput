@@ -41,8 +41,12 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         with:
           manifest-dir: ${{ github.workspace }}
-          triplet: x64-windows-release
+          triplet: x86-windows-release
           token: ${{ github.token }}
+          
+      - name: Integrate vcpkg
+        shell: powershell
+        run: .\vcpkg integrate install
 
       - name: Build x86
         working-directory: ${{env.GITHUB_WORKSPACE}}
